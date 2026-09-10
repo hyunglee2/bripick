@@ -102,21 +102,30 @@ export default function ResumeCanvas() {
                             )}
 
                             {/* 4. 스킬 블록 */}
+                            {/* 4. 스킬 블록 (실시간 데이터 연동) */}
                             {block.type === "skills" && (
                                 <div className="space-y-2">
                                     <h2 className="text-base font-bold border-b border-neutral-300 pb-1 text-neutral-900 uppercase tracking-wider">
                                         {block.title || "SKILLS"}
                                     </h2>
                                     <div className="flex flex-wrap gap-1.5 pt-1">
-                                        {["TypeScript", "React", "Next.js", "Tailwind CSS", "Zustand"].map((skill) => (
-                                            <span key={skill} className="px-2 py-0.5 bg-neutral-100 text-neutral-800 rounded text-xs font-medium">
-                                                {skill}
+                                        {((block.data as any)?.skills || []).length > 0 ? (
+                                            ((block.data as any).skills as string[]).map((skill: string) => (
+                                                <span
+                                                    key={skill}
+                                                    className="px-2 py-0.5 bg-neutral-100 text-neutral-800 rounded text-xs font-medium border border-neutral-200"
+                                                >
+                                                    {skill}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-xs text-neutral-400 italic">
+                                                우측 인스펙터에서 스킬을 추가하세요.
                                             </span>
-                                        ))}
+                                        )}
                                     </div>
                                 </div>
                             )}
-
                             {/* 5. 자유 텍스트 블록 */}
                             {block.type === "custom_text" && (
                                 <div className="space-y-2">
