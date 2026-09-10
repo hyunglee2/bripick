@@ -1,5 +1,6 @@
-// src/store/useResumeStore.ts
+// 6: Zustand의 persist 기능을 추가해 스토어의 상태가 브라우저 localStorage에 실시간으로 동기화되도록 수정
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import {
     ResumeDocument,
     ResumeBlock,
@@ -18,9 +19,9 @@ interface ResumeState {
     updateBlockStyle: (blockId: string, style: Partial<BlockStyle>) => void;
     updateBlockData: (blockId: string, data: any) => void;
     reorderBlocks: (startIndex: number, endIndex: number) => void;
+    loadResume: (newResume: ResumeDocument) => void;
 }
 
-// 초기 기본 이력서 데이터 템플릿
 const initialResume: ResumeDocument = {
     id: "resume-default",
     versionName: "프론트엔드 개발자 기본 이력서",
@@ -73,83 +74,100 @@ const initialResume: ResumeDocument = {
     ],
 };
 
-export const useResumeStore = create<ResumeState>((set) => ({
-    resume: initialResume,
-    selectedBlockId: "block-profile",
+export const useResumeStore = create<ResumeState>()(
+    persist(
+        (set) => ({
+            resume: initialResume,
+            selectedBlockId: "block-profile",
 
-    // 블록 선택
-    setSelectedBlockId: (id) => set({ selectedBlockId: id }),
+            setSelectedBlockId: (id) => set({ selectedBlockId: id }),
 
-    // 블록 추가
-    addBlock: (type) =>
-        set((state) => {
-            const newBlockId = `block-${Date.now()}`;
-            const defaultBlock: ResumeBlock = {
-                id: newBlockId,
-                type,
-                title: type.toUpperCase(),
-                isVisible: true,
-                order: state.resume.blocks.length,
-                style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
-                data: type === "custom_text" ? { content: "" } : ([] as any),
-            } as ResumeBlock;
+            addBlock: (type) =>
+                set((state) => {
+                    const newBlockId = `block-${Date.now()}`;
+                    const defaultBlock: ResumeBlock = {
+                        id: newBlockId,
+                        type,
+                        title: type.toUpperCase(),
+                        isVisible: true,
+                        order: state.resume.blocks.length,
+                        style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
+                        data:
+                            type === "custom_text"
+                                ? { content: "" }
+                                : type === "skills"
+                                    ? { skills: ["TypeScript", "React", "Next.js"] }
+                                    : ([] as any),
+                    } as ResumeBlock;
 
-            return {
-                resume: {
-                    ...state.resume,
-                    blocks: [...state.resume.blocks, defaultBlock],
-                },
-                selectedBlockId: newBlockId,
-            };
+                    return {
+                        resume: {
+                            ...state.resume,
+                            blocks: [...state.resume.blocks, defaultBlock],
+                            updatedAt: new Date().toISOString(),
+                        },
+                        selectedBlockId: newBlockId,
+                    };
+                }),
+
+            removeBlock: (blockId) =>
+                set((state) => ({
+                    resume: {
+                        ...state.resume,
+                        blocks: state.resume.blocks.filter((block) => block.id !== blockId),
+                        updatedAt: new Date().toISOString(),
+                    },
+                    selectedBlockId:
+                        state.selectedBlockId === blockId ? null : state.selectedBlockId,
+                })),
+
+            updateBlockStyle: (blockId, newStyle) =>
+                set((state) => ({
+                    resume: {
+                        ...state.resume,
+                        blocks: state.resume.blocks.map((block) =>
+                            block.id === blockId
+                                ? { ...block, style: { ...block.style, ...newStyle } }
+                                : block
+                        ),
+                        updatedAt: new Date().toISOString(),
+                    },
+                })),
+
+            updateBlockData: (blockId, newData) =>
+                set((state) => ({
+                    resume: {
+                        ...state.resume,
+                        blocks: state.resume.blocks.map((block) =>
+                            block.id === blockId ? { ...block, data: newData } : block
+                        ),
+                        updatedAt: new Date().toISOString(),
+                    },
+                })),
+
+            reorderBlocks: (startIndex, endIndex) =>
+                set((state) => {
+                    const updatedBlocks = Array.from(state.resume.blocks);
+                    const [movedBlock] = updatedBlocks.splice(startIndex, 1);
+                    updatedBlocks.splice(endIndex, 0, movedBlock);
+
+                    return {
+                        resume: {
+                            ...state.resume,
+                            blocks: updatedBlocks.map((b, idx) => ({ ...b, order: idx })),
+                            updatedAt: new Date().toISOString(),
+                        },
+                    };
+                }),
+
+            loadResume: (newResume) =>
+                set({
+                    resume: newResume,
+                    selectedBlockId: null,
+                }),
         }),
-
-    // 블록 삭제
-    removeBlock: (blockId) =>
-        set((state) => ({
-            resume: {
-                ...state.resume,
-                blocks: state.resume.blocks.filter((block) => block.id !== blockId),
-            },
-            selectedBlockId:
-                state.selectedBlockId === blockId ? null : state.selectedBlockId,
-        })),
-
-    // 블록 여백/스타일 업데이트
-    updateBlockStyle: (blockId, newStyle) =>
-        set((state) => ({
-            resume: {
-                ...state.resume,
-                blocks: state.resume.blocks.map((block) =>
-                    block.id === blockId
-                        ? { ...block, style: { ...block.style, ...newStyle } }
-                        : block
-                ),
-            },
-        })),
-
-    // 블록 세부 콘텐츠 업데이트
-    updateBlockData: (blockId, newData) =>
-        set((state) => ({
-            resume: {
-                ...state.resume,
-                blocks: state.resume.blocks.map((block) =>
-                    block.id === blockId ? { ...block, data: newData } : block
-                ),
-            },
-        })),
-
-    // 블록 순서 변경
-    reorderBlocks: (startIndex, endIndex) =>
-        set((state) => {
-            const updatedBlocks = Array.from(state.resume.blocks);
-            const [movedBlock] = updatedBlocks.splice(startIndex, 1);
-            updatedBlocks.splice(endIndex, 0, movedBlock);
-
-            return {
-                resume: {
-                    ...state.resume,
-                    blocks: updatedBlocks.map((b, idx) => ({ ...b, order: idx })),
-                },
-            };
-        }),
-}));
+        {
+            name: "bripick-resume-storage", // 로컬 스토리지 키 이름
+        }
+    )
+);
