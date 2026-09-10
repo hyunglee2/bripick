@@ -20,6 +20,7 @@ interface ResumeState {
     updateBlockData: (blockId: string, data: any) => void;
     reorderBlocks: (startIndex: number, endIndex: number) => void;
     loadResume: (newResume: ResumeDocument) => void;
+    updateGlobalStyle: (style: Partial<ResumeDocument["globalStyle"]>) => void;
 }
 
 const initialResume: ResumeDocument = {
@@ -119,6 +120,16 @@ export const useResumeStore = create<ResumeState>()(
                     },
                     selectedBlockId:
                         state.selectedBlockId === blockId ? null : state.selectedBlockId,
+                })),
+
+            // 전역 스타일 업데이트 액션 추가
+            updateGlobalStyle: (newStyle) =>
+                set((state) => ({
+                    resume: {
+                        ...state.resume,
+                        globalStyle: { ...state.resume.globalStyle, ...newStyle },
+                        updatedAt: new Date().toISOString(),
+                    },
                 })),
 
             updateBlockStyle: (blockId, newStyle) =>

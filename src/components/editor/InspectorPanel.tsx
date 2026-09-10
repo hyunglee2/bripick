@@ -4,11 +4,13 @@
 
 import { useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
-import { Trash2, ChevronUp, ChevronDown, Plus, X } from "lucide-react";
+import { Trash2, ChevronUp, ChevronDown, Plus, X, Sliders, Palette } from "lucide-react";
 
 export default function InspectorPanel() {
     const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
     const blocks = useResumeStore((state) => state.resume.blocks);
+    const globalStyle = useResumeStore((state) => state.resume.globalStyle);
+    const updateGlobalStyle = useResumeStore((state) => state.updateGlobalStyle);
     const updateBlockStyle = useResumeStore((state) => state.updateBlockStyle);
     const updateBlockData = useResumeStore((state) => state.updateBlockData);
     const removeBlock = useResumeStore((state) => state.removeBlock);
@@ -19,15 +21,79 @@ export default function InspectorPanel() {
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
     const currentBlock = blocks[currentIndex];
 
+    // 블록 미선택 시: 문서 전역 스타일(Global Style) 설정 패널 노출
     if (!currentBlock) {
         return (
-            <aside className="w-80 border-l border-neutral-800 bg-[#12131a] p-6 text-neutral-500 text-xs flex items-center justify-center">
-                편집할 블록을 캔버스에서 선택하세요.
+            <aside className="w-80 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
+                <div className="space-y-6">
+                    <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
+                        <Sliders size={15} className="text-blue-500" />
+                        <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
+                            문서 전역 설정
+                        </span>
+                    </div>
+
+                    {/* 1. 포인트 컬러 지정 */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
+                            <Palette size={13} /> 테마 포인트 컬러
+                        </label>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="color"
+                                value={globalStyle?.primaryColor || "#3b82f6"}
+                                onChange={(e) => updateGlobalStyle({ primaryColor: e.target.value })}
+                                className="w-8 h-8 rounded border border-neutral-700 bg-transparent cursor-pointer"
+                            />
+                            <span className="text-xs text-neutral-400 font-mono">
+                                {globalStyle?.primaryColor || "#3b82f6"}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* 2. 캔버스 기본 여백 */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-neutral-300">용지 기본 안쪽 여백</span>
+                            <span className="text-neutral-400 font-mono">{globalStyle?.basePadding || 32}px</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="16"
+                            max="64"
+                            step="4"
+                            value={globalStyle?.basePadding || 32}
+                            onChange={(e) => updateGlobalStyle({ basePadding: Number(e.target.value) })}
+                            className="w-full accent-blue-500 cursor-pointer"
+                        />
+                    </div>
+
+                    {/* 3. 캔버스 최대 가로폭 */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-neutral-300">캔버스 가로 너비</span>
+                            <span className="text-neutral-400 font-mono">{globalStyle?.contentWidth || 800}px</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="700"
+                            max="950"
+                            step="25"
+                            value={globalStyle?.contentWidth || 800}
+                            onChange={(e) => updateGlobalStyle({ contentWidth: Number(e.target.value) })}
+                            className="w-full accent-blue-500 cursor-pointer"
+                        />
+                    </div>
+
+                    <div className="p-3 bg-neutral-900/60 rounded border border-neutral-800 text-[11px] text-neutral-400 leading-relaxed">
+                        캔버스의 빈 영역을 클릭하면 언제든 이 전역 설정 화면으로 돌아옵니다.
+                    </div>
+                </div>
             </aside>
         );
     }
 
-    // 순서 이동 핸들러
+    // --- 순서 이동 핸들러 ---
     const handleMoveUp = () => {
         if (currentIndex > 0) reorderBlocks(currentIndex, currentIndex - 1);
     };
@@ -64,6 +130,37 @@ export default function InspectorPanel() {
         updateBlockData(
             currentBlock.id,
             prevData.filter((item: any) => item.id !== expId)
+        );
+    };
+
+    // --- 프로젝트(Project) 편집 핸들러 ---
+    const handleAddProjectItem = () => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        const newItem = {
+            id: `proj-${Date.now()}`,
+            title: "프로젝트 명",
+            role: "담당 역할",
+            startDate: "2025.01",
+            endDate: "2025.06",
+            link: "",
+            description: ["주요 성과 및 핵심 기여도를 작성하세요."],
+        };
+        updateBlockData(currentBlock.id, [...prevData, newItem]);
+    };
+
+    const handleUpdateProjectField = (projId: string, field: string, value: any) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        const updated = prevData.map((item: any) =>
+            item.id === projId ? { ...item, [field]: value } : item
+        );
+        updateBlockData(currentBlock.id, updated);
+    };
+
+    const handleRemoveProjectItem = (projId: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.filter((item: any) => item.id !== projId)
         );
     };
 
@@ -157,7 +254,7 @@ export default function InspectorPanel() {
                     </div>
                 </div>
 
-                {/* 2. 데이터 편집 섹션 */}
+                {/* 2. 블록별 전용 데이터 편집 섹션 */}
 
                 {/* [프로필 폼] */}
                 {currentBlock.type === "profile" && (
@@ -205,20 +302,6 @@ export default function InspectorPanel() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-neutral-400 block mb-1">연락처</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.phone || ""}
-                                onChange={(e) =>
-                                    updateBlockData(currentBlock.id, {
-                                        ...currentBlock.data,
-                                        phone: e.target.value,
-                                    })
-                                }
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
                             <label className="text-xs text-neutral-400 block mb-1">한줄 소개</label>
                             <textarea
                                 rows={3}
@@ -235,7 +318,7 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {/* [경력(Experience) 폼] */}
+                {/* [경력 폼] */}
                 {currentBlock.type === "experience" && (
                     <div className="space-y-4 border-t border-neutral-800 pt-4">
                         <div className="flex items-center justify-between">
@@ -249,15 +332,15 @@ export default function InspectorPanel() {
                         </div>
 
                         {Array.isArray(currentBlock.data) &&
-                            currentBlock.data.map((exp: any, index: number) => (
+                            currentBlock.data.map((exp: any) => (
                                 <div
-                                    key={exp.id || index}
+                                    key={exp.id}
                                     className="bg-neutral-900/80 border border-neutral-800 rounded p-3 space-y-2 relative"
                                 >
                                     <button
                                         onClick={() => handleRemoveExpItem(exp.id)}
                                         className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        title="이 경력 삭제"
+                                        title="경력 삭제"
                                     >
                                         <Trash2 size={13} />
                                     </button>
@@ -327,7 +410,6 @@ export default function InspectorPanel() {
                                                     e.target.value.split("\n")
                                                 )
                                             }
-                                            placeholder="한 줄에 하나의 성과를 입력하세요"
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
                                         />
                                     </div>
@@ -336,7 +418,120 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {/* [스킬(Skills) 폼] */}
+                {/* [프로젝트 폼] */}
+                {currentBlock.type === "project" && (
+                    <div className="space-y-4 border-t border-neutral-800 pt-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-neutral-300">프로젝트 목록</span>
+                            <button
+                                onClick={handleAddProjectItem}
+                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
+                            >
+                                <Plus size={13} /> 프로젝트 추가
+                            </button>
+                        </div>
+
+                        {Array.isArray(currentBlock.data) &&
+                            currentBlock.data.map((proj: any) => (
+                                <div
+                                    key={proj.id}
+                                    className="bg-neutral-900/80 border border-neutral-800 rounded p-3 space-y-2 relative"
+                                >
+                                    <button
+                                        onClick={() => handleRemoveProjectItem(proj.id)}
+                                        className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
+                                        title="프로젝트 삭제"
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+
+                                    <div>
+                                        <label className="text-[11px] text-neutral-400 block">프로젝트명</label>
+                                        <input
+                                            type="text"
+                                            value={proj.title || ""}
+                                            onChange={(e) =>
+                                                handleUpdateProjectField(proj.id, "title", e.target.value)
+                                            }
+                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[11px] text-neutral-400 block">담당 역할</label>
+                                        <input
+                                            type="text"
+                                            value={proj.role || ""}
+                                            onChange={(e) =>
+                                                handleUpdateProjectField(proj.id, "role", e.target.value)
+                                            }
+                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[11px] text-neutral-400 block">링크 URL (선택)</label>
+                                        <input
+                                            type="text"
+                                            placeholder="https://..."
+                                            value={proj.link || ""}
+                                            onChange={(e) =>
+                                                handleUpdateProjectField(proj.id, "link", e.target.value)
+                                            }
+                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[11px] text-neutral-400 block">시작일</label>
+                                            <input
+                                                type="text"
+                                                placeholder="YYYY.MM"
+                                                value={proj.startDate || ""}
+                                                onChange={(e) =>
+                                                    handleUpdateProjectField(proj.id, "startDate", e.target.value)
+                                                }
+                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[11px] text-neutral-400 block">종료일</label>
+                                            <input
+                                                type="text"
+                                                placeholder="진행 중"
+                                                value={proj.endDate || ""}
+                                                onChange={(e) =>
+                                                    handleUpdateProjectField(proj.id, "endDate", e.target.value)
+                                                }
+                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[11px] text-neutral-400 block">
+                                            주요 성과 / 설명 (줄바꿈 구분)
+                                        </label>
+                                        <textarea
+                                            rows={3}
+                                            value={Array.isArray(proj.description) ? proj.description.join("\n") : ""}
+                                            onChange={(e) =>
+                                                handleUpdateProjectField(
+                                                    proj.id,
+                                                    "description",
+                                                    e.target.value.split("\n")
+                                                )
+                                            }
+                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                )}
+
+                {/* [스킬 폼] */}
                 {currentBlock.type === "skills" && (
                     <div className="space-y-3 border-t border-neutral-800 pt-4">
                         <label className="text-xs font-semibold text-neutral-300 block">
