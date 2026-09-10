@@ -7,6 +7,7 @@ import { BlockType } from "@/types/resume";
 
 export default function EditorHeader() {
     const addBlock = useResumeStore((state) => state.addBlock);
+    const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
 
     const blockButtons: { label: string; type: BlockType }[] = [
         { label: "+ 경력", type: "experience" },
@@ -14,6 +15,14 @@ export default function EditorHeader() {
         { label: "+ 기술 스택", type: "skills" },
         { label: "+ 자유 텍스트", type: "custom_text" },
     ];
+
+    // PDF 내보내기 핸들러 (포커스 테두리 해제 후 인쇄창 호출)
+    const handleExportPDF = () => {
+        setSelectedBlockId(null); // 선택된 블록 테두리 제거
+        setTimeout(() => {
+            window.print();
+        }, 150);
+    };
 
     return (
         <header className="h-14 border-b border-neutral-800 bg-[#12131a] px-6 flex items-center justify-between sticky top-0 z-50">
@@ -34,7 +43,7 @@ export default function EditorHeader() {
                         <button
                             key={btn.type}
                             onClick={() => addBlock(btn.type)}
-                            className="text-xs px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition"
+                            className="text-xs px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition active:scale-95"
                         >
                             {btn.label}
                         </button>
@@ -43,10 +52,10 @@ export default function EditorHeader() {
             </div>
 
             <div className="flex items-center gap-3">
-                <button className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition">
-                    <Eye size={14} /> 미리보기
-                </button>
-                <button className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 font-medium text-white transition">
+                <button
+                    onClick={handleExportPDF}
+                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 font-medium text-white transition shadow-sm active:scale-95"
+                >
                     <Download size={14} /> PDF 저장
                 </button>
             </div>
