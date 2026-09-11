@@ -1,3 +1,5 @@
+export type TemplateStyle = "modern" | "minimal" | "creative";
+
 // 1. 지원할 블록 종류 정의
 export type BlockType =
     | 'profile'       // 기본 인적사항 & 한줄소개
@@ -83,6 +85,9 @@ export interface ResumeDocument {
         primaryColor: string;
         contentWidth: number; // 캔버스 너비 (px)
         basePadding: number;
+        template?: TemplateStyle;
     };
     blocks: ResumeBlock[];  // 조립된 블록들의 목록
 }
+
+

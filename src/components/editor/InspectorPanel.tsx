@@ -85,6 +85,35 @@ export default function InspectorPanel() {
                         />
                     </div>
 
+                    {/* [여기 추가] 4. 이력서 레이아웃 템플릿 선택 */}
+                    <div className="space-y-2 border-t border-neutral-800 pt-4">
+                        <label className="text-xs font-medium text-neutral-300 block">
+                            이력서 레이아웃 템플릿
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                onClick={() => updateGlobalStyle({ template: "modern" })}
+                                className={`p-2.5 rounded text-xs font-medium border text-left transition ${(globalStyle?.template || "modern") === "modern"
+                                        ? "bg-blue-600/20 border-blue-500 text-blue-300"
+                                        : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
+                                    }`}
+                            >
+                                <div className="font-bold">Modern</div>
+                                <div className="text-[10px] opacity-75">입체감 있는 카드형</div>
+                            </button>
+                            <button
+                                onClick={() => updateGlobalStyle({ template: "minimal" })}
+                                className={`p-2.5 rounded text-xs font-medium border text-left transition ${globalStyle?.template === "minimal"
+                                        ? "bg-blue-600/20 border-blue-500 text-blue-300"
+                                        : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
+                                    }`}
+                            >
+                                <div className="font-bold">Minimal</div>
+                                <div className="text-[10px] opacity-75">군더더기 없는 선형</div>
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="p-3 bg-neutral-900/60 rounded border border-neutral-800 text-[11px] text-neutral-400 leading-relaxed">
                         캔버스의 빈 영역을 클릭하면 언제든 이 전역 설정 화면으로 돌아옵니다.
                     </div>

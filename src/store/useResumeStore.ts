@@ -29,9 +29,10 @@ const initialResume: ResumeDocument = {
     updatedAt: new Date().toISOString(),
     globalStyle: {
         fontFamily: "Pretendard Variable",
-        primaryColor: "#3b82f6",
+        primaryColor: "#2563eb",
         contentWidth: 800,
-        basePadding: 32,
+        basePadding: 36,
+        template: "modern", // <- 기본 템플릿 설정
     },
     blocks: [
         {
