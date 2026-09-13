@@ -1,8 +1,10 @@
 // src/components/editor/ResumeCanvas.tsx
 "use client";
 
+import { useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
+import { GripVertical } from "lucide-react";
 
 export default function ResumeCanvas() {
     const blocks = useResumeStore((state) => state.resume.blocks);
@@ -10,10 +12,45 @@ export default function ResumeCanvas() {
     const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
     const updateBlockData = useResumeStore((state) => state.updateBlockData);
+    const reorderBlocks = useResumeStore((state) => state.reorderBlocks);
+
+    // 드래그 중인 블록의 인덱스 상태 관리
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
     const templateType = globalStyle?.template || "modern";
     const primaryColor = globalStyle?.primaryColor || "#2563eb";
     const A4_HEIGHT_PX = 1130;
+
+    // --- HTML5 드래그 앤 드롭 핸들러 ---
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+        // 드래그 고스트 이미지 반투명 설정용
+        e.dataTransfer.setData("text/plain", index.toString());
+    };
+
+    const handleDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (dragOverIndex !== index) {
+            setDragOverIndex(index);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+        e.preventDefault();
+        if (draggedIndex !== null && draggedIndex !== targetIndex) {
+            reorderBlocks(draggedIndex, targetIndex);
+        }
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
+        setDragOverIndex(null);
+    };
 
     return (
         <main
@@ -39,26 +76,43 @@ export default function ResumeCanvas() {
                     </span>
                 </div>
 
-                {blocks.map((block) => {
+                {blocks.map((block, index) => {
                     const isSelected = selectedBlockId === block.id;
+                    const isBeingDragged = draggedIndex === index;
+                    const isTargeted = dragOverIndex === index && draggedIndex !== index;
 
                     return (
                         <div
                             key={block.id}
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDrop={(e) => handleDrop(e, index)}
+                            onDragEnd={handleDragEnd}
                             onClick={() => setSelectedBlockId(block.id)}
                             style={{
                                 paddingTop: `${block.style.paddingY}px`,
                                 paddingBottom: `${block.style.paddingY}px`,
                             }}
-                            /* 템플릿(Modern 카드 vs Minimal 플랫) 스타일 분기 */
-                            className={`relative cursor-pointer transition ${templateType === "modern"
+                            /* 드래그 상태 및 템플릿(Modern vs Minimal) 스타일 분기 */
+                            className={`relative cursor-pointer transition-all ${templateType === "modern"
                                     ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
                                     : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
                                 } ${isSelected
                                     ? "!ring-2 !ring-blue-500 !border-blue-500 bg-blue-50/20"
                                     : ""
-                                }`}
+                                } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
+                                } ${isTargeted ? "border-t-4 border-t-blue-500 -mt-1" : ""
+                                } group`}
                         >
+                            {/* 좌측 드래그 앤 드롭 핸들 (마우스 올리면 표시, 인쇄 시 숨김) */}
+                            <div
+                                className="no-print absolute -left-7 top-1/2 -translate-y-1/2 text-neutral-400 opacity-0 group-hover:opacity-100 hover:text-neutral-700 cursor-grab active:cursor-grabbing p-1 transition"
+                                title="끌어서 순서 변경"
+                            >
+                                <GripVertical size={16} />
+                            </div>
+
                             {/* 1. 프로필 블록 */}
                             {block.type === "profile" && (
                                 <div className="space-y-2">
@@ -182,7 +236,7 @@ export default function ResumeCanvas() {
                                                     <EditableText
                                                         tag="div"
                                                         value={exp.role}
-                                                        placeholder="직책 및 담당 역할"
+                                                        placeholder="직책 및 역할"
                                                         style={{ color: primaryColor }}
                                                         onChange={(newRole) => {
                                                             const updated = [...block.data];
