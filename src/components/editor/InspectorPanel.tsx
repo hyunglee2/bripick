@@ -1,10 +1,19 @@
-// 선택된 블록의 여백, 구분선, 기본 데이터를 실시간으로 제어하는 설정창
 // src/components/editor/InspectorPanel.tsx
 "use client";
 
 import { useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
-import { Trash2, ChevronUp, ChevronDown, Plus, X, Sliders, Palette } from "lucide-react";
+import {
+    Trash2,
+    ChevronUp,
+    ChevronDown,
+    Plus,
+    X,
+    Sliders,
+    Palette,
+    Sparkles,
+    Layers,
+} from "lucide-react";
 
 export default function InspectorPanel() {
     const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
@@ -21,7 +30,7 @@ export default function InspectorPanel() {
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
     const currentBlock = blocks[currentIndex];
 
-    // 블록 미선택 시: 문서 전역 스타일(Global Style) 설정 패널 노출
+    // 1. 블록 미선택 시: 문서 전역 설정 패널
     if (!currentBlock) {
         return (
             <aside className="w-80 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
@@ -33,7 +42,7 @@ export default function InspectorPanel() {
                         </span>
                     </div>
 
-                    {/* 1. 포인트 컬러 지정 */}
+                    {/* 포인트 컬러 지정 */}
                     <div className="space-y-2">
                         <label className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
                             <Palette size={13} /> 테마 포인트 컬러
@@ -51,24 +60,24 @@ export default function InspectorPanel() {
                         </div>
                     </div>
 
-                    {/* 2. 캔버스 기본 여백 */}
+                    {/* 캔버스 기본 여백 */}
                     <div className="space-y-2">
                         <div className="flex justify-between text-xs">
-                            <span className="text-neutral-300">용지 기본 안쪽 여백</span>
-                            <span className="text-neutral-400 font-mono">{globalStyle?.basePadding || 32}px</span>
+                            <span className="text-neutral-300">용지 안쪽 여백</span>
+                            <span className="text-neutral-400 font-mono">{globalStyle?.basePadding || 36}px</span>
                         </div>
                         <input
                             type="range"
-                            min="16"
+                            min="20"
                             max="64"
                             step="4"
-                            value={globalStyle?.basePadding || 32}
+                            value={globalStyle?.basePadding || 36}
                             onChange={(e) => updateGlobalStyle({ basePadding: Number(e.target.value) })}
                             className="w-full accent-blue-500 cursor-pointer"
                         />
                     </div>
 
-                    {/* 3. 캔버스 최대 가로폭 */}
+                    {/* 캔버스 최대 가로폭 */}
                     <div className="space-y-2">
                         <div className="flex justify-between text-xs">
                             <span className="text-neutral-300">캔버스 가로 너비</span>
@@ -76,16 +85,16 @@ export default function InspectorPanel() {
                         </div>
                         <input
                             type="range"
-                            min="700"
-                            max="950"
-                            step="25"
+                            min="720"
+                            max="900"
+                            step="20"
                             value={globalStyle?.contentWidth || 800}
                             onChange={(e) => updateGlobalStyle({ contentWidth: Number(e.target.value) })}
                             className="w-full accent-blue-500 cursor-pointer"
                         />
                     </div>
 
-                    {/* [여기 추가] 4. 이력서 레이아웃 템플릿 선택 */}
+                    {/* 템플릿 스타일 선택 */}
                     <div className="space-y-2 border-t border-neutral-800 pt-4">
                         <label className="text-xs font-medium text-neutral-300 block">
                             이력서 레이아웃 템플릿
@@ -122,7 +131,7 @@ export default function InspectorPanel() {
         );
     }
 
-    // --- 순서 이동 핸들러 ---
+    // --- 공통 블록 조작 ---
     const handleMoveUp = () => {
         if (currentIndex > 0) reorderBlocks(currentIndex, currentIndex - 1);
     };
@@ -131,7 +140,7 @@ export default function InspectorPanel() {
         if (currentIndex < blocks.length - 1) reorderBlocks(currentIndex, currentIndex + 1);
     };
 
-    // --- 경력(Experience) 편집 핸들러 ---
+    // --- 경력(Experience) 핸들러 ---
     const handleAddExperienceItem = () => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const newItem = {
@@ -140,18 +149,17 @@ export default function InspectorPanel() {
             role: "직무를 입력하세요",
             startDate: "2024.01",
             endDate: "재직 중",
-            description: ["담당 업무 및 주요 성과를 입력하세요."],
-            techStack: [],
+            description: ["주요 업무 및 달성한 성과를 입력하세요."],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
     };
 
     const handleUpdateExpField = (expId: string, field: string, value: any) => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        const updated = prevData.map((item: any) =>
-            item.id === expId ? { ...item, [field]: value } : item
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => (item.id === expId ? { ...item, [field]: value } : item))
         );
-        updateBlockData(currentBlock.id, updated);
     };
 
     const handleRemoveExpItem = (expId: string) => {
@@ -162,7 +170,47 @@ export default function InspectorPanel() {
         );
     };
 
-    // --- 프로젝트(Project) 편집 핸들러 ---
+    // 불릿 포인트 개별 조작 (추가/수정/삭제/STAR 프리셋)
+    const handleAddExpBullet = (expId: string, text = "") => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== expId) return item;
+                const currentDesc = Array.isArray(item.description) ? item.description : [];
+                return { ...item, description: [...currentDesc, text || "새로운 성과 불릿 포인트"] };
+            })
+        );
+    };
+
+    const handleUpdateExpBullet = (expId: string, index: number, value: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== expId) return item;
+                const newDesc = [...item.description];
+                newDesc[index] = value;
+                return { ...item, description: newDesc };
+            })
+        );
+    };
+
+    const handleRemoveExpBullet = (expId: string, index: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== expId) return item;
+                return {
+                    ...item,
+                    description: item.description.filter((_: any, i: number) => i !== index),
+                };
+            })
+        );
+    };
+
+    // --- 프로젝트(Project) 핸들러 ---
     const handleAddProjectItem = () => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const newItem = {
@@ -172,17 +220,17 @@ export default function InspectorPanel() {
             startDate: "2025.01",
             endDate: "2025.06",
             link: "",
-            description: ["주요 성과 및 핵심 기여도를 작성하세요."],
+            description: ["프로젝트 핵심 기여도 및 결과물을 작성하세요."],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
     };
 
     const handleUpdateProjectField = (projId: string, field: string, value: any) => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        const updated = prevData.map((item: any) =>
-            item.id === projId ? { ...item, [field]: value } : item
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => (item.id === projId ? { ...item, [field]: value } : item))
         );
-        updateBlockData(currentBlock.id, updated);
     };
 
     const handleRemoveProjectItem = (projId: string) => {
@@ -193,7 +241,46 @@ export default function InspectorPanel() {
         );
     };
 
-    // --- 스킬(Skills) 편집 핸들러 ---
+    const handleAddProjBullet = (projId: string, text = "") => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== projId) return item;
+                const currentDesc = Array.isArray(item.description) ? item.description : [];
+                return { ...item, description: [...currentDesc, text || "새로운 기여 항목"] };
+            })
+        );
+    };
+
+    const handleUpdateProjBullet = (projId: string, index: number, value: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== projId) return item;
+                const newDesc = [...item.description];
+                newDesc[index] = value;
+                return { ...item, description: newDesc };
+            })
+        );
+    };
+
+    const handleRemoveProjBullet = (projId: string, index: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== projId) return item;
+                return {
+                    ...item,
+                    description: item.description.filter((_: any, i: number) => i !== index),
+                };
+            })
+        );
+    };
+
+    // --- 스킬(Skills) 핸들러 ---
     const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && newSkillInput.trim()) {
             e.preventDefault();
@@ -219,9 +306,10 @@ export default function InspectorPanel() {
             <div className="space-y-6">
                 {/* 상단 블록 타이틀 및 액션 버튼들 */}
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-                    <span className="text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                        {currentBlock.type} 설정
-                    </span>
+                    <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                        <Layers size={14} className="text-blue-500" />
+                        <span>{currentBlock.type} 설정</span>
+                    </div>
                     <div className="flex items-center gap-1">
                         <button
                             onClick={handleMoveUp}
@@ -283,7 +371,7 @@ export default function InspectorPanel() {
                     </div>
                 </div>
 
-                {/* 2. 블록별 전용 데이터 편집 섹션 */}
+                {/* 2. 블록별 데이터 입력 폼 */}
 
                 {/* [프로필 폼] */}
                 {currentBlock.type === "profile" && (
@@ -294,10 +382,7 @@ export default function InspectorPanel() {
                                 type="text"
                                 value={currentBlock.data.name || ""}
                                 onChange={(e) =>
-                                    updateBlockData(currentBlock.id, {
-                                        ...currentBlock.data,
-                                        name: e.target.value,
-                                    })
+                                    updateBlockData(currentBlock.id, { ...currentBlock.data, name: e.target.value })
                                 }
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
@@ -308,10 +393,7 @@ export default function InspectorPanel() {
                                 type="text"
                                 value={currentBlock.data.role || ""}
                                 onChange={(e) =>
-                                    updateBlockData(currentBlock.id, {
-                                        ...currentBlock.data,
-                                        role: e.target.value,
-                                    })
+                                    updateBlockData(currentBlock.id, { ...currentBlock.data, role: e.target.value })
                                 }
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
@@ -322,10 +404,18 @@ export default function InspectorPanel() {
                                 type="text"
                                 value={currentBlock.data.email || ""}
                                 onChange={(e) =>
-                                    updateBlockData(currentBlock.id, {
-                                        ...currentBlock.data,
-                                        email: e.target.value,
-                                    })
+                                    updateBlockData(currentBlock.id, { ...currentBlock.data, email: e.target.value })
+                                }
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs text-neutral-400 block mb-1">연락처</label>
+                            <input
+                                type="text"
+                                value={currentBlock.data.phone || ""}
+                                onChange={(e) =>
+                                    updateBlockData(currentBlock.id, { ...currentBlock.data, phone: e.target.value })
                                 }
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
@@ -336,10 +426,7 @@ export default function InspectorPanel() {
                                 rows={3}
                                 value={currentBlock.data.bio || ""}
                                 onChange={(e) =>
-                                    updateBlockData(currentBlock.id, {
-                                        ...currentBlock.data,
-                                        bio: e.target.value,
-                                    })
+                                    updateBlockData(currentBlock.id, { ...currentBlock.data, bio: e.target.value })
                                 }
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
                             />
@@ -347,7 +434,7 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {/* [경력 폼] */}
+                {/* [경력 폼 - STAR 불릿 관리 탑재] */}
                 {currentBlock.type === "experience" && (
                     <div className="space-y-4 border-t border-neutral-800 pt-4">
                         <div className="flex items-center justify-between">
@@ -364,7 +451,7 @@ export default function InspectorPanel() {
                             currentBlock.data.map((exp: any) => (
                                 <div
                                     key={exp.id}
-                                    className="bg-neutral-900/80 border border-neutral-800 rounded p-3 space-y-2 relative"
+                                    className="bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-3 relative"
                                 >
                                     <button
                                         onClick={() => handleRemoveExpItem(exp.id)}
@@ -379,21 +466,17 @@ export default function InspectorPanel() {
                                         <input
                                             type="text"
                                             value={exp.company || ""}
-                                            onChange={(e) =>
-                                                handleUpdateExpField(exp.id, "company", e.target.value)
-                                            }
+                                            onChange={(e) => handleUpdateExpField(exp.id, "company", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="text-[11px] text-neutral-400 block">직무 / 직책</label>
+                                        <label className="text-[11px] text-neutral-400 block">직무 / 역할</label>
                                         <input
                                             type="text"
                                             value={exp.role || ""}
-                                            onChange={(e) =>
-                                                handleUpdateExpField(exp.id, "role", e.target.value)
-                                            }
+                                            onChange={(e) => handleUpdateExpField(exp.id, "role", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
@@ -403,11 +486,8 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">시작일</label>
                                             <input
                                                 type="text"
-                                                placeholder="YYYY.MM"
                                                 value={exp.startDate || ""}
-                                                onChange={(e) =>
-                                                    handleUpdateExpField(exp.id, "startDate", e.target.value)
-                                                }
+                                                onChange={(e) => handleUpdateExpField(exp.id, "startDate", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
@@ -415,39 +495,71 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">종료일</label>
                                             <input
                                                 type="text"
-                                                placeholder="재직 중"
                                                 value={exp.endDate || ""}
-                                                onChange={(e) =>
-                                                    handleUpdateExpField(exp.id, "endDate", e.target.value)
-                                                }
+                                                onChange={(e) => handleUpdateExpField(exp.id, "endDate", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">
-                                            주요 성과 (줄바꿈으로 구분)
-                                        </label>
-                                        <textarea
-                                            rows={3}
-                                            value={Array.isArray(exp.description) ? exp.description.join("\n") : ""}
-                                            onChange={(e) =>
-                                                handleUpdateExpField(
-                                                    exp.id,
-                                                    "description",
-                                                    e.target.value.split("\n")
-                                                )
-                                            }
-                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
-                                        />
+                                    {/* 개별 불릿 리스트 & STAR 가이드 */}
+                                    <div className="space-y-2 pt-1 border-t border-neutral-800">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[11px] text-neutral-300 font-medium">성과 불릿 목록</label>
+                                            <button
+                                                onClick={() => handleAddExpBullet(exp.id)}
+                                                className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-0.5"
+                                            >
+                                                <Plus size={12} /> 불릿 추가
+                                            </button>
+                                        </div>
+
+                                        {/* STAR 추천 칩 */}
+                                        <div className="flex flex-wrap gap-1">
+                                            <button
+                                                onClick={() =>
+                                                    handleAddExpBullet(exp.id, "Next.js 마이그레이션을 통해 초기 로딩 속도 40% 단축")
+                                                }
+                                                className="text-[10px] bg-blue-950/60 border border-blue-800/60 text-blue-300 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-blue-900/60 transition"
+                                            >
+                                                <Sparkles size={10} /> 성능 개선형
+                                            </button>
+                                            <button
+                                                onClick={() =>
+                                                    handleAddExpBullet(exp.id, "디자인 시스템 공통 컴포넌트 구축으로 개발 리드타임 30% 개선")
+                                                }
+                                                className="text-[10px] bg-neutral-800 border border-neutral-700 text-neutral-300 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-neutral-700 transition"
+                                            >
+                                                <Sparkles size={10} /> 생산성 향상형
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            {(exp.description || []).map((bullet: string, bIdx: number) => (
+                                                <div key={bIdx} className="flex items-start gap-1.5">
+                                                    <textarea
+                                                        rows={2}
+                                                        value={bullet}
+                                                        onChange={(e) => handleUpdateExpBullet(exp.id, bIdx, e.target.value)}
+                                                        className="flex-1 bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none leading-snug"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleRemoveExpBullet(exp.id, bIdx)}
+                                                        className="text-neutral-500 hover:text-red-400 p-1 transition"
+                                                        title="불릿 삭제"
+                                                    >
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
                     </div>
                 )}
 
-                {/* [프로젝트 폼] */}
+                {/* [프로젝트 폼 - 불릿 관리 탑재] */}
                 {currentBlock.type === "project" && (
                     <div className="space-y-4 border-t border-neutral-800 pt-4">
                         <div className="flex items-center justify-between">
@@ -464,7 +576,7 @@ export default function InspectorPanel() {
                             currentBlock.data.map((proj: any) => (
                                 <div
                                     key={proj.id}
-                                    className="bg-neutral-900/80 border border-neutral-800 rounded p-3 space-y-2 relative"
+                                    className="bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-3 relative"
                                 >
                                     <button
                                         onClick={() => handleRemoveProjectItem(proj.id)}
@@ -479,21 +591,17 @@ export default function InspectorPanel() {
                                         <input
                                             type="text"
                                             value={proj.title || ""}
-                                            onChange={(e) =>
-                                                handleUpdateProjectField(proj.id, "title", e.target.value)
-                                            }
+                                            onChange={(e) => handleUpdateProjectField(proj.id, "title", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="text-[11px] text-neutral-400 block">담당 역할</label>
+                                        <label className="text-[11px] text-neutral-400 block">역할 / 기여도</label>
                                         <input
                                             type="text"
                                             value={proj.role || ""}
-                                            onChange={(e) =>
-                                                handleUpdateProjectField(proj.id, "role", e.target.value)
-                                            }
+                                            onChange={(e) => handleUpdateProjectField(proj.id, "role", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
@@ -502,11 +610,9 @@ export default function InspectorPanel() {
                                         <label className="text-[11px] text-neutral-400 block">링크 URL (선택)</label>
                                         <input
                                             type="text"
-                                            placeholder="https://..."
+                                            placeholder="https://github.com/..."
                                             value={proj.link || ""}
-                                            onChange={(e) =>
-                                                handleUpdateProjectField(proj.id, "link", e.target.value)
-                                            }
+                                            onChange={(e) => handleUpdateProjectField(proj.id, "link", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
@@ -516,11 +622,8 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">시작일</label>
                                             <input
                                                 type="text"
-                                                placeholder="YYYY.MM"
                                                 value={proj.startDate || ""}
-                                                onChange={(e) =>
-                                                    handleUpdateProjectField(proj.id, "startDate", e.target.value)
-                                                }
+                                                onChange={(e) => handleUpdateProjectField(proj.id, "startDate", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
@@ -528,32 +631,44 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">종료일</label>
                                             <input
                                                 type="text"
-                                                placeholder="진행 중"
                                                 value={proj.endDate || ""}
-                                                onChange={(e) =>
-                                                    handleUpdateProjectField(proj.id, "endDate", e.target.value)
-                                                }
+                                                onChange={(e) => handleUpdateProjectField(proj.id, "endDate", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
                                     </div>
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">
-                                            주요 성과 / 설명 (줄바꿈 구분)
-                                        </label>
-                                        <textarea
-                                            rows={3}
-                                            value={Array.isArray(proj.description) ? proj.description.join("\n") : ""}
-                                            onChange={(e) =>
-                                                handleUpdateProjectField(
-                                                    proj.id,
-                                                    "description",
-                                                    e.target.value.split("\n")
-                                                )
-                                            }
-                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
-                                        />
+                                    {/* 프로젝트 불릿 목록 */}
+                                    <div className="space-y-2 pt-1 border-t border-neutral-800">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[11px] text-neutral-300 font-medium">기여/성과 불릿 목록</label>
+                                            <button
+                                                onClick={() => handleAddProjBullet(proj.id)}
+                                                className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-0.5"
+                                            >
+                                                <Plus size={12} /> 불릿 추가
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            {(proj.description || []).map((bullet: string, bIdx: number) => (
+                                                <div key={bIdx} className="flex items-start gap-1.5">
+                                                    <textarea
+                                                        rows={2}
+                                                        value={bullet}
+                                                        onChange={(e) => handleUpdateProjBullet(proj.id, bIdx, e.target.value)}
+                                                        className="flex-1 bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none leading-snug"
+                                                    />
+                                                    <button
+                                                        onClick={() => handleRemoveProjBullet(proj.id, bIdx)}
+                                                        className="text-neutral-500 hover:text-red-400 p-1 transition"
+                                                        title="불릿 삭제"
+                                                    >
+                                                        <X size={13} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -602,9 +717,7 @@ export default function InspectorPanel() {
                             <input
                                 type="text"
                                 value={currentBlock.title}
-                                onChange={(e) =>
-                                    updateBlockStyle(currentBlock.id, { ...currentBlock.style })
-                                }
+                                onChange={(e) => updateBlockStyle(currentBlock.id, { ...currentBlock.style })}
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
                         </div>
@@ -613,9 +726,7 @@ export default function InspectorPanel() {
                             <textarea
                                 rows={6}
                                 value={currentBlock.data?.content || ""}
-                                onChange={(e) =>
-                                    updateBlockData(currentBlock.id, { content: e.target.value })
-                                }
+                                onChange={(e) => updateBlockData(currentBlock.id, { content: e.target.value })}
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
                                 placeholder="내용을 입력하세요."
                             />
