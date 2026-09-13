@@ -1,4 +1,4 @@
-// 6: Zustand의 persist 기능을 추가해 스토어의 상태가 브라우저 localStorage에 실시간으로 동기화되도록 수정
+// src/store/useResumeStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
@@ -12,6 +12,10 @@ interface ResumeState {
     resume: ResumeDocument;
     selectedBlockId: string | null;
 
+    // Undo / Redo 스택
+    past: ResumeDocument[];
+    future: ResumeDocument[];
+
     // Actions
     setSelectedBlockId: (id: string | null) => void;
     addBlock: (type: BlockType) => void;
@@ -21,6 +25,12 @@ interface ResumeState {
     reorderBlocks: (startIndex: number, endIndex: number) => void;
     loadResume: (newResume: ResumeDocument) => void;
     updateGlobalStyle: (style: Partial<ResumeDocument["globalStyle"]>) => void;
+
+    // History Actions
+    undo: () => void;
+    redo: () => void;
+    canUndo: () => boolean;
+    canRedo: () => boolean;
 }
 
 const initialResume: ResumeDocument = {
@@ -32,7 +42,7 @@ const initialResume: ResumeDocument = {
         primaryColor: "#2563eb",
         contentWidth: 800,
         basePadding: 36,
-        template: "modern", // <- 기본 템플릿 설정
+        template: "modern",
     },
     blocks: [
         {
@@ -69,21 +79,26 @@ const initialResume: ResumeDocument = {
                         "모듈형 웹 에디터 인터페이스 설계 및 성능 최적화",
                         "Next.js App Router 기반 렌더링 파이프라인 구축",
                     ],
-                    techStack: ["Next.js", "TypeScript", "Tailwind CSS", "Zustand"],
                 },
             ],
         },
     ],
 };
 
+// 최대 히스토리 보관 개수
+const MAX_HISTORY_LIMIT = 25;
+
 export const useResumeStore = create<ResumeState>()(
     persist(
-        (set) => ({
+        (set, get) => ({
             resume: initialResume,
             selectedBlockId: "block-profile",
+            past: [],
+            future: [],
 
             setSelectedBlockId: (id) => set({ selectedBlockId: id }),
 
+            // 히스토리를 기록하며 상태를 업데이트하는 헬퍼 함수
             addBlock: (type) =>
                 set((state) => {
                     const newBlockId = `block-${Date.now()}`;
@@ -102,18 +117,24 @@ export const useResumeStore = create<ResumeState>()(
                                     : ([] as any),
                     } as ResumeBlock;
 
+                    const newResume = {
+                        ...state.resume,
+                        blocks: [...state.resume.blocks, defaultBlock],
+                        updatedAt: new Date().toISOString(),
+                    };
+
                     return {
-                        resume: {
-                            ...state.resume,
-                            blocks: [...state.resume.blocks, defaultBlock],
-                            updatedAt: new Date().toISOString(),
-                        },
+                        past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                        future: [],
+                        resume: newResume,
                         selectedBlockId: newBlockId,
                     };
                 }),
 
             removeBlock: (blockId) =>
                 set((state) => ({
+                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                    future: [],
                     resume: {
                         ...state.resume,
                         blocks: state.resume.blocks.filter((block) => block.id !== blockId),
@@ -123,18 +144,10 @@ export const useResumeStore = create<ResumeState>()(
                         state.selectedBlockId === blockId ? null : state.selectedBlockId,
                 })),
 
-            // 전역 스타일 업데이트 액션 추가
-            updateGlobalStyle: (newStyle) =>
-                set((state) => ({
-                    resume: {
-                        ...state.resume,
-                        globalStyle: { ...state.resume.globalStyle, ...newStyle },
-                        updatedAt: new Date().toISOString(),
-                    },
-                })),
-
             updateBlockStyle: (blockId, newStyle) =>
                 set((state) => ({
+                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                    future: [],
                     resume: {
                         ...state.resume,
                         blocks: state.resume.blocks.map((block) =>
@@ -148,6 +161,8 @@ export const useResumeStore = create<ResumeState>()(
 
             updateBlockData: (blockId, newData) =>
                 set((state) => ({
+                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                    future: [],
                     resume: {
                         ...state.resume,
                         blocks: state.resume.blocks.map((block) =>
@@ -164,6 +179,8 @@ export const useResumeStore = create<ResumeState>()(
                     updatedBlocks.splice(endIndex, 0, movedBlock);
 
                     return {
+                        past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                        future: [],
                         resume: {
                             ...state.resume,
                             blocks: updatedBlocks.map((b, idx) => ({ ...b, order: idx })),
@@ -173,13 +190,66 @@ export const useResumeStore = create<ResumeState>()(
                 }),
 
             loadResume: (newResume) =>
-                set({
+                set((state) => ({
+                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                    future: [],
                     resume: newResume,
                     selectedBlockId: null,
-                }),
+                })),
+
+            updateGlobalStyle: (newStyle) =>
+                set((state) => ({
+                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                    future: [],
+                    resume: {
+                        ...state.resume,
+                        globalStyle: { ...state.resume.globalStyle, ...newStyle },
+                        updatedAt: new Date().toISOString(),
+                    },
+                })),
+
+            // 실행 취소 (Undo)
+            undo: () => {
+                const { past, resume, future } = get();
+                if (past.length === 0) return;
+
+                const previous = past[past.length - 1];
+                const newPast = past.slice(0, past.length - 1);
+
+                set({
+                    resume: previous,
+                    past: newPast,
+                    future: [resume, ...future],
+                    selectedBlockId: null,
+                });
+            },
+
+            // 다시 실행 (Redo)
+            redo: () => {
+                const { past, resume, future } = get();
+                if (future.length === 0) return;
+
+                const next = future[0];
+                const newFuture = future.slice(1);
+
+                set({
+                    resume: next,
+                    past: [...past, resume],
+                    future: newFuture,
+                    selectedBlockId: null,
+                });
+            },
+
+            canUndo: () => get().past.length > 0,
+            canRedo: () => get().future.length > 0,
         }),
         {
-            name: "bripick-resume-storage", // 로컬 스토리지 키 이름
+            name: "bripick-resume-storage",
+            // past와 future는 로컬스토리지 용량을 아끼기 위해 저장 대상에서 제외
+            partialize: (state) => ({
+                resume: state.resume,
+                selectedBlockId: state.selectedBlockId,
+            }) as any,
         }
     )
 );
