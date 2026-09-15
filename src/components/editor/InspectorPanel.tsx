@@ -13,6 +13,7 @@ import {
     Palette,
     Sparkles,
     Layers,
+    Type,
 } from "lucide-react";
 
 export default function InspectorPanel() {
@@ -30,6 +31,14 @@ export default function InspectorPanel() {
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
     const currentBlock = blocks[currentIndex];
 
+    // 폰트 옵션 목록
+    const fontOptions = [
+        { label: "Pretendard (기본 / 깔끔한 고딕)", value: "'Pretendard', -apple-system, sans-serif" },
+        { label: "Noto Sans KR (안정적인 본문용)", value: "'Noto Sans KR', sans-serif" },
+        { label: "Nanum Myeongjo (우아한 명조체)", value: "'Nanum Myeongjo', serif" },
+        { label: "System UI (애플/윈도우 기본)", value: "system-ui, sans-serif" },
+    ];
+
     // 1. 블록 미선택 시: 문서 전역 설정 패널
     if (!currentBlock) {
         return (
@@ -40,6 +49,24 @@ export default function InspectorPanel() {
                         <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
                             문서 전역 설정
                         </span>
+                    </div>
+
+                    {/* 서체(폰트) 선택 */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
+                            <Type size={13} /> 국문/영문 서체
+                        </label>
+                        <select
+                            value={globalStyle?.fontFamily || fontOptions[0].value}
+                            onChange={(e) => updateGlobalStyle({ fontFamily: e.target.value })}
+                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 cursor-pointer"
+                        >
+                            {fontOptions.map((f) => (
+                                <option key={f.value} value={f.value}>
+                                    {f.label}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* 포인트 컬러 지정 */}
@@ -170,7 +197,6 @@ export default function InspectorPanel() {
         );
     };
 
-    // 불릿 포인트 개별 조작 (추가/수정/삭제/STAR 프리셋)
     const handleAddExpBullet = (expId: string, text = "") => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         updateBlockData(
@@ -434,7 +460,7 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {/* [경력 폼 - STAR 불릿 관리 탑재] */}
+                {/* [경력 폼] */}
                 {currentBlock.type === "experience" && (
                     <div className="space-y-4 border-t border-neutral-800 pt-4">
                         <div className="flex items-center justify-between">
@@ -514,7 +540,6 @@ export default function InspectorPanel() {
                                             </button>
                                         </div>
 
-                                        {/* STAR 추천 칩 */}
                                         <div className="flex flex-wrap gap-1">
                                             <button
                                                 onClick={() =>
@@ -559,7 +584,7 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {/* [프로젝트 폼 - 불릿 관리 탑재] */}
+                {/* [프로젝트 폼] */}
                 {currentBlock.type === "project" && (
                     <div className="space-y-4 border-t border-neutral-800 pt-4">
                         <div className="flex items-center justify-between">
