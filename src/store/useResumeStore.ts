@@ -10,6 +10,7 @@ import {
 
 interface ResumeState {
     resume: ResumeDocument;
+    resumeList: ResumeDocument[]; // 저장된 전체 이력서 목록
     selectedBlockId: string | null;
 
     // Undo / Redo 스택
@@ -26,6 +27,13 @@ interface ResumeState {
     loadResume: (newResume: ResumeDocument) => void;
     updateGlobalStyle: (style: Partial<ResumeDocument["globalStyle"]>) => void;
 
+    // Version Management Actions
+    switchResume: (id: string) => void;
+    createNewResume: (title?: string) => void;
+    duplicateCurrentResume: () => void;
+    deleteResume: (id: string) => void;
+    updateVersionName: (name: string) => void;
+
     // History Actions
     undo: () => void;
     redo: () => void;
@@ -33,12 +41,12 @@ interface ResumeState {
     canRedo: () => boolean;
 }
 
-const initialResume: ResumeDocument = {
+const defaultResume: ResumeDocument = {
     id: "resume-default",
-    versionName: "프론트엔드 개발자 기본 이력서",
+    versionName: "기본 이력서",
     updatedAt: new Date().toISOString(),
     globalStyle: {
-        fontFamily: "Pretendard Variable",
+        fontFamily: "'Pretendard', sans-serif",
         primaryColor: "#2563eb",
         contentWidth: 800,
         basePadding: 36,
@@ -85,20 +93,30 @@ const initialResume: ResumeDocument = {
     ],
 };
 
-// 최대 히스토리 보관 개수
 const MAX_HISTORY_LIMIT = 25;
+
+// 동기화 헬퍼: 현재 편집 중인 이력서를 resumeList 배열 내에도 함께 갱신
+const syncList = (list: ResumeDocument[], updated: ResumeDocument) => {
+    const index = list.findIndex((item) => item.id === updated.id);
+    if (index === -1) {
+        return [...list, updated];
+    }
+    const nextList = [...list];
+    nextList[index] = updated;
+    return nextList;
+};
 
 export const useResumeStore = create<ResumeState>()(
     persist(
         (set, get) => ({
-            resume: initialResume,
+            resume: defaultResume,
+            resumeList: [defaultResume],
             selectedBlockId: "block-profile",
             past: [],
             future: [],
 
             setSelectedBlockId: (id) => set({ selectedBlockId: id }),
 
-            // 히스토리를 기록하며 상태를 업데이트하는 헬퍼 함수
             addBlock: (type) =>
                 set((state) => {
                     const newBlockId = `block-${Date.now()}`;
@@ -127,28 +145,32 @@ export const useResumeStore = create<ResumeState>()(
                         past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
                         future: [],
                         resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
                         selectedBlockId: newBlockId,
                     };
                 }),
 
             removeBlock: (blockId) =>
-                set((state) => ({
-                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
-                    future: [],
-                    resume: {
+                set((state) => {
+                    const newResume = {
                         ...state.resume,
                         blocks: state.resume.blocks.filter((block) => block.id !== blockId),
                         updatedAt: new Date().toISOString(),
-                    },
-                    selectedBlockId:
-                        state.selectedBlockId === blockId ? null : state.selectedBlockId,
-                })),
+                    };
+
+                    return {
+                        past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                        future: [],
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
+                        selectedBlockId:
+                            state.selectedBlockId === blockId ? null : state.selectedBlockId,
+                    };
+                }),
 
             updateBlockStyle: (blockId, newStyle) =>
-                set((state) => ({
-                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
-                    future: [],
-                    resume: {
+                set((state) => {
+                    const newResume = {
                         ...state.resume,
                         blocks: state.resume.blocks.map((block) =>
                             block.id === blockId
@@ -156,21 +178,33 @@ export const useResumeStore = create<ResumeState>()(
                                 : block
                         ),
                         updatedAt: new Date().toISOString(),
-                    },
-                })),
+                    };
+
+                    return {
+                        past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                        future: [],
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
+                    };
+                }),
 
             updateBlockData: (blockId, newData) =>
-                set((state) => ({
-                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
-                    future: [],
-                    resume: {
+                set((state) => {
+                    const newResume = {
                         ...state.resume,
                         blocks: state.resume.blocks.map((block) =>
                             block.id === blockId ? { ...block, data: newData } : block
                         ),
                         updatedAt: new Date().toISOString(),
-                    },
-                })),
+                    };
+
+                    return {
+                        past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                        future: [],
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
+                    };
+                }),
 
             reorderBlocks: (startIndex, endIndex) =>
                 set((state) => {
@@ -178,14 +212,17 @@ export const useResumeStore = create<ResumeState>()(
                     const [movedBlock] = updatedBlocks.splice(startIndex, 1);
                     updatedBlocks.splice(endIndex, 0, movedBlock);
 
+                    const newResume = {
+                        ...state.resume,
+                        blocks: updatedBlocks.map((b, idx) => ({ ...b, order: idx })),
+                        updatedAt: new Date().toISOString(),
+                    };
+
                     return {
                         past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
                         future: [],
-                        resume: {
-                            ...state.resume,
-                            blocks: updatedBlocks.map((b, idx) => ({ ...b, order: idx })),
-                            updatedAt: new Date().toISOString(),
-                        },
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
                     };
                 }),
 
@@ -194,23 +231,107 @@ export const useResumeStore = create<ResumeState>()(
                     past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
                     future: [],
                     resume: newResume,
+                    resumeList: syncList(state.resumeList, newResume),
                     selectedBlockId: null,
                 })),
 
             updateGlobalStyle: (newStyle) =>
-                set((state) => ({
-                    past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
-                    future: [],
-                    resume: {
+                set((state) => {
+                    const newResume = {
                         ...state.resume,
                         globalStyle: { ...state.resume.globalStyle, ...newStyle },
                         updatedAt: new Date().toISOString(),
-                    },
-                })),
+                    };
 
-            // 실행 취소 (Undo)
+                    return {
+                        past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                        future: [],
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
+                    };
+                }),
+
+            // --- 버전 관리 액션 ---
+            updateVersionName: (name) =>
+                set((state) => {
+                    const newResume = { ...state.resume, versionName: name };
+                    return {
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
+                    };
+                }),
+
+            switchResume: (id) => {
+                const target = get().resumeList.find((r) => r.id === id);
+                if (target) {
+                    set({
+                        resume: target,
+                        past: [],
+                        future: [],
+                        selectedBlockId: null,
+                    });
+                }
+            },
+
+            createNewResume: (title = "새 이력서") => {
+                const newId = `resume-${Date.now()}`;
+                const freshResume: ResumeDocument = {
+                    ...defaultResume,
+                    id: newId,
+                    versionName: title,
+                    updatedAt: new Date().toISOString(),
+                };
+
+                set((state) => ({
+                    resume: freshResume,
+                    resumeList: [...state.resumeList, freshResume],
+                    past: [],
+                    future: [],
+                    selectedBlockId: null,
+                }));
+            },
+
+            duplicateCurrentResume: () => {
+                const current = get().resume;
+                const newId = `resume-${Date.now()}`;
+                const duplicated: ResumeDocument = {
+                    ...JSON.parse(JSON.stringify(current)),
+                    id: newId,
+                    versionName: `${current.versionName} (사본)`,
+                    updatedAt: new Date().toISOString(),
+                };
+
+                set((state) => ({
+                    resume: duplicated,
+                    resumeList: [...state.resumeList, duplicated],
+                    past: [],
+                    future: [],
+                    selectedBlockId: null,
+                }));
+            },
+
+            deleteResume: (id) => {
+                const list = get().resumeList;
+                if (list.length <= 1) {
+                    alert("최소 1개의 이력서는 유지되어야 합니다.");
+                    return;
+                }
+
+                const filtered = list.filter((r) => r.id !== id);
+                const fallback = filtered[0];
+
+                set({
+                    resume: fallback,
+                    resumeList: filtered,
+                    past: [],
+                    future: [],
+                    selectedBlockId: null,
+                });
+            },
+
+            // Undo / Redo
             undo: () => {
-                const { past, resume, future } = get();
+                const { past, resume, future, resumeList } = get();
                 if (past.length === 0) return;
 
                 const previous = past[past.length - 1];
@@ -218,15 +339,15 @@ export const useResumeStore = create<ResumeState>()(
 
                 set({
                     resume: previous,
+                    resumeList: syncList(resumeList, previous),
                     past: newPast,
                     future: [resume, ...future],
                     selectedBlockId: null,
                 });
             },
 
-            // 다시 실행 (Redo)
             redo: () => {
-                const { past, resume, future } = get();
+                const { past, resume, future, resumeList } = get();
                 if (future.length === 0) return;
 
                 const next = future[0];
@@ -234,6 +355,7 @@ export const useResumeStore = create<ResumeState>()(
 
                 set({
                     resume: next,
+                    resumeList: syncList(resumeList, next),
                     past: [...past, resume],
                     future: newFuture,
                     selectedBlockId: null,
@@ -245,11 +367,12 @@ export const useResumeStore = create<ResumeState>()(
         }),
         {
             name: "bripick-resume-storage",
-            // past와 future는 로컬스토리지 용량을 아끼기 위해 저장 대상에서 제외
-            partialize: (state) => ({
+            partialize: (state) =>
+            ({
                 resume: state.resume,
+                resumeList: state.resumeList,
                 selectedBlockId: state.selectedBlockId,
-            }) as any,
+            } as any),
         }
     )
 );

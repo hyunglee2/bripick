@@ -11,6 +11,9 @@ import {
     Sparkles,
     Undo2,
     Redo2,
+    Copy,
+    Trash2,
+    FileText,
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 
@@ -18,7 +21,15 @@ export default function EditorHeader() {
     const addBlock = useResumeStore((state) => state.addBlock);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
     const resume = useResumeStore((state) => state.resume);
+    const resumeList = useResumeStore((state) => state.resumeList);
     const loadResume = useResumeStore((state) => state.loadResume);
+
+    // 버전 관리 액션
+    const switchResume = useResumeStore((state) => state.switchResume);
+    const createNewResume = useResumeStore((state) => state.createNewResume);
+    const duplicateCurrentResume = useResumeStore((state) => state.duplicateCurrentResume);
+    const deleteResume = useResumeStore((state) => state.deleteResume);
+    const updateVersionName = useResumeStore((state) => state.updateVersionName);
 
     const undo = useResumeStore((state) => state.undo);
     const redo = useResumeStore((state) => state.redo);
@@ -27,10 +38,9 @@ export default function EditorHeader() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // 글로벌 키보드 단축키 (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z)
+    // 글로벌 키보드 단축키
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            // 텍스트 인풋 또는 텍스트에어리어 내부 타이핑 중에는 브라우저 기본 편집 유지
             const target = e.target as HTMLElement;
             if (
                 target.tagName === "INPUT" ||
@@ -80,7 +90,7 @@ export default function EditorHeader() {
             encodeURIComponent(JSON.stringify(resume, null, 2));
         const downloadAnchor = document.createElement("a");
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", `bripick-resume-${Date.now()}.json`);
+        downloadAnchor.setAttribute("download", `${resume.versionName || "resume"}-${Date.now()}.json`);
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
@@ -113,11 +123,11 @@ export default function EditorHeader() {
             return;
 
         const samplePreset: ResumeDocument = {
-            id: "preset-frontend-pro",
+            id: `preset-${Date.now()}`,
             versionName: "시니어 프론트엔드 엔지니어 이력서",
             updatedAt: new Date().toISOString(),
             globalStyle: {
-                fontFamily: "Pretendard Variable",
+                fontFamily: "'Pretendard', sans-serif",
                 primaryColor: "#2563eb",
                 contentWidth: 800,
                 basePadding: 36,
@@ -179,17 +189,6 @@ export default function EditorHeader() {
                                 "A4 프린트 전용 미디어 쿼리 최적화로 다이렉트 PDF 내보내기 파이프라인 완성",
                             ],
                         },
-                        {
-                            id: "exp-sample-2",
-                            company: "Next Commerce",
-                            role: "Frontend Engineer",
-                            startDate: "2022.05",
-                            endDate: "2024.02",
-                            description: [
-                                "Next.js App Router 마이그레이션을 주도하여 FCP 1.2초 단축",
-                                "공통 컴포넌트 디자인 시스템 구축으로 피쳐 개발 리드타임 30% 개선",
-                            ],
-                        },
                     ],
                 },
                 {
@@ -222,12 +221,70 @@ export default function EditorHeader() {
 
     return (
         <header className="h-14 border-b border-neutral-800 bg-[#12131a] px-6 flex items-center justify-between sticky top-0 z-50">
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-4">
+                {/* 서비스 로고 */}
                 <div className="flex items-center gap-2">
                     <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center font-black text-xs text-white shadow-sm">
                         B
                     </div>
-                    <span className="font-bold tracking-tight text-white">Bripick</span>
+                    <span className="font-bold tracking-tight text-white hidden sm:inline">Bripick</span>
+                </div>
+
+                {/* 이력서 버전 관리 (스위처 & 제목 변경) */}
+                <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-3">
+                    <FileText size={14} className="text-neutral-500" />
+                    <input
+                        type="text"
+                        value={resume.versionName || ""}
+                        onChange={(e) => updateVersionName(e.target.value)}
+                        className="w-36 bg-neutral-900 border border-neutral-700 hover:border-neutral-600 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 font-medium"
+                        title="현재 이력서 이름 수정"
+                    />
+
+                    {/* 버전 선택 드롭다운 */}
+                    <select
+                        value={resume.id}
+                        onChange={(e) => switchResume(e.target.value)}
+                        className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-300 focus:outline-none cursor-pointer max-w-[120px] truncate"
+                    >
+                        {(resumeList || []).map((r) => (
+                            <option key={r.id} value={r.id}>
+                                {r.versionName}
+                            </option>
+                        ))}
+                    </select>
+
+                    {/* 복제 버튼 */}
+                    <button
+                        onClick={duplicateCurrentResume}
+                        className="p-1 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition"
+                        title="현재 이력서 복제 (사본 생성)"
+                    >
+                        <Copy size={14} />
+                    </button>
+
+                    {/* 새 이력서 추가 */}
+                    <button
+                        onClick={() => createNewResume("새 이력서")}
+                        className="p-1 text-neutral-400 hover:text-blue-400 hover:bg-neutral-800 rounded transition"
+                        title="새 빈 이력서 생성"
+                    >
+                        <Plus size={15} />
+                    </button>
+
+                    {/* 삭제 버튼 */}
+                    <button
+                        onClick={() => {
+                            if (confirm(`'${resume.versionName}' 이력서를 정말 삭제하시겠습니까?`)) {
+                                deleteResume(resume.id);
+                            }
+                        }}
+                        disabled={(resumeList || []).length <= 1}
+                        className="p-1 text-neutral-500 hover:text-red-400 disabled:opacity-20 hover:bg-neutral-800 rounded transition"
+                        title="현재 이력서 삭제"
+                    >
+                        <Trash2 size={14} />
+                    </button>
                 </div>
 
                 {/* Undo / Redo 버튼 영역 */}
@@ -235,7 +292,7 @@ export default function EditorHeader() {
                     <button
                         onClick={undo}
                         disabled={!canUndo}
-                        className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400 transition"
+                        className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 transition"
                         title="실행 취소 (Ctrl+Z)"
                     >
                         <Undo2 size={15} />
@@ -243,7 +300,7 @@ export default function EditorHeader() {
                     <button
                         onClick={redo}
                         disabled={!canRedo}
-                        className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-neutral-400 transition"
+                        className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 transition"
                         title="다시 실행 (Ctrl+Y)"
                     >
                         <Redo2 size={15} />
@@ -251,15 +308,15 @@ export default function EditorHeader() {
                 </div>
 
                 {/* 블록 추가 단축 버튼들 */}
-                <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-4">
+                <div className="hidden lg:flex items-center gap-1.5 border-l border-neutral-800 pl-4">
                     <span className="text-xs text-neutral-400 mr-1 flex items-center gap-1">
-                        <Plus size={14} /> 블록 추가:
+                        <Plus size={14} /> 블록:
                     </span>
                     {blockButtons.map((btn) => (
                         <button
                             key={btn.type}
                             onClick={() => addBlock(btn.type)}
-                            className="text-xs px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition active:scale-95"
+                            className="text-xs px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition active:scale-95"
                         >
                             {btn.label}
                         </button>
@@ -270,10 +327,10 @@ export default function EditorHeader() {
             <div className="flex items-center gap-2">
                 <button
                     onClick={handleLoadPreset}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30 text-purple-300 transition"
+                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30 text-purple-300 transition"
                     title="완성형 개발자 샘플 불러오기"
                 >
-                    <Sparkles size={14} className="text-purple-400" /> 샘플 예시
+                    <Sparkles size={13} className="text-purple-400" /> 샘플
                 </button>
 
                 <input
@@ -285,23 +342,23 @@ export default function EditorHeader() {
                 />
                 <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
+                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
                     title="JSON 파일로 불러오기"
                 >
-                    <Upload size={14} /> 불러오기
+                    <Upload size={13} /> 불러오기
                 </button>
                 <button
                     onClick={handleDownloadJSON}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
+                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
                     title="JSON 파일로 백업"
                 >
-                    <FileCode size={14} /> JSON 백업
+                    <FileCode size={13} /> 백업
                 </button>
                 <button
                     onClick={handleExportPDF}
                     className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 font-medium text-white transition shadow-sm active:scale-95"
                 >
-                    <Download size={14} /> PDF 저장
+                    <Download size={13} /> PDF 저장
                 </button>
             </div>
         </header>
