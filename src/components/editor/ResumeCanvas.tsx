@@ -111,8 +111,8 @@ export default function ResumeCanvas() {
                                     paddingBottom: `${block.style.paddingY}px`,
                                 }}
                                 className={`relative cursor-pointer transition-all ${templateType === "modern"
-                                        ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
-                                        : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
+                                    ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
+                                    : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
                                     } ${isSelected ? "!ring-2 !ring-blue-500 !border-blue-500 bg-blue-50/20" : ""
                                     } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
                                     } ${isTargeted ? "border-t-4 border-t-blue-500 -mt-1" : ""
@@ -424,8 +424,8 @@ export default function ResumeCanvas() {
                                                                 : {}
                                                         }
                                                         className={`px-2 py-0.5 rounded text-xs font-medium ${templateType === "modern"
-                                                                ? "border"
-                                                                : "bg-neutral-100 text-neutral-800 border border-neutral-200"
+                                                            ? "border"
+                                                            : "bg-neutral-100 text-neutral-800 border border-neutral-200"
                                                             }`}
                                                     >
                                                         {skill}
@@ -440,7 +440,146 @@ export default function ResumeCanvas() {
                                     </div>
                                 )}
 
-                                {/* 5. 자유 텍스트 블록 */}
+                                {/* 5. 학력 (Education) 블록 */}
+                                {block.type === "education" && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
+                                            {templateType === "modern" && (
+                                                <span
+                                                    style={{ backgroundColor: primaryColor }}
+                                                    className="w-1.5 h-4 rounded-full inline-block"
+                                                />
+                                            )}
+                                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                                                {block.title || "EDUCATION"}
+                                            </h2>
+                                        </div>
+
+                                        {Array.isArray(block.data) && block.data.length > 0 ? (
+                                            <div className="space-y-2 pt-1">
+                                                {block.data.map((edu: any, eduIdx: number) => (
+                                                    <div key={edu.id} className="space-y-0.5">
+                                                        <div className="flex justify-between items-baseline gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <EditableText
+                                                                    tag="span"
+                                                                    value={edu.school}
+                                                                    placeholder="학교명"
+                                                                    onChange={(newSchool) => {
+                                                                        const updated = [...block.data];
+                                                                        updated[eduIdx] = { ...edu, school: newSchool };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                    className="font-bold text-neutral-900 text-sm"
+                                                                />
+                                                                <span className="text-xs text-neutral-400">|</span>
+                                                                <EditableText
+                                                                    value={edu.major}
+                                                                    placeholder="전공"
+                                                                    onChange={(newMajor) => {
+                                                                        const updated = [...block.data];
+                                                                        updated[eduIdx] = { ...edu, major: newMajor };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                    className="text-xs font-semibold text-neutral-700"
+                                                                />
+                                                            </div>
+
+                                                            <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
+                                                                <EditableText
+                                                                    value={edu.startDate}
+                                                                    placeholder="입학일"
+                                                                    onChange={(newDate) => {
+                                                                        const updated = [...block.data];
+                                                                        updated[eduIdx] = { ...edu, startDate: newDate };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                />
+                                                                <span>~</span>
+                                                                <EditableText
+                                                                    value={edu.endDate}
+                                                                    placeholder="졸업일"
+                                                                    onChange={(newDate) => {
+                                                                        const updated = [...block.data];
+                                                                        updated[eduIdx] = { ...edu, endDate: newDate };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                />
+                                                                <span className="text-neutral-400">({edu.status || "졸업"})</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {edu.score && (
+                                                            <p className="text-xs text-neutral-500">
+                                                                학점: {edu.score}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-neutral-400 italic">학력 정보를 추가해 주세요.</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* 6. 자격/수상 (Certification) 블록 */}
+                                {block.type === "certification" && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
+                                            {templateType === "modern" && (
+                                                <span
+                                                    style={{ backgroundColor: primaryColor }}
+                                                    className="w-1.5 h-4 rounded-full inline-block"
+                                                />
+                                            )}
+                                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                                                {block.title || "CERTIFICATIONS & AWARDS"}
+                                            </h2>
+                                        </div>
+
+                                        {Array.isArray(block.data) && block.data.length > 0 ? (
+                                            <div className="space-y-2 pt-1">
+                                                {block.data.map((cert: any, certIdx: number) => (
+                                                    <div key={cert.id} className="flex justify-between items-baseline gap-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <EditableText
+                                                                tag="span"
+                                                                value={cert.title}
+                                                                placeholder="자격증/수상명"
+                                                                onChange={(newTitle) => {
+                                                                    const updated = [...block.data];
+                                                                    updated[certIdx] = { ...cert, title: newTitle };
+                                                                    updateBlockData(block.id, updated);
+                                                                }}
+                                                                className="font-bold text-neutral-900 text-sm"
+                                                            />
+                                                            {cert.issuer && (
+                                                                <span className="text-xs text-neutral-500">
+                                                                    ({cert.issuer})
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <EditableText
+                                                            value={cert.date}
+                                                            placeholder="취득일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[certIdx] = { ...cert, date: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                            className="text-xs text-neutral-500 font-medium"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-neutral-400 italic">자격 및 수상 내역을 추가해 주세요.</p>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* 7. 자유 텍스트 블록 */}
                                 {block.type === "custom_text" && (
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">

@@ -120,20 +120,50 @@ export const useResumeStore = create<ResumeState>()(
             addBlock: (type) =>
                 set((state) => {
                     const newBlockId = `block-${Date.now()}`;
+
+                    let defaultData: any = [];
+                    if (type === "custom_text") {
+                        defaultData = { content: "" };
+                    } else if (type === "skills") {
+                        defaultData = { skills: ["TypeScript", "React", "Next.js"] };
+                    } else if (type === "education") {
+                        defaultData = [
+                            {
+                                id: `edu-${Date.now()}`,
+                                school: "한국대학교",
+                                major: "컴퓨터공학과",
+                                startDate: "2019.03",
+                                endDate: "2023.02",
+                                status: "졸업",
+                                score: "3.8 / 4.5",
+                            },
+                        ];
+                    } else if (type === "certification") {
+                        defaultData = [
+                            {
+                                id: `cert-${Date.now()}`,
+                                title: "정보처리기사",
+                                issuer: "한국산업인력공단",
+                                date: "2023.06",
+                                description: "",
+                            },
+                        ];
+                    }
+
                     const defaultBlock: ResumeBlock = {
                         id: newBlockId,
                         type,
-                        title: type.toUpperCase(),
+                        title:
+                            type === "education"
+                                ? "EDUCATION"
+                                : type === "certification"
+                                    ? "CERTIFICATIONS & AWARDS"
+                                    : type.toUpperCase(),
                         isVisible: true,
                         order: state.resume.blocks.length,
                         style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
-                        data:
-                            type === "custom_text"
-                                ? { content: "" }
-                                : type === "skills"
-                                    ? { skills: ["TypeScript", "React", "Next.js"] }
-                                    : ([] as any),
-                    } as ResumeBlock;
+                        data: defaultData,
+                    };
 
                     const newResume = {
                         ...state.resume,
@@ -149,7 +179,6 @@ export const useResumeStore = create<ResumeState>()(
                         selectedBlockId: newBlockId,
                     };
                 }),
-
             removeBlock: (blockId) =>
                 set((state) => {
                     const newResume = {

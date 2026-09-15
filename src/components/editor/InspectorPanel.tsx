@@ -130,8 +130,8 @@ export default function InspectorPanel() {
                             <button
                                 onClick={() => updateGlobalStyle({ template: "modern" })}
                                 className={`p-2.5 rounded text-xs font-medium border text-left transition ${(globalStyle?.template || "modern") === "modern"
-                                        ? "bg-blue-600/20 border-blue-500 text-blue-300"
-                                        : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
+                                    ? "bg-blue-600/20 border-blue-500 text-blue-300"
+                                    : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
                                     }`}
                             >
                                 <div className="font-bold">Modern</div>
@@ -140,8 +140,8 @@ export default function InspectorPanel() {
                             <button
                                 onClick={() => updateGlobalStyle({ template: "minimal" })}
                                 className={`p-2.5 rounded text-xs font-medium border text-left transition ${globalStyle?.template === "minimal"
-                                        ? "bg-blue-600/20 border-blue-500 text-blue-300"
-                                        : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
+                                    ? "bg-blue-600/20 border-blue-500 text-blue-300"
+                                    : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
                                     }`}
                             >
                                 <div className="font-bold">Minimal</div>
@@ -249,6 +249,66 @@ export default function InspectorPanel() {
             description: ["프로젝트 핵심 기여도 및 결과물을 작성하세요."],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
+    };
+
+    // --- 학력(Education) 핸들러 ---
+    const handleAddEducationItem = () => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        const newItem = {
+            id: `edu-${Date.now()}`,
+            school: "대학교",
+            major: "전공명",
+            startDate: "2019.03",
+            endDate: "2023.02",
+            status: "졸업",
+            score: "",
+        };
+        updateBlockData(currentBlock.id, [...prevData, newItem]);
+    };
+
+    const handleUpdateEduField = (eduId: string, field: string, value: any) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => (item.id === eduId ? { ...item, [field]: value } : item))
+        );
+    };
+
+    const handleRemoveEduItem = (eduId: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.filter((item: any) => item.id !== eduId)
+        );
+    };
+
+    // --- 자격/수상(Certification) 핸들러 ---
+    const handleAddCertItem = () => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        const newItem = {
+            id: `cert-${Date.now()}`,
+            title: "자격증 / 수상명",
+            issuer: "발행 기관",
+            date: "2024.01",
+            description: "",
+        };
+        updateBlockData(currentBlock.id, [...prevData, newItem]);
+    };
+
+    const handleUpdateCertField = (certId: string, field: string, value: any) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => (item.id === certId ? { ...item, [field]: value } : item))
+        );
+    };
+
+    const handleRemoveCertItem = (certId: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.filter((item: any) => item.id !== certId)
+        );
     };
 
     const handleUpdateProjectField = (projId: string, field: string, value: any) => {
@@ -733,6 +793,163 @@ export default function InspectorPanel() {
                         </div>
                     </div>
                 )}
+
+                {/* [학력(Education) 폼] */}
+                {currentBlock.type === "education" && (
+                    <div className="space-y-4 border-t border-neutral-800 pt-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-neutral-300">학력 목록</span>
+                            <button
+                                onClick={handleAddEducationItem}
+                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
+                            >
+                                <Plus size={13} /> 학교 추가
+                            </button>
+                        </div>
+
+                        {Array.isArray(currentBlock.data) &&
+                            currentBlock.data.map((edu: any) => (
+                                <div
+                                    key={edu.id}
+                                    className="bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-2.5 relative"
+                                >
+                                    <button
+                                        onClick={() => handleRemoveEduItem(edu.id)}
+                                        className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
+                                        title="학력 삭제"
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+
+                                    <div>
+                                        <label className="text-[11px] text-neutral-400 block">학교명</label>
+                                        <input
+                                            type="text"
+                                            value={edu.school || ""}
+                                            onChange={(e) => handleUpdateEduField(edu.id, "school", e.target.value)}
+                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[11px] text-neutral-400 block">전공</label>
+                                        <input
+                                            type="text"
+                                            value={edu.major || ""}
+                                            onChange={(e) => handleUpdateEduField(edu.id, "major", e.target.value)}
+                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[11px] text-neutral-400 block">입학일</label>
+                                            <input
+                                                type="text"
+                                                value={edu.startDate || ""}
+                                                onChange={(e) => handleUpdateEduField(edu.id, "startDate", e.target.value)}
+                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[11px] text-neutral-400 block">졸업일</label>
+                                            <input
+                                                type="text"
+                                                value={edu.endDate || ""}
+                                                onChange={(e) => handleUpdateEduField(edu.id, "endDate", e.target.value)}
+                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[11px] text-neutral-400 block">상태 (졸업/재학)</label>
+                                            <input
+                                                type="text"
+                                                value={edu.status || ""}
+                                                onChange={(e) => handleUpdateEduField(edu.id, "status", e.target.value)}
+                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[11px] text-neutral-400 block">학점 (선택)</label>
+                                            <input
+                                                type="text"
+                                                placeholder="예: 3.8 / 4.5"
+                                                value={edu.score || ""}
+                                                onChange={(e) => handleUpdateEduField(edu.id, "score", e.target.value)}
+                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                )}
+
+                {/* [자격/수상(Certification) 폼] */}
+                {currentBlock.type === "certification" && (
+                    <div className="space-y-4 border-t border-neutral-800 pt-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-neutral-300">자격 및 수상 목록</span>
+                            <button
+                                onClick={handleAddCertItem}
+                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
+                            >
+                                <Plus size={13} /> 항목 추가
+                            </button>
+                        </div>
+
+                        {Array.isArray(currentBlock.data) &&
+                            currentBlock.data.map((cert: any) => (
+                                <div
+                                    key={cert.id}
+                                    className="bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-2.5 relative"
+                                >
+                                    <button
+                                        onClick={() => handleRemoveCertItem(cert.id)}
+                                        className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
+                                        title="항목 삭제"
+                                    >
+                                        <Trash2 size={13} />
+                                    </button>
+
+                                    <div>
+                                        <label className="text-[11px] text-neutral-400 block">자격/수상/시험명</label>
+                                        <input
+                                            type="text"
+                                            value={cert.title || ""}
+                                            onChange={(e) => handleUpdateCertField(cert.id, "title", e.target.value)}
+                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="text-[11px] text-neutral-400 block">발행/주관 기관</label>
+                                            <input
+                                                type="text"
+                                                value={cert.issuer || ""}
+                                                onChange={(e) => handleUpdateCertField(cert.id, "issuer", e.target.value)}
+                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[11px] text-neutral-400 block">취득/수상 일자</label>
+                                            <input
+                                                type="text"
+                                                value={cert.date || ""}
+                                                onChange={(e) => handleUpdateCertField(cert.id, "date", e.target.value)}
+                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                )}
+
 
                 {/* [자유 텍스트 폼] */}
                 {currentBlock.type === "custom_text" && (

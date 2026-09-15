@@ -68,10 +68,13 @@ export default function EditorHeader() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [undo, redo]);
 
+
     const blockButtons: { label: string; type: BlockType }[] = [
         { label: "+ 경력", type: "experience" },
         { label: "+ 프로젝트", type: "project" },
         { label: "+ 기술 스택", type: "skills" },
+        { label: "+ 학력", type: "education" },          // <- 추가
+        { label: "+ 자격/수상", type: "certification" },  // <- 추가
         { label: "+ 자유 텍스트", type: "custom_text" },
     ];
 
