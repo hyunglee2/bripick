@@ -14,6 +14,8 @@ import {
     Sparkles,
     Layers,
     Type,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 
 export default function InspectorPanel() {
@@ -25,13 +27,13 @@ export default function InspectorPanel() {
     const updateBlockData = useResumeStore((state) => state.updateBlockData);
     const removeBlock = useResumeStore((state) => state.removeBlock);
     const reorderBlocks = useResumeStore((state) => state.reorderBlocks);
+    const toggleBlockVisibility = useResumeStore((state) => state.toggleBlockVisibility);
 
     const [newSkillInput, setNewSkillInput] = useState("");
 
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
     const currentBlock = blocks[currentIndex];
 
-    // 폰트 옵션 목록
     const fontOptions = [
         { label: "Pretendard (기본 / 깔끔한 고딕)", value: "'Pretendard', -apple-system, sans-serif" },
         { label: "Noto Sans KR (안정적인 본문용)", value: "'Noto Sans KR', sans-serif" },
@@ -130,8 +132,8 @@ export default function InspectorPanel() {
                             <button
                                 onClick={() => updateGlobalStyle({ template: "modern" })}
                                 className={`p-2.5 rounded text-xs font-medium border text-left transition ${(globalStyle?.template || "modern") === "modern"
-                                    ? "bg-blue-600/20 border-blue-500 text-blue-300"
-                                    : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
+                                        ? "bg-blue-600/20 border-blue-500 text-blue-300"
+                                        : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
                                     }`}
                             >
                                 <div className="font-bold">Modern</div>
@@ -140,8 +142,8 @@ export default function InspectorPanel() {
                             <button
                                 onClick={() => updateGlobalStyle({ template: "minimal" })}
                                 className={`p-2.5 rounded text-xs font-medium border text-left transition ${globalStyle?.template === "minimal"
-                                    ? "bg-blue-600/20 border-blue-500 text-blue-300"
-                                    : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
+                                        ? "bg-blue-600/20 border-blue-500 text-blue-300"
+                                        : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
                                     }`}
                             >
                                 <div className="font-bold">Minimal</div>
@@ -251,6 +253,61 @@ export default function InspectorPanel() {
         updateBlockData(currentBlock.id, [...prevData, newItem]);
     };
 
+    const handleUpdateProjectField = (projId: string, field: string, value: any) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => (item.id === projId ? { ...item, [field]: value } : item))
+        );
+    };
+
+    const handleRemoveProjectItem = (projId: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.filter((item: any) => item.id !== projId)
+        );
+    };
+
+    const handleAddProjBullet = (projId: string, text = "") => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== projId) return item;
+                const currentDesc = Array.isArray(item.description) ? item.description : [];
+                return { ...item, description: [...currentDesc, text || "새로운 기여 항목"] };
+            })
+        );
+    };
+
+    const handleUpdateProjBullet = (projId: string, index: number, value: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== projId) return item;
+                const newDesc = [...item.description];
+                newDesc[index] = value;
+                return { ...item, description: newDesc };
+            })
+        );
+    };
+
+    const handleRemoveProjBullet = (projId: string, index: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== projId) return item;
+                return {
+                    ...item,
+                    description: item.description.filter((_: any, i: number) => i !== index),
+                };
+            })
+        );
+    };
+
     // --- 학력(Education) 핸들러 ---
     const handleAddEducationItem = () => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
@@ -311,61 +368,6 @@ export default function InspectorPanel() {
         );
     };
 
-    const handleUpdateProjectField = (projId: string, field: string, value: any) => {
-        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        updateBlockData(
-            currentBlock.id,
-            prevData.map((item: any) => (item.id === projId ? { ...item, [field]: value } : item))
-        );
-    };
-
-    const handleRemoveProjectItem = (projId: string) => {
-        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        updateBlockData(
-            currentBlock.id,
-            prevData.filter((item: any) => item.id !== projId)
-        );
-    };
-
-    const handleAddProjBullet = (projId: string, text = "") => {
-        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        updateBlockData(
-            currentBlock.id,
-            prevData.map((item: any) => {
-                if (item.id !== projId) return item;
-                const currentDesc = Array.isArray(item.description) ? item.description : [];
-                return { ...item, description: [...currentDesc, text || "새로운 기여 항목"] };
-            })
-        );
-    };
-
-    const handleUpdateProjBullet = (projId: string, index: number, value: string) => {
-        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        updateBlockData(
-            currentBlock.id,
-            prevData.map((item: any) => {
-                if (item.id !== projId) return item;
-                const newDesc = [...item.description];
-                newDesc[index] = value;
-                return { ...item, description: newDesc };
-            })
-        );
-    };
-
-    const handleRemoveProjBullet = (projId: string, index: number) => {
-        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        updateBlockData(
-            currentBlock.id,
-            prevData.map((item: any) => {
-                if (item.id !== projId) return item;
-                return {
-                    ...item,
-                    description: item.description.filter((_: any, i: number) => i !== index),
-                };
-            })
-        );
-    };
-
     // --- 스킬(Skills) 핸들러 ---
     const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter" && newSkillInput.trim()) {
@@ -390,13 +392,30 @@ export default function InspectorPanel() {
     return (
         <aside className="w-80 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
             <div className="space-y-6">
-                {/* 상단 블록 타이틀 및 액션 버튼들 */}
+                {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                         <Layers size={14} className="text-blue-500" />
                         <span>{currentBlock.type} 설정</span>
+                        {currentBlock.isVisible === false && (
+                            <span className="text-[10px] bg-red-950/60 text-red-400 px-1.5 py-0.5 rounded border border-red-900/60 lowercase font-normal">
+                                숨김
+                            </span>
+                        )}
                     </div>
                     <div className="flex items-center gap-1">
+                        {/* 눈 모양 숨기기/보이기 토글 버튼 */}
+                        <button
+                            onClick={() => toggleBlockVisibility(currentBlock.id)}
+                            className={`p-1 rounded transition ${currentBlock.isVisible === false
+                                    ? "text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                                }`}
+                            title={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
+                        >
+                            {currentBlock.isVisible === false ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+
                         <button
                             onClick={handleMoveUp}
                             disabled={currentIndex === 0}
@@ -588,7 +607,7 @@ export default function InspectorPanel() {
                                         </div>
                                     </div>
 
-                                    {/* 개별 불릿 리스트 & STAR 가이드 */}
+                                    {/* 성과 불릿 목록 & STAR 칩 */}
                                     <div className="space-y-2 pt-1 border-t border-neutral-800">
                                         <div className="flex items-center justify-between">
                                             <label className="text-[11px] text-neutral-300 font-medium">성과 불릿 목록</label>
@@ -723,7 +742,6 @@ export default function InspectorPanel() {
                                         </div>
                                     </div>
 
-                                    {/* 프로젝트 불릿 목록 */}
                                     <div className="space-y-2 pt-1 border-t border-neutral-800">
                                         <div className="flex items-center justify-between">
                                             <label className="text-[11px] text-neutral-300 font-medium">기여/성과 불릿 목록</label>
@@ -949,7 +967,6 @@ export default function InspectorPanel() {
                             ))}
                     </div>
                 )}
-
 
                 {/* [자유 텍스트 폼] */}
                 {currentBlock.type === "custom_text" && (

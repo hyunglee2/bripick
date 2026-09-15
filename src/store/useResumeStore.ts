@@ -39,6 +39,9 @@ interface ResumeState {
     redo: () => void;
     canUndo: () => boolean;
     canRedo: () => boolean;
+
+    toggleBlockVisibility: (blockId: string) => void;
+
 }
 
 const defaultResume: ResumeDocument = {
@@ -194,6 +197,27 @@ export const useResumeStore = create<ResumeState>()(
                         resumeList: syncList(state.resumeList, newResume),
                         selectedBlockId:
                             state.selectedBlockId === blockId ? null : state.selectedBlockId,
+                    };
+                }),
+
+            // 블록 보이기 / 숨기기 토글 액션
+            toggleBlockVisibility: (blockId) =>
+                set((state) => {
+                    const newResume = {
+                        ...state.resume,
+                        blocks: state.resume.blocks.map((block) =>
+                            block.id === blockId
+                                ? { ...block, isVisible: !block.isVisible }
+                                : block
+                        ),
+                        updatedAt: new Date().toISOString(),
+                    };
+
+                    return {
+                        past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                        future: [],
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
                     };
                 }),
 

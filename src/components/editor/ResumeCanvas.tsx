@@ -96,6 +96,7 @@ export default function ResumeCanvas() {
                         const isSelected = selectedBlockId === block.id;
                         const isBeingDragged = draggedIndex === index;
                         const isTargeted = dragOverIndex === index && draggedIndex !== index;
+                        const isHidden = block.isVisible === false;
 
                         return (
                             <div
@@ -110,14 +111,23 @@ export default function ResumeCanvas() {
                                     paddingTop: `${block.style.paddingY}px`,
                                     paddingBottom: `${block.style.paddingY}px`,
                                 }}
-                                className={`relative cursor-pointer transition-all ${templateType === "modern"
-                                    ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
-                                    : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
+                                /* resume-block-item(A4 분할 방지) 및 숨김(block-hidden) 클래스 적용 */
+                                className={`resume-block-item relative cursor-pointer transition-all ${templateType === "modern"
+                                        ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
+                                        : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
                                     } ${isSelected ? "!ring-2 !ring-blue-500 !border-blue-500 bg-blue-50/20" : ""
                                     } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
                                     } ${isTargeted ? "border-t-4 border-t-blue-500 -mt-1" : ""
+                                    } ${isHidden ? "opacity-40 grayscale border-dashed border-neutral-300 block-hidden" : ""
                                     } group`}
                             >
+                                {/* 숨김 상태 뱃지 (에디터 전용) */}
+                                {isHidden && (
+                                    <div className="no-print absolute top-2 right-3 flex items-center gap-1 text-[10px] font-semibold text-neutral-500 bg-neutral-200/80 px-2 py-0.5 rounded-full select-none">
+                                        숨겨진 블록 (인쇄 시 제외)
+                                    </div>
+                                )}
+
                                 {/* 드래그 핸들 */}
                                 <div
                                     className="no-print absolute -left-7 top-1/2 -translate-y-1/2 text-neutral-400 opacity-0 group-hover:opacity-100 hover:text-neutral-700 cursor-grab active:cursor-grabbing p-1 transition"
@@ -424,8 +434,8 @@ export default function ResumeCanvas() {
                                                                 : {}
                                                         }
                                                         className={`px-2 py-0.5 rounded text-xs font-medium ${templateType === "modern"
-                                                            ? "border"
-                                                            : "bg-neutral-100 text-neutral-800 border border-neutral-200"
+                                                                ? "border"
+                                                                : "bg-neutral-100 text-neutral-800 border border-neutral-200"
                                                             }`}
                                                     >
                                                         {skill}
@@ -616,7 +626,7 @@ export default function ResumeCanvas() {
                 </div>
             </div>
 
-            {/* 우측 하단 플로팅 줌 컨트롤 바 (인쇄 시 자동 숨김) */}
+            {/* 우측 하단 플로팅 줌 컨트롤 바 */}
             <div className="no-print fixed bottom-6 right-84 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40">
                 <button
                     onClick={handleZoomOut}

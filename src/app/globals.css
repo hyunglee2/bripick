@@ -55,4 +55,51 @@ body {
     size: A4 portrait;
     margin: 0;
   }
+
+  /* src/app/globals.css 맨 아래 수정 */
+
+  @media print {
+
+    header,
+    aside,
+    .no-print {
+      display: none !important;
+    }
+
+    body {
+      background: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    main {
+      padding: 0 !important;
+      background: transparent !important;
+      overflow: visible !important;
+    }
+
+    .resume-paper {
+      box-shadow: none !important;
+      border: none !important;
+      margin: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      padding: 20mm !important;
+    }
+
+    /* 인쇄 시 블록이나 카드 중간이 다음 장으로 어색하게 잘리는 현상 방지 */
+    .resume-block-item {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    /* 숨김 처리된 블록은 인쇄 시 완전히 렌더링 제외 */
+    .block-hidden {
+      display: none !important;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+  }
 }
