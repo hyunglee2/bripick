@@ -1,8 +1,9 @@
 // src/components/editor/EditorHeader.tsx
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
+import AtsCheckerModal from "@/components/editor/AtsCheckerModal";
 import {
     Plus,
     Download,
@@ -14,17 +15,19 @@ import {
     Copy,
     Trash2,
     FileText,
+    ShieldCheck,
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 
 export default function EditorHeader() {
+    const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
+
     const addBlock = useResumeStore((state) => state.addBlock);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
     const resume = useResumeStore((state) => state.resume);
     const resumeList = useResumeStore((state) => state.resumeList);
     const loadResume = useResumeStore((state) => state.loadResume);
 
-    // 버전 관리 액션
     const switchResume = useResumeStore((state) => state.switchResume);
     const createNewResume = useResumeStore((state) => state.createNewResume);
     const duplicateCurrentResume = useResumeStore((state) => state.duplicateCurrentResume);
@@ -38,7 +41,6 @@ export default function EditorHeader() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // 글로벌 키보드 단축키
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
@@ -68,17 +70,15 @@ export default function EditorHeader() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [undo, redo]);
 
-
     const blockButtons: { label: string; type: BlockType }[] = [
         { label: "+ 경력", type: "experience" },
         { label: "+ 프로젝트", type: "project" },
         { label: "+ 기술 스택", type: "skills" },
-        { label: "+ 학력", type: "education" },          // <- 추가
-        { label: "+ 자격/수상", type: "certification" },  // <- 추가
+        { label: "+ 학력", type: "education" },
+        { label: "+ 자격/수상", type: "certification" },
         { label: "+ 자유 텍스트", type: "custom_text" },
     ];
 
-    // 1. PDF 인쇄 저장
     const handleExportPDF = () => {
         setSelectedBlockId(null);
         setTimeout(() => {
@@ -86,7 +86,6 @@ export default function EditorHeader() {
         }, 150);
     };
 
-    // 2. JSON 다운로드 백업
     const handleDownloadJSON = () => {
         const dataStr =
             "data:text/json;charset=utf-8," +
@@ -99,7 +98,6 @@ export default function EditorHeader() {
         downloadAnchor.remove();
     };
 
-    // 3. JSON 불러오기
     const handleUploadJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
         const fileReader = new FileReader();
         if (e.target.files && e.target.files[0]) {
@@ -120,7 +118,6 @@ export default function EditorHeader() {
         }
     };
 
-    // 4. 완성형 샘플 프리셋 주입
     const handleLoadPreset = () => {
         if (!confirm("현재 작성 중인 내용이 샘플 이력서로 대체됩니다. 계속하시겠습니까?"))
             return;
@@ -223,147 +220,160 @@ export default function EditorHeader() {
     };
 
     return (
-        <header className="h-14 border-b border-neutral-800 bg-[#12131a] px-6 flex items-center justify-between sticky top-0 z-50">
-            <div className="flex items-center gap-4">
-                {/* 서비스 로고 */}
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center font-black text-xs text-white shadow-sm">
-                        B
+        <>
+            <header className="h-14 border-b border-neutral-800 bg-[#12131a] px-6 flex items-center justify-between sticky top-0 z-50">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center font-black text-xs text-white shadow-sm">
+                            B
+                        </div>
+                        <span className="font-bold tracking-tight text-white hidden sm:inline">Bripick</span>
                     </div>
-                    <span className="font-bold tracking-tight text-white hidden sm:inline">Bripick</span>
-                </div>
 
-                {/* 이력서 버전 관리 (스위처 & 제목 변경) */}
-                <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-3">
-                    <FileText size={14} className="text-neutral-500" />
-                    <input
-                        type="text"
-                        value={resume.versionName || ""}
-                        onChange={(e) => updateVersionName(e.target.value)}
-                        className="w-36 bg-neutral-900 border border-neutral-700 hover:border-neutral-600 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 font-medium"
-                        title="현재 이력서 이름 수정"
-                    />
+                    {/* 버전 관리 */}
+                    <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-3">
+                        <FileText size={14} className="text-neutral-500" />
+                        <input
+                            type="text"
+                            value={resume.versionName || ""}
+                            onChange={(e) => updateVersionName(e.target.value)}
+                            className="w-36 bg-neutral-900 border border-neutral-700 hover:border-neutral-600 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 font-medium"
+                            title="현재 이력서 이름 수정"
+                        />
 
-                    {/* 버전 선택 드롭다운 */}
-                    <select
-                        value={resume.id}
-                        onChange={(e) => switchResume(e.target.value)}
-                        className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-300 focus:outline-none cursor-pointer max-w-[120px] truncate"
-                    >
-                        {(resumeList || []).map((r) => (
-                            <option key={r.id} value={r.id}>
-                                {r.versionName}
-                            </option>
-                        ))}
-                    </select>
-
-                    {/* 복제 버튼 */}
-                    <button
-                        onClick={duplicateCurrentResume}
-                        className="p-1 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition"
-                        title="현재 이력서 복제 (사본 생성)"
-                    >
-                        <Copy size={14} />
-                    </button>
-
-                    {/* 새 이력서 추가 */}
-                    <button
-                        onClick={() => createNewResume("새 이력서")}
-                        className="p-1 text-neutral-400 hover:text-blue-400 hover:bg-neutral-800 rounded transition"
-                        title="새 빈 이력서 생성"
-                    >
-                        <Plus size={15} />
-                    </button>
-
-                    {/* 삭제 버튼 */}
-                    <button
-                        onClick={() => {
-                            if (confirm(`'${resume.versionName}' 이력서를 정말 삭제하시겠습니까?`)) {
-                                deleteResume(resume.id);
-                            }
-                        }}
-                        disabled={(resumeList || []).length <= 1}
-                        className="p-1 text-neutral-500 hover:text-red-400 disabled:opacity-20 hover:bg-neutral-800 rounded transition"
-                        title="현재 이력서 삭제"
-                    >
-                        <Trash2 size={14} />
-                    </button>
-                </div>
-
-                {/* Undo / Redo 버튼 영역 */}
-                <div className="flex items-center gap-0.5 border-l border-neutral-800 pl-3">
-                    <button
-                        onClick={undo}
-                        disabled={!canUndo}
-                        className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 transition"
-                        title="실행 취소 (Ctrl+Z)"
-                    >
-                        <Undo2 size={15} />
-                    </button>
-                    <button
-                        onClick={redo}
-                        disabled={!canRedo}
-                        className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 transition"
-                        title="다시 실행 (Ctrl+Y)"
-                    >
-                        <Redo2 size={15} />
-                    </button>
-                </div>
-
-                {/* 블록 추가 단축 버튼들 */}
-                <div className="hidden lg:flex items-center gap-1.5 border-l border-neutral-800 pl-4">
-                    <span className="text-xs text-neutral-400 mr-1 flex items-center gap-1">
-                        <Plus size={14} /> 블록:
-                    </span>
-                    {blockButtons.map((btn) => (
-                        <button
-                            key={btn.type}
-                            onClick={() => addBlock(btn.type)}
-                            className="text-xs px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition active:scale-95"
+                        <select
+                            value={resume.id}
+                            onChange={(e) => switchResume(e.target.value)}
+                            className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-300 focus:outline-none cursor-pointer max-w-[120px] truncate"
                         >
-                            {btn.label}
+                            {(resumeList || []).map((r) => (
+                                <option key={r.id} value={r.id}>
+                                    {r.versionName}
+                                </option>
+                            ))}
+                        </select>
+
+                        <button
+                            onClick={duplicateCurrentResume}
+                            className="p-1 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition"
+                            title="현재 이력서 복제 (사본 생성)"
+                        >
+                            <Copy size={14} />
                         </button>
-                    ))}
+
+                        <button
+                            onClick={() => createNewResume("새 이력서")}
+                            className="p-1 text-neutral-400 hover:text-blue-400 hover:bg-neutral-800 rounded transition"
+                            title="새 빈 이력서 생성"
+                        >
+                            <Plus size={15} />
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                if (confirm(`'${resume.versionName}' 이력서를 정말 삭제하시겠습니까?`)) {
+                                    deleteResume(resume.id);
+                                }
+                            }}
+                            disabled={(resumeList || []).length <= 1}
+                            className="p-1 text-neutral-500 hover:text-red-400 disabled:opacity-20 hover:bg-neutral-800 rounded transition"
+                            title="현재 이력서 삭제"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
+
+                    {/* Undo / Redo */}
+                    <div className="flex items-center gap-0.5 border-l border-neutral-800 pl-3">
+                        <button
+                            onClick={undo}
+                            disabled={!canUndo}
+                            className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 transition"
+                            title="실행 취소 (Ctrl+Z)"
+                        >
+                            <Undo2 size={15} />
+                        </button>
+                        <button
+                            onClick={redo}
+                            disabled={!canRedo}
+                            className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 transition"
+                            title="다시 실행 (Ctrl+Y)"
+                        >
+                            <Redo2 size={15} />
+                        </button>
+                    </div>
+
+                    {/* 블록 추가 버튼 */}
+                    <div className="hidden lg:flex items-center gap-1.5 border-l border-neutral-800 pl-4">
+                        <span className="text-xs text-neutral-400 mr-1 flex items-center gap-1">
+                            <Plus size={14} /> 블록:
+                        </span>
+                        {blockButtons.map((btn) => (
+                            <button
+                                key={btn.type}
+                                onClick={() => addBlock(btn.type)}
+                                className="text-xs px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition active:scale-95"
+                            >
+                                {btn.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-                <button
-                    onClick={handleLoadPreset}
-                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30 text-purple-300 transition"
-                    title="완성형 개발자 샘플 불러오기"
-                >
-                    <Sparkles size={13} className="text-purple-400" /> 샘플
-                </button>
+                {/* 우측 유틸리티 버튼들 */}
+                <div className="flex items-center gap-2">
+                    {/* ATS 완성도 진단기 버튼 */}
+                    <button
+                        onClick={() => setIsAtsModalOpen(true)}
+                        className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 text-emerald-300 font-medium transition active:scale-95"
+                        title="ATS 이력서 완성도 진단"
+                    >
+                        <ShieldCheck size={14} className="text-emerald-400" /> ATS 검사
+                    </button>
 
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleUploadJSON}
-                    accept=".json"
-                    className="hidden"
-                />
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
-                    title="JSON 파일로 불러오기"
-                >
-                    <Upload size={13} /> 불러오기
-                </button>
-                <button
-                    onClick={handleDownloadJSON}
-                    className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
-                    title="JSON 파일로 백업"
-                >
-                    <FileCode size={13} /> 백업
-                </button>
-                <button
-                    onClick={handleExportPDF}
-                    className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 font-medium text-white transition shadow-sm active:scale-95"
-                >
-                    <Download size={13} /> PDF 저장
-                </button>
-            </div>
-        </header>
+                    <button
+                        onClick={handleLoadPreset}
+                        className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30 text-purple-300 transition"
+                        title="완성형 개발자 샘플 불러오기"
+                    >
+                        <Sparkles size={13} className="text-purple-400" /> 샘플
+                    </button>
+
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleUploadJSON}
+                        accept=".json"
+                        className="hidden"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
+                        title="JSON 파일로 불러오기"
+                    >
+                        <Upload size={13} /> 불러오기
+                    </button>
+                    <button
+                        onClick={handleDownloadJSON}
+                        className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
+                        title="JSON 파일로 백업"
+                    >
+                        <FileCode size={13} /> 백업
+                    </button>
+                    <button
+                        onClick={handleExportPDF}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 font-medium text-white transition shadow-sm active:scale-95"
+                    >
+                        <Download size={13} /> PDF 저장
+                    </button>
+                </div>
+            </header>
+
+            {/* ATS 진단 모달 */}
+            <AtsCheckerModal
+                isOpen={isAtsModalOpen}
+                onClose={() => setIsAtsModalOpen(false)}
+            />
+        </>
     );
 }
