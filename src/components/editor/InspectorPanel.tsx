@@ -23,6 +23,7 @@ export default function InspectorPanel() {
     const blocks = useResumeStore((state) => state.resume.blocks);
     const globalStyle = useResumeStore((state) => state.resume.globalStyle);
     const updateGlobalStyle = useResumeStore((state) => state.updateGlobalStyle);
+    const updateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
     const updateBlockStyle = useResumeStore((state) => state.updateBlockStyle);
     const updateBlockData = useResumeStore((state) => state.updateBlockData);
     const removeBlock = useResumeStore((state) => state.removeBlock);
@@ -137,7 +138,7 @@ export default function InspectorPanel() {
                                     }`}
                             >
                                 <div className="font-bold">Modern</div>
-                                <div className="text-[10px] opacity-75">입체감 있는 카드형</div>
+                                <div className="text-[10px] opacity-75">블루 포인트 문서형</div>
                             </button>
                             <button
                                 onClick={() => updateGlobalStyle({ template: "minimal" })}
@@ -161,6 +162,33 @@ export default function InspectorPanel() {
     }
 
     // --- 공통 블록 조작 ---
+    const handleProfilePhotoUpload = (file?: File) => {
+        if (!file || currentBlock.type !== "profile") return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const image = new Image();
+            image.onload = () => {
+                const canvas = document.createElement("canvas");
+                const size = 640;
+                const scale = Math.max(size / image.width, size / image.height);
+                const width = image.width * scale;
+                const height = image.height * scale;
+                canvas.width = size;
+                canvas.height = size;
+                const context = canvas.getContext("2d");
+                if (!context) return;
+                context.drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
+                updateBlockData(currentBlock.id, {
+                    ...currentBlock.data,
+                    photo: canvas.toDataURL("image/jpeg", 0.86),
+                });
+            };
+            image.src = String(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
     const handleMoveUp = () => {
         if (currentIndex > 0) reorderBlocks(currentIndex, currentIndex - 1);
     };
@@ -442,6 +470,18 @@ export default function InspectorPanel() {
                     </div>
                 </div>
 
+                <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-neutral-300 block">블록 제목</label>
+                    <input
+                        type="text"
+                        value={currentBlock.title || ""}
+                        placeholder="블록 제목을 입력하세요"
+                        onChange={(e) => updateBlockTitle(currentBlock.id, e.target.value)}
+                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                    />
+                    <p className="text-[10px] text-neutral-500">캔버스와 PDF의 섹션 제목에 바로 반영됩니다.</p>
+                </div>
+
                 {/* 1. 스타일 설정 섹션 */}
                 <div className="space-y-3">
                     <label className="text-xs font-medium text-neutral-300 block">
@@ -495,6 +535,31 @@ export default function InspectorPanel() {
                 {currentBlock.type === "profile" && (
                     <div className="space-y-3 border-t border-neutral-800 pt-4">
                         <div>
+                            <label className="text-xs text-neutral-400 block mb-1">프로필 사진</label>
+                            <div className="flex items-center gap-3">
+                                {currentBlock.data.photo && (
+                                    <img src={currentBlock.data.photo} alt="프로필 미리보기" className="w-12 h-12 rounded-lg object-cover" />
+                                )}
+                                <label className="text-xs px-3 py-2 rounded border border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-blue-500 cursor-pointer">
+                                    사진 선택
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        className="hidden"
+                                        onChange={(e) => handleProfilePhotoUpload(e.target.files?.[0])}
+                                    />
+                                </label>
+                                {currentBlock.data.photo && (
+                                    <button
+                                        onClick={() => updateBlockData(currentBlock.id, { ...currentBlock.data, photo: "" })}
+                                        className="text-[11px] text-neutral-500 hover:text-red-400"
+                                    >
+                                        제거
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <div>
                             <label className="text-xs text-neutral-400 block mb-1">이름</label>
                             <input
                                 type="text"
@@ -547,6 +612,45 @@ export default function InspectorPanel() {
                                     updateBlockData(currentBlock.id, { ...currentBlock.data, bio: e.target.value })
                                 }
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs text-neutral-400 block mb-1">거주 지역</label>
+                            <input
+                                type="text"
+                                value={currentBlock.data.location || ""}
+                                onChange={(e) => updateBlockData(currentBlock.id, { ...currentBlock.data, location: e.target.value })}
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs text-neutral-400 block mb-1">Blog</label>
+                            <input
+                                type="text"
+                                value={currentBlock.data.blog || ""}
+                                onChange={(e) => updateBlockData(currentBlock.id, { ...currentBlock.data, blog: e.target.value })}
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs text-neutral-400 block mb-1">GitHub</label>
+                            <input
+                                type="text"
+                                value={currentBlock.data.github || ""}
+                                onChange={(e) => updateBlockData(currentBlock.id, { ...currentBlock.data, github: e.target.value })}
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs text-neutral-400 block mb-1">핵심 요약 (줄마다 한 항목)</label>
+                            <textarea
+                                rows={5}
+                                value={(currentBlock.data.highlights || []).join("\n")}
+                                onChange={(e) => updateBlockData(currentBlock.id, {
+                                    ...currentBlock.data,
+                                    highlights: e.target.value.split("\n"),
+                                })}
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
                             />
                         </div>
                     </div>

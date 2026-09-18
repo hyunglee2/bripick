@@ -21,6 +21,7 @@ interface ResumeState {
     setSelectedBlockId: (id: string | null) => void;
     addBlock: (type: BlockType) => void;
     removeBlock: (blockId: string) => void;
+    updateBlockTitle: (blockId: string, title: string) => void;
     updateBlockStyle: (blockId: string, style: Partial<BlockStyle>) => void;
     updateBlockData: (blockId: string, data: any) => void;
     reorderBlocks: (startIndex: number, endIndex: number) => void;
@@ -70,6 +71,13 @@ const defaultResume: ResumeDocument = {
                 phone: "010-1234-5678",
                 location: "Seoul, Korea",
                 bio: "사용자 중심의 가치를 코드로 구현하는 모던 웹 엔지니어입니다.",
+                blog: "",
+                github: "",
+                highlights: [
+                    "제품의 전 과정을 경험하며 사용자 중심의 기능을 구현합니다.",
+                    "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 만듭니다.",
+                    "데이터와 피드백을 기반으로 사용자 경험과 서비스 품질을 개선합니다.",
+                ],
             },
         },
         {
@@ -220,6 +228,24 @@ export const useResumeStore = create<ResumeState>()(
                             block.id === blockId
                                 ? { ...block, isVisible: !block.isVisible }
                                 : block
+                        ),
+                        updatedAt: new Date().toISOString(),
+                    };
+
+                    return {
+                        past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
+                        future: [],
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
+                    };
+                }),
+
+            updateBlockTitle: (blockId, title) =>
+                set((state) => {
+                    const newResume = {
+                        ...state.resume,
+                        blocks: state.resume.blocks.map((block) =>
+                            block.id === blockId ? { ...block, title } : block
                         ),
                         updatedAt: new Date().toISOString(),
                     };

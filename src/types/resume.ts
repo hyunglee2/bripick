@@ -27,6 +27,10 @@ export interface ProfileData {
     phone: string;
     location: string;
     bio: string;
+    photo?: string;
+    blog?: string;
+    github?: string;
+    highlights?: string[];
 }
 
 export interface ExperienceItem {

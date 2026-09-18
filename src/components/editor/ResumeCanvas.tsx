@@ -51,6 +51,7 @@ export default function ResumeCanvas() {
     const templateType = globalStyle?.template || "modern";
     const primaryColor = globalStyle?.primaryColor || "#2563eb";
     const fontFamily = globalStyle?.fontFamily || "'Pretendard', sans-serif";
+    const paperPadding = templateType === "modern" ? 56 : (globalStyle?.basePadding || 36);
 
     const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 10, 150));
     const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 10, 50));
@@ -100,7 +101,7 @@ export default function ResumeCanvas() {
         if (!canvas) return;
 
         const repaginate = () => {
-            const availableHeight = A4_PAPER_HEIGHT - ((globalStyle?.basePadding || 36) * 2);
+            const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2);
             const measuredBlockHeights = new Map<number, number>();
             const measuredItemHeights = new Map<string, number>();
             const measuredDescriptionHeights = new Map<string, number>();
@@ -249,13 +250,83 @@ export default function ResumeCanvas() {
         document.fonts.ready.then(repaginate);
 
         return () => observer.disconnect();
-    }, [blocks, globalStyle?.basePadding, globalStyle?.contentWidth, pagePlacements, templateType]);
+    }, [blocks, globalStyle?.contentWidth, pagePlacements, paperPadding, templateType]);
 
     // 단일 블록 렌더러 함수
     const renderBlockContent = (block: ResumeBlock, placement: BlockPlacement) => {
         const isContinuation = (placement.itemStart || 0) > 0 || (placement.descriptionStart || 0) > 0;
         switch (block.type) {
             case "profile":
+                if (templateType === "modern") {
+                    const highlights = Array.isArray(block.data.highlights) ? block.data.highlights : [];
+                    return (
+                        <div className="resume-profile-hero">
+                            <div className="resume-profile-main">
+                                <div className="resume-profile-photo">
+                                    {block.data.photo ? (
+                                        <img src={block.data.photo} alt="프로필" />
+                                    ) : (
+                                        <span>{String(block.data.name || "?").slice(0, 1)}</span>
+                                    )}
+                                </div>
+                                <div className="resume-profile-copy">
+                                    <EditableText
+                                        tag="p"
+                                        value={block.data.bio || ""}
+                                        placeholder="나를 설명하는 한 줄 소개"
+                                        onChange={(bio) => updateBlockData(block.id, { ...block.data, bio })}
+                                        className="resume-profile-tagline"
+                                    />
+                                    <div className="resume-profile-headline">
+                                        <EditableText
+                                            tag="span"
+                                            value={block.data.role || ""}
+                                            placeholder="프론트엔드 개발자"
+                                            onChange={(role) => updateBlockData(block.id, { ...block.data, role })}
+                                            className="resume-profile-role"
+                                        />
+                                        <EditableText
+                                            tag="h1"
+                                            value={block.data.name || ""}
+                                            placeholder="이름"
+                                            onChange={(name) => updateBlockData(block.id, { ...block.data, name })}
+                                            className="resume-profile-name"
+                                        />
+                                        <span className="resume-profile-suffix">입니다.</span>
+                                    </div>
+                                    <div className="resume-profile-contacts">
+                                        <strong>CONTACTS</strong>
+                                        <div>
+                                            <span className="resume-contact-row"><b>▸</b> Email : <EditableText value={block.data.email || ""} placeholder="이메일" onChange={(email) => updateBlockData(block.id, { ...block.data, email })} /></span>
+                                            <span className="resume-contact-row"><b>▸</b> Phone : <EditableText value={block.data.phone || ""} placeholder="연락처" onChange={(phone) => updateBlockData(block.id, { ...block.data, phone })} /></span>
+                                            <span className="resume-contact-row resume-contact-links">
+                                                <b>▸</b> Blog : <span>{block.data.blog || "—"}</span>
+                                                <em>GitHub : <span>{block.data.github || "—"}</span></em>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {highlights.length > 0 && (
+                                <ul className="resume-profile-highlights">
+                                    {highlights.map((highlight: string, index: number) => (
+                                        <li key={index}>
+                                            <EditableText
+                                                value={highlight}
+                                                placeholder="핵심 강점을 입력하세요"
+                                                onChange={(value) => {
+                                                    const updated = [...highlights];
+                                                    updated[index] = value;
+                                                    updateBlockData(block.id, { ...block.data, highlights: updated });
+                                                }}
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    );
+                }
                 return (
                     <div className="space-y-2">
                         <div className="flex justify-between items-baseline gap-4">
@@ -745,10 +816,10 @@ export default function ResumeCanvas() {
                             style={{
                                 width: `${globalStyle?.contentWidth || 800}px`,
                                 minHeight: `${A4_PAPER_HEIGHT}px`,
-                                padding: `${globalStyle?.basePadding || 36}px`,
+                                padding: `${paperPadding}px`,
                                 fontFamily: fontFamily,
                             }}
-                            className="resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all"
+                            className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : ""}`}
                         >
                             {page.blocks.map(({ block, globalIdx, placement }) => {
                                 const isSelected = selectedBlockId === block.id;
@@ -760,6 +831,7 @@ export default function ResumeCanvas() {
                                     <div
                                         key={block.id}
                                         data-resume-block-index={globalIdx}
+                                        data-block-type={block.type}
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, globalIdx)}
                                         onDragOver={(e) => handleDragOver(e, globalIdx)}
@@ -773,7 +845,7 @@ export default function ResumeCanvas() {
                                         className={`resume-block-item relative cursor-pointer transition-all ${templateType === "modern"
                                                 ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
                                                 : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
-                                            } ${isSelected ? "!ring-2 !ring-blue-500 !border-blue-500 bg-blue-50/20" : ""
+                                            } ${isSelected ? "resume-block-selected" : ""
                                             } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
                                             } ${isTargeted ? "border-t-4 border-t-blue-500 -mt-1" : ""
                                             } ${isHidden ? "opacity-40 grayscale border-dashed border-neutral-300 block-hidden" : ""
