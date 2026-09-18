@@ -42,10 +42,29 @@ export default function InspectorPanel() {
         { label: "System UI (애플/윈도우 기본)", value: "system-ui, sans-serif" },
     ];
 
+    const typographyControls = [
+        { key: "displayTitleFontSize", label: "프로필 대표 제목", min: 20, max: 38, fallback: 24 },
+        { key: "sectionTitleFontSize", label: "섹션 제목", min: 16, max: 32, fallback: 25 },
+        { key: "itemTitleFontSize", label: "항목 제목", min: 12, max: 20, fallback: 15 },
+        { key: "bodyFontSize", label: "본문", min: 10, max: 17, fallback: 12 },
+        { key: "captionFontSize", label: "설명 · 보조 정보", min: 9, max: 15, fallback: 11 },
+    ] as const;
+
+    const accentColorPresets = [
+        { value: "#ac1c1c", label: "딥 레드" },
+        { value: "#fcc02c", label: "골든 옐로" },
+        { value: "#057e0e", label: "포레스트 그린" },
+        { value: "#1ca7ac", label: "아쿠아 틸" },
+        { value: "#2f80c3", label: "클래식 블루" },
+        { value: "#9c47b2", label: "오키드 퍼플" },
+        { value: "#f25f8c", label: "비비드 핑크" },
+        { value: "#334155", label: "슬레이트" },
+    ] as const;
+
     // 1. 블록 미선택 시: 문서 전역 설정 패널
     if (!currentBlock) {
         return (
-            <aside className="w-80 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
+            <aside className="inspector-panel w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
                 <div className="space-y-6">
                     <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
                         <Sliders size={15} className="text-blue-500" />
@@ -72,21 +91,75 @@ export default function InspectorPanel() {
                         </select>
                     </div>
 
+                    {/* 문서 타이포그래피 크기 */}
+                    <details className="group border-t border-neutral-800 pt-4">
+                        <summary className="flex cursor-pointer list-none items-center justify-between rounded px-1 py-1.5 text-neutral-300 transition hover:bg-neutral-800/60 [&::-webkit-details-marker]:hidden">
+                            <span className="flex items-center gap-1.5 text-xs font-medium">
+                                <Type size={13} /> 글자 크기
+                            </span>
+                            <ChevronDown size={15} className="text-neutral-500 transition-transform group-open:rotate-180" />
+                        </summary>
+                        <div className="mt-3 space-y-3 px-1">
+                            <p className="text-[10px] text-neutral-500">문서 종류별 크기를 개별 조정합니다.</p>
+                            {typographyControls.map(({ key, label, min, max, fallback }) => {
+                                const value = globalStyle?.[key] ?? fallback;
+                                return (
+                                    <div key={key} className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-neutral-300">{label}</span>
+                                            <span className="font-mono text-neutral-400">{value}px</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min={min}
+                                            max={max}
+                                            step="1"
+                                            value={value}
+                                            onChange={(e) => updateGlobalStyle({ [key]: Number(e.target.value) })}
+                                            className="w-full accent-blue-500 cursor-pointer"
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </details>
+
                     {/* 포인트 컬러 지정 */}
                     <div className="space-y-2">
                         <label className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
                             <Palette size={13} /> 테마 포인트 컬러
                         </label>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <input
                                 type="color"
-                                value={globalStyle?.primaryColor || "#3b82f6"}
+                                value={globalStyle?.primaryColor || "#2f80c3"}
                                 onChange={(e) => updateGlobalStyle({ primaryColor: e.target.value })}
-                                className="w-8 h-8 rounded border border-neutral-700 bg-transparent cursor-pointer"
+                                className="h-8 w-8 shrink-0 cursor-pointer rounded border border-neutral-700 bg-transparent"
+                                aria-label="사용자 지정 포인트 컬러"
                             />
                             <span className="text-xs text-neutral-400 font-mono">
-                                {globalStyle?.primaryColor || "#3b82f6"}
+                                {globalStyle?.primaryColor || "#2f80c3"}
                             </span>
+                            <div className="ml-auto flex items-center gap-1.5" aria-label="추천 포인트 컬러">
+                                {accentColorPresets.map((color) => {
+                                    const isSelected = (globalStyle?.primaryColor || "#2f80c3").toLowerCase() === color.value;
+                                    return (
+                                        <button
+                                            key={color.value}
+                                            type="button"
+                                            onClick={() => updateGlobalStyle({ primaryColor: color.value })}
+                                            title={`${color.label} ${color.value}`}
+                                            aria-label={`${color.label} ${color.value}`}
+                                            aria-pressed={isSelected}
+                                            className={`h-5 w-5 rounded-full border-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#2f80c3]/70 ${isSelected
+                                                    ? "border-white shadow-[0_0_0_2px_rgba(47,128,195,0.55)]"
+                                                    : "border-neutral-700 hover:border-neutral-400"
+                                                }`}
+                                            style={{ backgroundColor: color.value }}
+                                        />
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
 
@@ -138,7 +211,7 @@ export default function InspectorPanel() {
                                     }`}
                             >
                                 <div className="font-bold">Modern</div>
-                                <div className="text-[10px] opacity-75">블루 포인트 문서형</div>
+                                <div className="text-[10px] opacity-75">Bripick 시그니처 디자인</div>
                             </button>
                             <button
                                 onClick={() => updateGlobalStyle({ template: "minimal" })}
@@ -418,7 +491,7 @@ export default function InspectorPanel() {
     };
 
     return (
-        <aside className="w-80 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
+        <aside className="inspector-panel w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
             <div className="space-y-6">
                 {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-3">

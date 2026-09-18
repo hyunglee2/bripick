@@ -128,9 +128,14 @@ export default function EditorHeader() {
             updatedAt: new Date().toISOString(),
             globalStyle: {
                 fontFamily: "'Pretendard', sans-serif",
-                primaryColor: "#2563eb",
+                primaryColor: "#2f80c3",
                 contentWidth: 800,
                 basePadding: 36,
+                displayTitleFontSize: 24,
+                sectionTitleFontSize: 25,
+                itemTitleFontSize: 15,
+                bodyFontSize: 12,
+                captionFontSize: 11,
                 template: "modern",
             },
             blocks: [

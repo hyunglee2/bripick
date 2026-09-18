@@ -4,6 +4,7 @@
 :root {
   --background: #0c0d12;
   --foreground: #f1f5f9;
+  --brand-primary: #2f80c3;
 }
 
 @theme inline {
@@ -16,6 +17,48 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
+}
+
+/* 서비스 UI에서 사용하는 파란색을 단일 브랜드 컬러로 통일합니다. */
+.bg-blue-600,
+.hover\:bg-blue-500:hover {
+  background-color: var(--brand-primary) !important;
+}
+
+.bg-blue-600\/20 {
+  background-color: color-mix(in srgb, var(--brand-primary) 20%, transparent) !important;
+}
+
+.bg-blue-950\/60,
+.hover\:bg-blue-900\/60:hover {
+  background-color: color-mix(in srgb, var(--brand-primary) 18%, transparent) !important;
+}
+
+.text-blue-300,
+.text-blue-400,
+.text-blue-500,
+.hover\:text-blue-300:hover,
+.hover\:text-blue-400:hover {
+  color: var(--brand-primary) !important;
+}
+
+.border-blue-500,
+.focus\:border-blue-500:focus,
+.hover\:border-blue-500:hover,
+.border-t-blue-500 {
+  border-color: var(--brand-primary) !important;
+}
+
+.border-blue-800\/60 {
+  border-color: color-mix(in srgb, var(--brand-primary) 60%, transparent) !important;
+}
+
+.accent-blue-500 {
+  accent-color: var(--brand-primary) !important;
+}
+
+.selection\:bg-blue-600::selection {
+  background-color: var(--brand-primary) !important;
 }
 
 .resume-block-selected {
@@ -130,6 +173,43 @@ body {
   letter-spacing: -0.018em;
 }
 
+.resume-paper {
+  --resume-display-title-size: 24px;
+  --resume-section-title-size: 25px;
+  --resume-item-title-size: 15px;
+  --resume-body-size: 12px;
+  --resume-caption-size: 11px;
+  font-size: var(--resume-body-size);
+}
+
+.resume-paper .resume-block-item h2 {
+  font-size: var(--resume-section-title-size) !important;
+}
+
+.resume-paper .resume-profile-headline {
+  font-size: var(--resume-display-title-size);
+}
+
+.resume-paper [data-pagination-item-index] .font-bold.text-sm {
+  font-size: var(--resume-item-title-size);
+  line-height: 1.3;
+}
+
+.resume-paper .resume-block-item .text-xs.text-neutral-700,
+.resume-paper .resume-block-item .text-sm.text-neutral-700 {
+  font-size: var(--resume-body-size);
+  line-height: 1.55;
+}
+
+.resume-paper .resume-block-item .text-xs.text-neutral-400,
+.resume-paper .resume-block-item .text-xs.text-neutral-500,
+.resume-paper .resume-block-item .text-xs.text-neutral-600,
+.resume-paper .resume-profile-contacts,
+.resume-paper .resume-profile-tagline {
+  font-size: var(--resume-caption-size) !important;
+  line-height: 1.45;
+}
+
 .reference-template .resume-block-item {
   background: transparent !important;
   border: 0 !important;
@@ -141,7 +221,7 @@ body {
 }
 
 .reference-template .resume-block-item:hover {
-  background: rgba(47, 128, 195, 0.025) !important;
+  background: color-mix(in srgb, var(--resume-blue) 3%, transparent) !important;
 }
 
 .reference-template .resume-block-item.resume-block-selected {
@@ -160,7 +240,7 @@ body {
 
 .reference-template .resume-block-item h2 {
   color: var(--resume-blue) !important;
-  font-size: 25px !important;
+  font-size: var(--resume-section-title-size) !important;
   line-height: 1.15 !important;
   font-weight: 800 !important;
   letter-spacing: -0.035em !important;
@@ -222,7 +302,7 @@ body {
 
 .resume-profile-tagline {
   color: #52525b !important;
-  font-size: 12px !important;
+  font-size: var(--resume-caption-size) !important;
   line-height: 1.4 !important;
 }
 
@@ -233,7 +313,7 @@ body {
   gap: 5px;
   margin-top: 3px;
   color: #09090b;
-  font-size: 24px;
+  font-size: var(--resume-display-title-size);
   line-height: 1.18;
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -254,7 +334,7 @@ body {
   grid-template-columns: 92px minmax(0, 1fr);
   gap: 8px;
   margin-top: 17px;
-  font-size: 11px;
+  font-size: var(--resume-caption-size);
   color: #3f3f46;
 }
 
@@ -361,6 +441,37 @@ body {
 .reference-template [data-block-type="experience"]>div,
 .reference-template [data-block-type="project"]>div {
   gap: 9px;
+}
+
+/* 넓어진 인스펙터 패널에 맞춰 편집 UI의 가독성을 높입니다. */
+.inspector-panel input,
+.inspector-panel select,
+.inspector-panel textarea {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.inspector-panel input.text-xs,
+.inspector-panel select.text-xs,
+.inspector-panel textarea.text-xs {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.inspector-panel label,
+.inspector-panel .text-xs {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.inspector-panel .text-\[11px\] {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+.inspector-panel .text-\[10px\] {
+  font-size: 0.6875rem;
+  line-height: 0.9375rem;
 }
 
 @media print {

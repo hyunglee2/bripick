@@ -49,9 +49,17 @@ export default function ResumeCanvas() {
     const canvasRef = useRef<HTMLDivElement>(null);
 
     const templateType = globalStyle?.template || "modern";
-    const primaryColor = globalStyle?.primaryColor || "#2563eb";
+    const primaryColor = globalStyle?.primaryColor || "#2f80c3";
     const fontFamily = globalStyle?.fontFamily || "'Pretendard', sans-serif";
     const paperPadding = templateType === "modern" ? 56 : (globalStyle?.basePadding || 36);
+    const typographyStyle = {
+        "--resume-blue": primaryColor,
+        "--resume-display-title-size": `${globalStyle?.displayTitleFontSize ?? 24}px`,
+        "--resume-section-title-size": `${globalStyle?.sectionTitleFontSize ?? 25}px`,
+        "--resume-item-title-size": `${globalStyle?.itemTitleFontSize ?? 15}px`,
+        "--resume-body-size": `${globalStyle?.bodyFontSize ?? 12}px`,
+        "--resume-caption-size": `${globalStyle?.captionFontSize ?? 11}px`,
+    } as React.CSSProperties;
 
     const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 10, 150));
     const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 10, 50));
@@ -250,7 +258,18 @@ export default function ResumeCanvas() {
         document.fonts.ready.then(repaginate);
 
         return () => observer.disconnect();
-    }, [blocks, globalStyle?.contentWidth, pagePlacements, paperPadding, templateType]);
+    }, [
+        blocks,
+        globalStyle?.contentWidth,
+        globalStyle?.displayTitleFontSize,
+        globalStyle?.sectionTitleFontSize,
+        globalStyle?.itemTitleFontSize,
+        globalStyle?.bodyFontSize,
+        globalStyle?.captionFontSize,
+        pagePlacements,
+        paperPadding,
+        templateType,
+    ]);
 
     // 단일 블록 렌더러 함수
     const renderBlockContent = (block: ResumeBlock, placement: BlockPlacement) => {
@@ -788,7 +807,7 @@ export default function ResumeCanvas() {
     return (
         <main
             onClick={() => setSelectedBlockId(null)}
-            className="flex-1 bg-[#0c0d12] overflow-y-auto p-8 flex justify-center cursor-default relative"
+            className="flex-1 bg-[#444444] overflow-y-auto p-8 flex justify-center cursor-default relative"
         >
             <div
                 ref={canvasRef}
@@ -818,6 +837,7 @@ export default function ResumeCanvas() {
                                 minHeight: `${A4_PAPER_HEIGHT}px`,
                                 padding: `${paperPadding}px`,
                                 fontFamily: fontFamily,
+                                ...typographyStyle,
                             }}
                             className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : ""}`}
                         >
@@ -877,8 +897,11 @@ export default function ResumeCanvas() {
                 ))}
             </div>
 
-            {/* 우측 하단 줌 컨트롤 바 */}
-            <div className="no-print fixed bottom-6 right-84 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40">
+            {/* 캔버스 우측 하단 줌 컨트롤 바 */}
+            <div
+                className="no-print fixed bottom-6 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40"
+                style={{ right: 'calc(clamp(380px, 30vw, 480px) + 1.5rem)' }}
+            >
                 <button
                     onClick={handleZoomOut}
                     disabled={zoomLevel <= 50}
