@@ -408,7 +408,6 @@ export const useResumeStore = create<ResumeState>()(
             deleteResume: (id) => {
                 const list = get().resumeList;
                 if (list.length <= 1) {
-                    alert("최소 1개의 이력서는 유지되어야 합니다.");
                     return;
                 }
 

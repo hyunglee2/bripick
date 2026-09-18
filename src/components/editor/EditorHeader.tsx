@@ -4,6 +4,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import AtsCheckerModal from "@/components/editor/AtsCheckerModal";
+import ServiceDialog, { ServiceDialogVariant } from "@/components/ui/ServiceDialog";
 import {
     Plus,
     Download,
@@ -21,9 +22,19 @@ import {
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 
+type DialogState = {
+    title: string;
+    message: string;
+    variant: ServiceDialogVariant;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    action?: () => void;
+};
+
 export default function EditorHeader() {
     const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
     const [theme, setTheme] = useState<"dark" | "light">("dark");
+    const [dialog, setDialog] = useState<DialogState | null>(null);
 
     const addBlock = useResumeStore((state) => state.addBlock);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
@@ -86,6 +97,13 @@ export default function EditorHeader() {
         localStorage.setItem("bripick-theme", nextTheme);
     };
 
+    const closeDialog = () => setDialog(null);
+    const confirmDialog = () => {
+        const action = dialog?.action;
+        setDialog(null);
+        action?.();
+    };
+
     const blockButtons: { label: string; type: BlockType }[] = [
         { label: "+ 경력", type: "experience" },
         { label: "+ 프로젝트", type: "project" },
@@ -123,21 +141,30 @@ export default function EditorHeader() {
                     const parsedData = JSON.parse(event.target?.result as string);
                     if (parsedData && parsedData.blocks) {
                         loadResume(parsedData);
-                        alert("이력서 데이터를 성공적으로 불러왔습니다!");
+                        setDialog({
+                            title: "이력서를 불러왔어요",
+                            message: "선택한 이력서 데이터가 편집기에 정상적으로 반영되었습니다.",
+                            variant: "success",
+                        });
                     } else {
-                        alert("올바르지 않은 이력서 JSON 파일 형식입니다.");
+                        setDialog({
+                            title: "파일을 확인해 주세요",
+                            message: "Bripick에서 내보낸 올바른 이력서 JSON 파일이 아닙니다.",
+                            variant: "warning",
+                        });
                     }
                 } catch {
-                    alert("JSON 파일을 파싱하는 중 오류가 발생했습니다.");
+                    setDialog({
+                        title: "파일을 읽지 못했어요",
+                        message: "JSON 파일이 손상되었거나 지원하지 않는 형식입니다.",
+                        variant: "warning",
+                    });
                 }
             };
         }
     };
 
     const handleLoadPreset = () => {
-        if (!confirm("현재 작성 중인 내용이 샘플 이력서로 대체됩니다. 계속하시겠습니까?"))
-            return;
-
         const samplePreset: ResumeDocument = {
             id: `preset-${Date.now()}`,
             versionName: "시니어 프론트엔드 엔지니어 이력서",
@@ -237,7 +264,14 @@ export default function EditorHeader() {
             ],
         };
 
-        loadResume(samplePreset);
+        setDialog({
+            title: "샘플 이력서를 불러올까요?",
+            message: "현재 작성 중인 내용이 Bripick 샘플 이력서로 대체됩니다.",
+            variant: "warning",
+            confirmLabel: "샘플 불러오기",
+            cancelLabel: "취소",
+            action: () => loadResume(samplePreset),
+        });
     };
 
     return (
@@ -292,9 +326,14 @@ export default function EditorHeader() {
 
                         <button
                             onClick={() => {
-                                if (confirm(`'${resume.versionName}' 이력서를 정말 삭제하시겠습니까?`)) {
-                                    deleteResume(resume.id);
-                                }
+                                setDialog({
+                                    title: "이력서를 삭제할까요?",
+                                    message: `'${resume.versionName}' 이력서는 삭제 후 복구할 수 없습니다.`,
+                                    variant: "danger",
+                                    confirmLabel: "삭제",
+                                    cancelLabel: "취소",
+                                    action: () => deleteResume(resume.id),
+                                });
                             }}
                             disabled={(resumeList || []).length <= 1}
                             className="p-1 text-neutral-500 hover:text-red-400 disabled:opacity-20 hover:bg-neutral-800 rounded transition"
@@ -404,6 +443,16 @@ export default function EditorHeader() {
             <AtsCheckerModal
                 isOpen={isAtsModalOpen}
                 onClose={() => setIsAtsModalOpen(false)}
+            />
+            <ServiceDialog
+                isOpen={dialog !== null}
+                title={dialog?.title || ""}
+                message={dialog?.message || ""}
+                variant={dialog?.variant}
+                confirmLabel={dialog?.confirmLabel}
+                cancelLabel={dialog?.cancelLabel}
+                onConfirm={confirmDialog}
+                onCancel={dialog?.cancelLabel ? closeDialog : undefined}
             />
         </>
     );

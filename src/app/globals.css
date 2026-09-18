@@ -74,6 +74,7 @@ body,
 .editor-canvas,
 .inspector-panel,
 .ats-modal,
+.service-dialog,
 .editor-zoom-controls {
   transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
@@ -102,10 +103,44 @@ body,
 [data-theme="light"] .editor-header,
 [data-theme="light"] .inspector-panel,
 [data-theme="light"] .ats-modal,
+[data-theme="light"] .service-dialog,
 [data-theme="light"] .editor-zoom-controls {
   background: #ffffff !important;
   border-color: #e5e8eb !important;
   color: #191f28 !important;
+}
+
+[data-theme="light"] .service-dialog :is(.text-white, .text-neutral-100, .text-neutral-200, .text-neutral-300) {
+  color: #191f28 !important;
+}
+
+[data-theme="light"] .service-dialog :is(.text-neutral-400, .text-neutral-500) {
+  color: #8b95a1 !important;
+}
+
+[data-theme="light"] .service-dialog :is(.border-neutral-700, .border-neutral-800) {
+  border-color: #e5e8eb !important;
+}
+
+[data-theme="light"] .service-dialog :is(.hover\:bg-neutral-800:hover, .bg-neutral-800) {
+  background-color: #eef1f4 !important;
+}
+
+[data-theme="light"] .service-dialog .bg-blue-600.text-white,
+[data-theme="light"] .service-dialog .bg-red-600.text-white {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .service-dialog .text-emerald-400 {
+  color: #087f5b !important;
+}
+
+[data-theme="light"] .service-dialog .text-amber-400 {
+  color: #a35b00 !important;
+}
+
+[data-theme="light"] .service-dialog .text-red-400 {
+  color: #c92a2a !important;
 }
 
 [data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .bg-neutral-950,
