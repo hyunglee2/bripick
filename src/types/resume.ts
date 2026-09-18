@@ -7,7 +7,8 @@ export type BlockType =
     | "skills"
     | "education"      // 신규 추가
     | "certification"  // 신규 추가
-    | "custom_text";
+    | "custom_text"
+    | "page_break";
 
 export type TemplateStyle = "modern" | "minimal" | "creative";
 
@@ -16,6 +17,7 @@ export interface BlockStyle {
     paddingX: number;
     columns: number;
     showDivider: boolean;
+    keepTogether?: boolean;
 }
 
 export interface ProfileData {

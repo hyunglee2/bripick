@@ -474,6 +474,19 @@ export default function InspectorPanel() {
                             className="accent-blue-500 w-4 h-4 cursor-pointer"
                         />
                     </div>
+
+                    <div className="flex items-center justify-between pt-2">
+                        <div>
+                            <span className="text-xs text-neutral-300 block">한 페이지에 묶기</span>
+                            <span className="text-[10px] text-neutral-500">끄면 긴 내용을 다음 장에 이어서 표시합니다.</span>
+                        </div>
+                        <input
+                            type="checkbox"
+                            checked={currentBlock.style.keepTogether === true}
+                            onChange={(e) => updateBlockStyle(currentBlock.id, { keepTogether: e.target.checked })}
+                            className="accent-blue-500 w-4 h-4 cursor-pointer"
+                        />
+                    </div>
                 </div>
 
                 {/* 2. 블록별 데이터 입력 폼 */}

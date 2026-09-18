@@ -151,20 +151,31 @@ export const useResumeStore = create<ResumeState>()(
                                 description: "",
                             },
                         ];
+                    } else if (type === "page_break") {
+                        // [추가된 부분 1] 페이지 나눔 블록 데이터
+                        defaultData = {};
                     }
 
                     const defaultBlock: ResumeBlock = {
                         id: newBlockId,
                         type,
+                        // [추가된 부분 2] 타이틀 분기
                         title:
-                            type === "education"
-                                ? "EDUCATION"
-                                : type === "certification"
-                                    ? "CERTIFICATIONS & AWARDS"
-                                    : type.toUpperCase(),
+                            type === "page_break"
+                                ? "PAGE BREAK"
+                                : type === "education"
+                                    ? "EDUCATION"
+                                    : type === "certification"
+                                        ? "CERTIFICATIONS & AWARDS"
+                                        : type.toUpperCase(),
                         isVisible: true,
                         order: state.resume.blocks.length,
-                        style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
+                        style: {
+                            paddingY: type === "page_break" ? 8 : 16,
+                            paddingX: 0,
+                            columns: 1,
+                            showDivider: type !== "page_break",
+                        },
                         data: defaultData,
                     };
 
