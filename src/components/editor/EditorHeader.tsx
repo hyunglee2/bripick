@@ -16,11 +16,14 @@ import {
     Trash2,
     FileText,
     ShieldCheck,
+    Sun,
+    Moon,
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 
 export default function EditorHeader() {
     const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
+    const [theme, setTheme] = useState<"dark" | "light">("dark");
 
     const addBlock = useResumeStore((state) => state.addBlock);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
@@ -40,6 +43,11 @@ export default function EditorHeader() {
     const canRedo = useResumeStore((state) => state.future.length > 0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const currentTheme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+        setTheme(currentTheme);
+    }, []);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -69,6 +77,14 @@ export default function EditorHeader() {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [undo, redo]);
+
+    const toggleTheme = () => {
+        const nextTheme = theme === "dark" ? "light" : "dark";
+        setTheme(nextTheme);
+        document.documentElement.dataset.theme = nextTheme;
+        document.documentElement.style.colorScheme = nextTheme;
+        localStorage.setItem("bripick-theme", nextTheme);
+    };
 
     const blockButtons: { label: string; type: BlockType }[] = [
         { label: "+ 경력", type: "experience" },
@@ -226,7 +242,7 @@ export default function EditorHeader() {
 
     return (
         <>
-            <header className="h-14 border-b border-neutral-800 bg-[#12131a] px-6 flex items-center justify-between sticky top-0 z-50">
+            <header className="editor-header h-14 border-b border-neutral-800 bg-[#12131a] px-6 flex items-center justify-between sticky top-0 z-50">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center font-black text-xs text-white shadow-sm">
@@ -327,6 +343,16 @@ export default function EditorHeader() {
 
                 {/* 우측 유틸리티 버튼들 */}
                 <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="flex h-8 w-8 items-center justify-center rounded border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                        title={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
+                        aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
+                    >
+                        {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+                    </button>
+
                     {/* ATS 완성도 진단기 버튼 */}
                     <button
                         onClick={() => setIsAtsModalOpen(true)}

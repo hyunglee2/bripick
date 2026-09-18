@@ -97,7 +97,7 @@ export default function AtsCheckerModal({ isOpen, onClose }: AtsCheckerModalProp
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                className="bg-[#161722] border border-neutral-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-6 text-neutral-100 animate-in fade-in zoom-in-95 duration-150"
+                className="ats-modal bg-[#161722] border border-neutral-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-6 text-neutral-100 animate-in fade-in zoom-in-95 duration-150"
             >
                 {/* 상단 헤더 */}
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-4">

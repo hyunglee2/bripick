@@ -413,84 +413,84 @@ export default function ResumeCanvas() {
                                 {block.data
                                     .slice(placement.itemStart ?? 0, placement.itemEnd ?? block.data.length)
                                     .map((exp: any, localIndex: number) => {
-                                    const expIndex = (placement.itemStart ?? 0) + localIndex;
-                                    return (
-                                    <div key={exp.id} data-pagination-item-index={expIndex} className="space-y-1">
-                                        <div className="flex justify-between items-baseline gap-2">
-                                            <EditableText
-                                                tag="span"
-                                                value={exp.company}
-                                                placeholder="회사명"
-                                                onChange={(newCompany) => {
-                                                    const updated = [...block.data];
-                                                    updated[expIndex] = { ...exp, company: newCompany };
-                                                    updateBlockData(block.id, updated);
-                                                }}
-                                                className="font-bold text-neutral-900 text-sm"
-                                            />
-                                            <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
-                                                <EditableText
-                                                    value={exp.startDate}
-                                                    placeholder="시작일"
-                                                    onChange={(newDate) => {
-                                                        const updated = [...block.data];
-                                                        updated[expIndex] = { ...exp, startDate: newDate };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                />
-                                                <span>~</span>
-                                                <EditableText
-                                                    value={exp.endDate}
-                                                    placeholder="종료일"
-                                                    onChange={(newDate) => {
-                                                        const updated = [...block.data];
-                                                        updated[expIndex] = { ...exp, endDate: newDate };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <EditableText
-                                            tag="div"
-                                            value={exp.role}
-                                            placeholder="직책 및 역할"
-                                            style={{ color: primaryColor }}
-                                            onChange={(newRole) => {
-                                                const updated = [...block.data];
-                                                updated[expIndex] = { ...exp, role: newRole };
-                                                updateBlockData(block.id, updated);
-                                            }}
-                                            className="text-xs font-semibold"
-                                        />
-                                        <ul className="list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1">
-                                            {exp.description
-                                                ?.slice(
-                                                    placement.descriptionStart ?? 0,
-                                                    placement.descriptionEnd ?? exp.description.length
-                                                )
-                                                .map((desc: string, localDescriptionIndex: number) => {
-                                                const i = (placement.descriptionStart ?? 0) + localDescriptionIndex;
-                                                return (
-                                                <li key={i} data-pagination-description-index={i} className="list-item">
+                                        const expIndex = (placement.itemStart ?? 0) + localIndex;
+                                        return (
+                                            <div key={exp.id} data-pagination-item-index={expIndex} className="space-y-1">
+                                                <div className="flex justify-between items-baseline gap-2">
                                                     <EditableText
-                                                        value={desc}
-                                                        placeholder="성과 및 업무 내용"
-                                                        onChange={(newDesc) => {
+                                                        tag="span"
+                                                        value={exp.company}
+                                                        placeholder="회사명"
+                                                        onChange={(newCompany) => {
                                                             const updated = [...block.data];
-                                                            const newDescriptions = [...exp.description];
-                                                            newDescriptions[i] = newDesc;
-                                                            updated[expIndex] = { ...exp, description: newDescriptions };
+                                                            updated[expIndex] = { ...exp, company: newCompany };
                                                             updateBlockData(block.id, updated);
                                                         }}
-                                                        className="inline"
+                                                        className="font-bold text-neutral-900 text-sm"
                                                     />
-                                                </li>
-                                                );
-                                            })}
-                                        </ul>
-                                    </div>
-                                    );
-                                })}
+                                                    <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
+                                                        <EditableText
+                                                            value={exp.startDate}
+                                                            placeholder="시작일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[expIndex] = { ...exp, startDate: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                        />
+                                                        <span>~</span>
+                                                        <EditableText
+                                                            value={exp.endDate}
+                                                            placeholder="종료일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[expIndex] = { ...exp, endDate: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <EditableText
+                                                    tag="div"
+                                                    value={exp.role}
+                                                    placeholder="직책 및 역할"
+                                                    style={{ color: primaryColor }}
+                                                    onChange={(newRole) => {
+                                                        const updated = [...block.data];
+                                                        updated[expIndex] = { ...exp, role: newRole };
+                                                        updateBlockData(block.id, updated);
+                                                    }}
+                                                    className="text-xs font-semibold"
+                                                />
+                                                <ul className="list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1">
+                                                    {exp.description
+                                                        ?.slice(
+                                                            placement.descriptionStart ?? 0,
+                                                            placement.descriptionEnd ?? exp.description.length
+                                                        )
+                                                        .map((desc: string, localDescriptionIndex: number) => {
+                                                            const i = (placement.descriptionStart ?? 0) + localDescriptionIndex;
+                                                            return (
+                                                                <li key={i} data-pagination-description-index={i} className="list-item">
+                                                                    <EditableText
+                                                                        value={desc}
+                                                                        placeholder="성과 및 업무 내용"
+                                                                        onChange={(newDesc) => {
+                                                                            const updated = [...block.data];
+                                                                            const newDescriptions = [...exp.description];
+                                                                            newDescriptions[i] = newDesc;
+                                                                            updated[expIndex] = { ...exp, description: newDescriptions };
+                                                                            updateBlockData(block.id, updated);
+                                                                        }}
+                                                                        className="inline"
+                                                                    />
+                                                                </li>
+                                                            );
+                                                        })}
+                                                </ul>
+                                            </div>
+                                        );
+                                    })}
                             </div>
                         ) : (
                             <p className="text-xs text-neutral-400 italic">경력 항목을 추가해 주세요.</p>
@@ -514,90 +514,90 @@ export default function ResumeCanvas() {
                                 {block.data
                                     .slice(placement.itemStart ?? 0, placement.itemEnd ?? block.data.length)
                                     .map((proj: any, localIndex: number) => {
-                                    const projIndex = (placement.itemStart ?? 0) + localIndex;
-                                    return (
-                                    <div key={proj.id} data-pagination-item-index={projIndex} className="space-y-1">
-                                        <div className="flex justify-between items-baseline gap-2">
-                                            <div className="flex items-center gap-2">
+                                        const projIndex = (placement.itemStart ?? 0) + localIndex;
+                                        return (
+                                            <div key={proj.id} data-pagination-item-index={projIndex} className="space-y-1">
+                                                <div className="flex justify-between items-baseline gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <EditableText
+                                                            tag="span"
+                                                            value={proj.title}
+                                                            placeholder="프로젝트명"
+                                                            onChange={(newTitle) => {
+                                                                const updated = [...block.data];
+                                                                updated[projIndex] = { ...proj, title: newTitle };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                            className="font-bold text-neutral-900 text-sm"
+                                                        />
+                                                        {proj.link && (
+                                                            <a href={proj.link} target="_blank" rel="noreferrer" style={{ color: primaryColor }} className="text-xs hover:underline">
+                                                                링크 ↗
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
+                                                        <EditableText
+                                                            value={proj.startDate}
+                                                            placeholder="시작일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[projIndex] = { ...proj, startDate: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                        />
+                                                        <span>~</span>
+                                                        <EditableText
+                                                            value={proj.endDate}
+                                                            placeholder="종료일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[projIndex] = { ...proj, endDate: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
                                                 <EditableText
-                                                    tag="span"
-                                                    value={proj.title}
-                                                    placeholder="프로젝트명"
-                                                    onChange={(newTitle) => {
+                                                    tag="div"
+                                                    value={proj.role}
+                                                    placeholder="프로젝트 역할"
+                                                    onChange={(newRole) => {
                                                         const updated = [...block.data];
-                                                        updated[projIndex] = { ...proj, title: newTitle };
+                                                        updated[projIndex] = { ...proj, role: newRole };
                                                         updateBlockData(block.id, updated);
                                                     }}
-                                                    className="font-bold text-neutral-900 text-sm"
+                                                    className="text-xs font-semibold text-neutral-600"
                                                 />
-                                                {proj.link && (
-                                                    <a href={proj.link} target="_blank" rel="noreferrer" style={{ color: primaryColor }} className="text-xs hover:underline">
-                                                        링크 ↗
-                                                    </a>
-                                                )}
+                                                <ul className="list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1">
+                                                    {proj.description
+                                                        ?.slice(
+                                                            placement.descriptionStart ?? 0,
+                                                            placement.descriptionEnd ?? proj.description.length
+                                                        )
+                                                        .map((desc: string, localDescriptionIndex: number) => {
+                                                            const i = (placement.descriptionStart ?? 0) + localDescriptionIndex;
+                                                            return (
+                                                                <li key={i} data-pagination-description-index={i} className="list-item">
+                                                                    <EditableText
+                                                                        value={desc}
+                                                                        placeholder="성과 및 주요 내용"
+                                                                        onChange={(newDesc) => {
+                                                                            const updated = [...block.data];
+                                                                            const newDescriptions = [...proj.description];
+                                                                            newDescriptions[i] = newDesc;
+                                                                            updated[projIndex] = { ...proj, description: newDescriptions };
+                                                                            updateBlockData(block.id, updated);
+                                                                        }}
+                                                                        className="inline"
+                                                                    />
+                                                                </li>
+                                                            );
+                                                        })}
+                                                </ul>
                                             </div>
-                                            <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
-                                                <EditableText
-                                                    value={proj.startDate}
-                                                    placeholder="시작일"
-                                                    onChange={(newDate) => {
-                                                        const updated = [...block.data];
-                                                        updated[projIndex] = { ...proj, startDate: newDate };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                />
-                                                <span>~</span>
-                                                <EditableText
-                                                    value={proj.endDate}
-                                                    placeholder="종료일"
-                                                    onChange={(newDate) => {
-                                                        const updated = [...block.data];
-                                                        updated[projIndex] = { ...proj, endDate: newDate };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <EditableText
-                                            tag="div"
-                                            value={proj.role}
-                                            placeholder="프로젝트 역할"
-                                            onChange={(newRole) => {
-                                                const updated = [...block.data];
-                                                updated[projIndex] = { ...proj, role: newRole };
-                                                updateBlockData(block.id, updated);
-                                            }}
-                                            className="text-xs font-semibold text-neutral-600"
-                                        />
-                                        <ul className="list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1">
-                                            {proj.description
-                                                ?.slice(
-                                                    placement.descriptionStart ?? 0,
-                                                    placement.descriptionEnd ?? proj.description.length
-                                                )
-                                                .map((desc: string, localDescriptionIndex: number) => {
-                                                const i = (placement.descriptionStart ?? 0) + localDescriptionIndex;
-                                                return (
-                                                <li key={i} data-pagination-description-index={i} className="list-item">
-                                                    <EditableText
-                                                        value={desc}
-                                                        placeholder="성과 및 주요 내용"
-                                                        onChange={(newDesc) => {
-                                                            const updated = [...block.data];
-                                                            const newDescriptions = [...proj.description];
-                                                            newDescriptions[i] = newDesc;
-                                                            updated[projIndex] = { ...proj, description: newDescriptions };
-                                                            updateBlockData(block.id, updated);
-                                                        }}
-                                                        className="inline"
-                                                    />
-                                                </li>
-                                                );
-                                            })}
-                                        </ul>
-                                    </div>
-                                    );
-                                })}
+                                        );
+                                    })}
                             </div>
                         ) : (
                             <p className="text-xs text-neutral-400 italic">우측 인스펙터에서 프로젝트를 추가해 주세요.</p>
@@ -645,61 +645,61 @@ export default function ResumeCanvas() {
                                 {block.data
                                     .slice(placement.itemStart ?? 0, placement.itemEnd ?? block.data.length)
                                     .map((edu: any, localIndex: number) => {
-                                    const eduIdx = (placement.itemStart ?? 0) + localIndex;
-                                    return (
-                                    <div key={edu.id} data-pagination-item-index={eduIdx} className="space-y-0.5">
-                                        <div className="flex justify-between items-baseline gap-2">
-                                            <div className="flex items-center gap-2">
-                                                <EditableText
-                                                    tag="span"
-                                                    value={edu.school}
-                                                    placeholder="학교명"
-                                                    onChange={(newSchool) => {
-                                                        const updated = [...block.data];
-                                                        updated[eduIdx] = { ...edu, school: newSchool };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                    className="font-bold text-neutral-900 text-sm"
-                                                />
-                                                <span className="text-xs text-neutral-400">|</span>
-                                                <EditableText
-                                                    value={edu.major}
-                                                    placeholder="전공"
-                                                    onChange={(newMajor) => {
-                                                        const updated = [...block.data];
-                                                        updated[eduIdx] = { ...edu, major: newMajor };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                    className="text-xs font-semibold text-neutral-700"
-                                                />
+                                        const eduIdx = (placement.itemStart ?? 0) + localIndex;
+                                        return (
+                                            <div key={edu.id} data-pagination-item-index={eduIdx} className="space-y-0.5">
+                                                <div className="flex justify-between items-baseline gap-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <EditableText
+                                                            tag="span"
+                                                            value={edu.school}
+                                                            placeholder="학교명"
+                                                            onChange={(newSchool) => {
+                                                                const updated = [...block.data];
+                                                                updated[eduIdx] = { ...edu, school: newSchool };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                            className="font-bold text-neutral-900 text-sm"
+                                                        />
+                                                        <span className="text-xs text-neutral-400">|</span>
+                                                        <EditableText
+                                                            value={edu.major}
+                                                            placeholder="전공"
+                                                            onChange={(newMajor) => {
+                                                                const updated = [...block.data];
+                                                                updated[eduIdx] = { ...edu, major: newMajor };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                            className="text-xs font-semibold text-neutral-700"
+                                                        />
+                                                    </div>
+                                                    <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
+                                                        <EditableText
+                                                            value={edu.startDate}
+                                                            placeholder="입학일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[eduIdx] = { ...edu, startDate: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                        />
+                                                        <span>~</span>
+                                                        <EditableText
+                                                            value={edu.endDate}
+                                                            placeholder="졸업일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[eduIdx] = { ...edu, endDate: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                        />
+                                                        <span className="text-neutral-400">({edu.status || "졸업"})</span>
+                                                    </div>
+                                                </div>
+                                                {edu.score && <p className="text-xs text-neutral-500">학점: {edu.score}</p>}
                                             </div>
-                                            <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
-                                                <EditableText
-                                                    value={edu.startDate}
-                                                    placeholder="입학일"
-                                                    onChange={(newDate) => {
-                                                        const updated = [...block.data];
-                                                        updated[eduIdx] = { ...edu, startDate: newDate };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                />
-                                                <span>~</span>
-                                                <EditableText
-                                                    value={edu.endDate}
-                                                    placeholder="졸업일"
-                                                    onChange={(newDate) => {
-                                                        const updated = [...block.data];
-                                                        updated[eduIdx] = { ...edu, endDate: newDate };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                />
-                                                <span className="text-neutral-400">({edu.status || "졸업"})</span>
-                                            </div>
-                                        </div>
-                                        {edu.score && <p className="text-xs text-neutral-500">학점: {edu.score}</p>}
-                                    </div>
-                                    );
-                                })}
+                                        );
+                                    })}
                             </div>
                         ) : (
                             <p className="text-xs text-neutral-400 italic">학력 정보를 추가해 주세요.</p>
@@ -723,36 +723,36 @@ export default function ResumeCanvas() {
                                 {block.data
                                     .slice(placement.itemStart ?? 0, placement.itemEnd ?? block.data.length)
                                     .map((cert: any, localIndex: number) => {
-                                    const certIdx = (placement.itemStart ?? 0) + localIndex;
-                                    return (
-                                    <div key={cert.id} data-pagination-item-index={certIdx} className="flex justify-between items-baseline gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <EditableText
-                                                tag="span"
-                                                value={cert.title}
-                                                placeholder="자격증/수상명"
-                                                onChange={(newTitle) => {
-                                                    const updated = [...block.data];
-                                                    updated[certIdx] = { ...cert, title: newTitle };
-                                                    updateBlockData(block.id, updated);
-                                                }}
-                                                className="font-bold text-neutral-900 text-sm"
-                                            />
-                                            {cert.issuer && <span className="text-xs text-neutral-500">({cert.issuer})</span>}
-                                        </div>
-                                        <EditableText
-                                            value={cert.date}
-                                            placeholder="취득일"
-                                            onChange={(newDate) => {
-                                                const updated = [...block.data];
-                                                updated[certIdx] = { ...cert, date: newDate };
-                                                updateBlockData(block.id, updated);
-                                            }}
-                                            className="text-xs text-neutral-500 font-medium"
-                                        />
-                                    </div>
-                                    );
-                                })}
+                                        const certIdx = (placement.itemStart ?? 0) + localIndex;
+                                        return (
+                                            <div key={cert.id} data-pagination-item-index={certIdx} className="flex justify-between items-baseline gap-2">
+                                                <div className="flex items-center gap-2">
+                                                    <EditableText
+                                                        tag="span"
+                                                        value={cert.title}
+                                                        placeholder="자격증/수상명"
+                                                        onChange={(newTitle) => {
+                                                            const updated = [...block.data];
+                                                            updated[certIdx] = { ...cert, title: newTitle };
+                                                            updateBlockData(block.id, updated);
+                                                        }}
+                                                        className="font-bold text-neutral-900 text-sm"
+                                                    />
+                                                    {cert.issuer && <span className="text-xs text-neutral-500">({cert.issuer})</span>}
+                                                </div>
+                                                <EditableText
+                                                    value={cert.date}
+                                                    placeholder="취득일"
+                                                    onChange={(newDate) => {
+                                                        const updated = [...block.data];
+                                                        updated[certIdx] = { ...cert, date: newDate };
+                                                        updateBlockData(block.id, updated);
+                                                    }}
+                                                    className="text-xs text-neutral-500 font-medium"
+                                                />
+                                            </div>
+                                        );
+                                    })}
                             </div>
                         ) : (
                             <p className="text-xs text-neutral-400 italic">자격 및 수상 내역을 추가해 주세요.</p>
@@ -807,7 +807,7 @@ export default function ResumeCanvas() {
     return (
         <main
             onClick={() => setSelectedBlockId(null)}
-            className="flex-1 bg-[#444444] overflow-y-auto p-8 flex justify-center cursor-default relative"
+            className="editor-canvas flex-1 bg-[#444444] overflow-y-auto p-8 flex justify-center cursor-default relative"
         >
             <div
                 ref={canvasRef}
@@ -822,8 +822,8 @@ export default function ResumeCanvas() {
                 {pages.map((page) => (
                     <div key={page.pageIndex} className="resume-page relative flex flex-col items-center">
                         {/* 페이지 상단 번호 표시기 (인쇄 시 제외) */}
-                        <div className="no-print w-full flex justify-between items-center mb-2 px-1 text-xs text-neutral-400 font-medium">
-                            <span className="bg-neutral-800/80 px-2.5 py-0.5 rounded text-[11px] border border-neutral-700/60">
+                        <div className="no-print w-full flex justify-between items-center mb-2 text-xs text-neutral-400 font-medium">
+                            <span className="resume-page-indicator px-2.5 py-0.5 rounded text-[11px] border">
                                 📄 A4 Page {page.pageIndex}
                             </span>
                             <span className="text-[10px] text-neutral-500">210mm × 297mm 규격</span>
@@ -863,8 +863,8 @@ export default function ResumeCanvas() {
                                             paddingBottom: `${block.style.paddingY}px`,
                                         }}
                                         className={`resume-block-item relative cursor-pointer transition-all ${templateType === "modern"
-                                                ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
-                                                : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
+                                            ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
+                                            : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
                                             } ${isSelected ? "resume-block-selected" : ""
                                             } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
                                             } ${isTargeted ? "border-t-4 border-t-blue-500 -mt-1" : ""
@@ -899,7 +899,7 @@ export default function ResumeCanvas() {
 
             {/* 캔버스 우측 하단 줌 컨트롤 바 */}
             <div
-                className="no-print fixed bottom-6 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40"
+                className="editor-zoom-controls no-print fixed bottom-6 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40"
                 style={{ right: 'calc(clamp(380px, 30vw, 480px) + 1.5rem)' }}
             >
                 <button

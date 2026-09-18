@@ -13,8 +13,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" data-theme="dark" suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var saved=localStorage.getItem('bripick-theme');var theme=saved==='light'||saved==='dark'?saved:'dark';document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;}catch(e){document.documentElement.dataset.theme='dark';}})();`,
+          }}
+        />
         {/* 국문 웹폰트 로드: Pretendard, Noto Sans KR, Nanum Myeongjo */}
         <link
           rel="stylesheet"
@@ -29,7 +34,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="bg-[#0c0d12] text-neutral-100 antialiased overflow-hidden selection:bg-blue-600 selection:text-white">
+      <body className="text-neutral-100 antialiased overflow-hidden selection:bg-blue-600 selection:text-white">
         {children}
       </body>
     </html>

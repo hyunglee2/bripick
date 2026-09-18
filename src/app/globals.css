@@ -19,6 +19,123 @@ body {
   font-family: var(--font-sans);
 }
 
+html,
+body,
+.editor-header,
+.editor-canvas,
+.inspector-panel,
+.ats-modal,
+.editor-zoom-controls {
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #191f28;
+}
+
+[data-theme="light"] .editor-canvas {
+  background: #f2f4f6 !important;
+}
+
+.resume-page-indicator {
+  background: color-mix(in srgb, var(--brand-primary) 22%, #15171c);
+  border-color: color-mix(in srgb, var(--brand-primary) 48%, #374151);
+  color: #a9d1ee;
+}
+
+[data-theme="light"] .resume-page-indicator {
+  background: #e8f3fb;
+  border-color: #b8d8ef;
+  color: #216a9f;
+}
+
+[data-theme="light"] .editor-header,
+[data-theme="light"] .inspector-panel,
+[data-theme="light"] .ats-modal,
+[data-theme="light"] .editor-zoom-controls {
+  background: #ffffff !important;
+  border-color: #e5e8eb !important;
+  color: #191f28 !important;
+}
+
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .bg-neutral-950,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .bg-neutral-900,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .bg-neutral-900\/90,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .bg-neutral-900\/60 {
+  background-color: #f7f8fa !important;
+}
+
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .bg-neutral-800,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .bg-neutral-800\/80,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .hover\:bg-neutral-800:hover,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .hover\:bg-neutral-700:hover {
+  background-color: #eef1f4 !important;
+}
+
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .border-neutral-800,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) .border-neutral-700 {
+  border-color: #e5e8eb !important;
+}
+
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) :is(.text-white, .text-neutral-100, .text-neutral-200, .text-neutral-300) {
+  color: #191f28 !important;
+}
+
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) :is(.text-neutral-400, .text-neutral-500) {
+  color: #8b95a1 !important;
+}
+
+[data-theme="light"] :is(.editor-header, .ats-modal) .bg-blue-600.text-white {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) input,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) select,
+[data-theme="light"] :is(.editor-header, .inspector-panel, .ats-modal, .editor-zoom-controls) textarea {
+  background-color: #f7f8fa !important;
+  color: #191f28 !important;
+}
+
+[data-theme="light"] .editor-header .bg-emerald-600\/20 {
+  background-color: #e8f8f2 !important;
+  border-color: #78d5b5 !important;
+  color: #087f5b !important;
+}
+
+[data-theme="light"] .editor-header :is(.text-emerald-300, .text-emerald-400) {
+  color: #087f5b !important;
+}
+
+[data-theme="light"] .editor-header .bg-purple-600\/20 {
+  background-color: #f3eefe !important;
+  border-color: #c4a7f5 !important;
+  color: #6d3fc0 !important;
+}
+
+[data-theme="light"] .editor-header :is(.text-purple-300, .text-purple-400) {
+  color: #6d3fc0 !important;
+}
+
+[data-theme="light"] .ats-modal .bg-emerald-950\/20 {
+  background-color: #f1fbf7 !important;
+  border-color: #b9e3d4 !important;
+}
+
+[data-theme="light"] .ats-modal .bg-emerald-950\/60 {
+  background-color: #e7f7f1 !important;
+  border-color: #8bd0b7 !important;
+}
+
+[data-theme="light"] .ats-modal :is(.text-emerald-300, .text-emerald-400) {
+  color: #087f5b !important;
+}
+
+[data-theme="light"] .ats-modal .border-emerald-900\/40,
+[data-theme="light"] .ats-modal .border-emerald-800\/80 {
+  border-color: #b9e3d4 !important;
+}
+
 /* 서비스 UI에서 사용하는 파란색을 단일 브랜드 컬러로 통일합니다. */
 .bg-blue-600,
 .hover\:bg-blue-500:hover {
