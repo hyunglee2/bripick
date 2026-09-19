@@ -55,10 +55,11 @@ export default function ResumeCanvas() {
     const typographyStyle = {
         "--resume-blue": primaryColor,
         "--resume-display-title-size": `${globalStyle?.displayTitleFontSize ?? 24}px`,
-        "--resume-section-title-size": `${globalStyle?.sectionTitleFontSize ?? 25}px`,
+        "--resume-tagline-size": `${Math.round(((globalStyle?.displayTitleFontSize ?? 24) + 2) * 0.6)}px`,
+        "--resume-section-title-size": `${globalStyle?.sectionTitleFontSize ?? 24}px`,
         "--resume-item-title-size": `${globalStyle?.itemTitleFontSize ?? 15}px`,
-        "--resume-body-size": `${globalStyle?.bodyFontSize ?? 12}px`,
-        "--resume-caption-size": `${globalStyle?.captionFontSize ?? 11}px`,
+        "--resume-body-size": `${globalStyle?.bodyFontSize ?? 14}px`,
+        "--resume-caption-size": `${globalStyle?.captionFontSize ?? 12}px`,
     } as React.CSSProperties;
 
     const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 10, 150));
@@ -292,7 +293,7 @@ export default function ResumeCanvas() {
                                     <EditableText
                                         tag="p"
                                         value={block.data.bio || ""}
-                                        placeholder="나를 설명하는 한 줄 소개"
+                                        placeholder="예: 사용자 중심의 서비스를 만드는"
                                         onChange={(bio) => updateBlockData(block.id, { ...block.data, bio })}
                                         className="resume-profile-tagline"
                                     />

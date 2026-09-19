@@ -55,10 +55,10 @@ const defaultResume: ResumeDocument = {
         contentWidth: 800,
         basePadding: 36,
         displayTitleFontSize: 24,
-        sectionTitleFontSize: 25,
+        sectionTitleFontSize: 24,
         itemTitleFontSize: 15,
-        bodyFontSize: 12,
-        captionFontSize: 11,
+        bodyFontSize: 14,
+        captionFontSize: 12,
         template: "modern",
     },
     blocks: [
@@ -75,7 +75,7 @@ const defaultResume: ResumeDocument = {
                 email: "dev.gildong@example.com",
                 phone: "010-1234-5678",
                 location: "Seoul, Korea",
-                bio: "사용자 중심의 가치를 코드로 구현하는 모던 웹 엔지니어입니다.",
+                bio: "기획·디자인·개발로 사용자 중심의 서비스를 만드는",
                 blog: "",
                 github: "",
                 highlights: [
@@ -121,6 +121,19 @@ const syncList = (list: ResumeDocument[], updated: ResumeDocument) => {
     nextList[index] = updated;
     return nextList;
 };
+
+const migrateTypographyDefaults = (document: ResumeDocument): ResumeDocument => ({
+    ...document,
+    globalStyle: {
+        ...document.globalStyle,
+        sectionTitleFontSize: document.globalStyle.sectionTitleFontSize === 25
+            ? 24
+            : document.globalStyle.sectionTitleFontSize,
+        bodyFontSize: document.globalStyle.bodyFontSize === 12 || document.globalStyle.bodyFontSize === 16
+            ? 14
+            : document.globalStyle.bodyFontSize,
+    },
+});
 
 export const useResumeStore = create<ResumeState>()(
     persist(
@@ -461,6 +474,15 @@ export const useResumeStore = create<ResumeState>()(
         }),
         {
             name: "bripick-resume-storage",
+            version: 2,
+            migrate: (persistedState) => {
+                const state = persistedState as Partial<ResumeState>;
+                return {
+                    ...state,
+                    resume: state.resume ? migrateTypographyDefaults(state.resume) : defaultResume,
+                    resumeList: state.resumeList?.map(migrateTypographyDefaults) ?? [defaultResume],
+                } as ResumeState;
+            },
             partialize: (state) =>
             ({
                 resume: state.resume,

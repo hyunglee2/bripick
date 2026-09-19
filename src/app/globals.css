@@ -376,10 +376,11 @@ body,
 
 .resume-paper {
   --resume-display-title-size: 24px;
-  --resume-section-title-size: 25px;
+  --resume-tagline-size: 16px;
+  --resume-section-title-size: 24px;
   --resume-item-title-size: 15px;
-  --resume-body-size: 12px;
-  --resume-caption-size: 11px;
+  --resume-body-size: 14px;
+  --resume-caption-size: 12px;
   font-size: var(--resume-body-size);
 }
 
@@ -399,7 +400,7 @@ body,
 .resume-paper .resume-block-item .text-xs.text-neutral-700,
 .resume-paper .resume-block-item .text-sm.text-neutral-700 {
   font-size: var(--resume-body-size);
-  line-height: 1.55;
+  line-height: 1.5;
 }
 
 .resume-paper .resume-block-item .text-xs.text-neutral-400,
@@ -463,27 +464,27 @@ body,
 }
 
 .reference-template [data-block-type="profile"] {
-  border-bottom: 1px solid #e5e7eb !important;
-  padding-bottom: 24px !important;
-  margin-bottom: 24px !important;
+  border-bottom: 0 !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 20px !important;
 }
 
 .resume-profile-main {
   display: grid;
-  grid-template-columns: 124px minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
 }
 
 .resume-profile-photo {
-  width: 124px;
-  height: 154px;
+  width: 132px;
+  height: 166px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 22px;
-  background: #e7e5e4;
+  border-radius: 15px 25px 0 25px;
+  background: #d6d3d1;
   color: #64748b;
   font-size: 42px;
   font-weight: 800;
@@ -493,29 +494,30 @@ body,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: center top;
 }
 
 .resume-profile-copy {
   min-width: 0;
-  padding-top: 4px;
+  padding-top: 19px;
 }
 
-.resume-profile-tagline {
-  color: #52525b !important;
-  font-size: var(--resume-caption-size) !important;
-  line-height: 1.4 !important;
+.resume-paper .resume-profile-tagline {
+  color: #3f3f46 !important;
+  font-size: var(--resume-tagline-size) !important;
+  line-height: 1.35 !important;
+  letter-spacing: -0.022em;
 }
 
 .resume-profile-headline {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 5px;
-  margin-top: 3px;
+  gap: 4px;
+  margin-top: 0px;
   color: #09090b;
-  font-size: var(--resume-display-title-size);
-  line-height: 1.18;
+  font-size: calc(var(--resume-display-title-size) + 2px);
+  line-height: 1.12;
   font-weight: 900;
   letter-spacing: -0.045em;
 }
@@ -532,23 +534,25 @@ body,
 
 .resume-profile-contacts {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: 8px;
-  margin-top: 17px;
-  font-size: var(--resume-caption-size);
-  color: #3f3f46;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 15px;
+  font-size: calc(var(--resume-caption-size) + 1px) !important;
+  color: #27272a;
 }
 
 .resume-profile-contacts>strong {
   color: var(--resume-blue);
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
 .resume-profile-contacts>div {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -559,8 +563,9 @@ body,
 .resume-contact-row {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 5px;
   white-space: nowrap;
+  line-height: 1.25;
 }
 
 .resume-contact-row>b {
@@ -576,7 +581,7 @@ body,
 .resume-contact-links>em {
   display: inline-flex;
   gap: 4px;
-  margin-left: 14px;
+  margin-left: 18px;
   font-style: normal;
 }
 
@@ -586,16 +591,19 @@ body,
 }
 
 .resume-profile-highlights {
-  margin-top: 18px;
-  padding-left: 18px;
+  margin-top: 17px;
+  margin-bottom: 0;
+  padding-left: 16px;
   list-style-type: square;
   color: #18181b;
-  font-size: 12px;
-  line-height: 1.65;
+  font-size: max(calc(var(--resume-body-size) + 1px), 13px);
+  line-height: 1.5;
+  letter-spacing: -0.018em;
 }
 
 .resume-profile-highlights li::marker {
   color: #111827;
+  font-size: 0.8em;
 }
 
 .reference-template [data-pagination-item-index] {
@@ -628,7 +636,7 @@ body,
 
 .reference-template [data-pagination-item-index] li {
   padding-left: 2px;
-  line-height: 1.65;
+  line-height: 1.55;
 }
 
 .reference-template [data-block-type="skills"] span[class*="rounded"] {

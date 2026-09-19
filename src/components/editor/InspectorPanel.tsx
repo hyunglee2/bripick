@@ -44,10 +44,10 @@ export default function InspectorPanel() {
 
     const typographyControls = [
         { key: "displayTitleFontSize", label: "프로필 대표 제목", min: 20, max: 38, fallback: 24 },
-        { key: "sectionTitleFontSize", label: "섹션 제목", min: 16, max: 32, fallback: 25 },
+        { key: "sectionTitleFontSize", label: "섹션 제목", min: 16, max: 32, fallback: 24 },
         { key: "itemTitleFontSize", label: "항목 제목", min: 12, max: 20, fallback: 15 },
-        { key: "bodyFontSize", label: "본문", min: 10, max: 17, fallback: 12 },
-        { key: "captionFontSize", label: "설명 · 보조 정보", min: 9, max: 15, fallback: 11 },
+        { key: "bodyFontSize", label: "본문", min: 10, max: 20, fallback: 14 },
+        { key: "captionFontSize", label: "설명 · 보조 정보", min: 9, max: 15, fallback: 12 },
     ] as const;
 
     const accentColorPresets = [
@@ -677,10 +677,11 @@ export default function InspectorPanel() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-neutral-400 block mb-1">한줄 소개</label>
+                            <label className="text-xs text-neutral-400 block mb-1">소개 수식어</label>
                             <textarea
-                                rows={3}
+                                rows={2}
                                 value={currentBlock.data.bio || ""}
+                                placeholder="예: 사용자 중심의 서비스를 만드는"
                                 onChange={(e) =>
                                     updateBlockData(currentBlock.id, { ...currentBlock.data, bio: e.target.value })
                                 }
