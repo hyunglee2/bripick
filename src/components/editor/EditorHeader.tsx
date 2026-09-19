@@ -19,6 +19,9 @@ import {
     ShieldCheck,
     Sun,
     Moon,
+    ChevronDown,
+    MoreHorizontal,
+    Check,
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 
@@ -31,10 +34,40 @@ type DialogState = {
     action?: () => void;
 };
 
+const STARTER_CONTENT = new Set([
+    "홍길동",
+    "Frontend Engineer",
+    "dev.gildong@example.com",
+    "010-1234-5678",
+    "Seoul, Korea",
+    "사용자 중심의 가치를 코드로 구현하는 모던 웹 엔지니어입니다.",
+    "제품의 전 과정을 경험하며 사용자 중심의 기능을 구현합니다.",
+    "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 만듭니다.",
+    "데이터와 피드백을 기반으로 사용자 경험과 서비스 품질을 개선합니다.",
+    "테크 스타트업",
+    "Frontend Developer",
+    "2024-01",
+    "현재 재직 중",
+    "모듈형 웹 에디터 인터페이스 설계 및 성능 최적화",
+    "Next.js App Router 기반 렌더링 파이프라인 구축",
+]);
+
+function collectContentStrings(value: unknown): string[] {
+    if (typeof value === "string") return value.trim() ? [value.trim()] : [];
+    if (Array.isArray(value)) return value.flatMap(collectContentStrings);
+    if (value && typeof value === "object") {
+        return Object.entries(value)
+            .filter(([key]) => key !== "id")
+            .flatMap(([, item]) => collectContentStrings(item));
+    }
+    return [];
+}
+
 export default function EditorHeader() {
     const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
     const [theme, setTheme] = useState<"dark" | "light">("dark");
     const [dialog, setDialog] = useState<DialogState | null>(null);
+    const [openMenu, setOpenMenu] = useState<"document" | "blocks" | "more" | null>(null);
 
     const addBlock = useResumeStore((state) => state.addBlock);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
@@ -54,6 +87,7 @@ export default function EditorHeader() {
     const canRedo = useResumeStore((state) => state.future.length > 0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const headerRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         const currentTheme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
@@ -89,6 +123,17 @@ export default function EditorHeader() {
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [undo, redo]);
 
+    useEffect(() => {
+        const handlePointerDown = (event: PointerEvent) => {
+            if (headerRef.current && !headerRef.current.contains(event.target as Node)) {
+                setOpenMenu(null);
+            }
+        };
+
+        window.addEventListener("pointerdown", handlePointerDown);
+        return () => window.removeEventListener("pointerdown", handlePointerDown);
+    }, []);
+
     const toggleTheme = () => {
         const nextTheme = theme === "dark" ? "light" : "dark";
         setTheme(nextTheme);
@@ -105,13 +150,19 @@ export default function EditorHeader() {
     };
 
     const blockButtons: { label: string; type: BlockType }[] = [
-        { label: "+ 경력", type: "experience" },
-        { label: "+ 프로젝트", type: "project" },
-        { label: "+ 기술 스택", type: "skills" },
-        { label: "+ 학력", type: "education" },
-        { label: "+ 자격/수상", type: "certification" },
-        { label: "+ 자유 텍스트", type: "custom_text" },
+        { label: "경력", type: "experience" },
+        { label: "프로젝트", type: "project" },
+        { label: "기술 스택", type: "skills" },
+        { label: "학력", type: "education" },
+        { label: "자격/수상", type: "certification" },
+        { label: "자유 텍스트", type: "custom_text" },
     ];
+
+    const contentBlocks = resume.blocks.filter((block) => block.type !== "page_break");
+    const customContentCount = contentBlocks
+        .flatMap((block) => collectContentStrings(block.data))
+        .filter((value) => !STARTER_CONTENT.has(value)).length;
+    const shouldShowSample = contentBlocks.length <= 2 && customContentCount < 3;
 
     const handleExportPDF = () => {
         setSelectedBlockId(null);
@@ -276,79 +327,102 @@ export default function EditorHeader() {
 
     return (
         <>
-            <header className="editor-header h-14 border-b border-neutral-800 bg-[#12131a] px-6 flex items-center justify-between sticky top-0 z-50">
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center font-black text-xs text-white shadow-sm">
+            <header
+                ref={headerRef}
+                className="editor-header sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b border-neutral-800 bg-[#12131a] px-5"
+            >
+                <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex shrink-0 items-center gap-2 pr-1">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-black text-white shadow-sm">
                             B
                         </div>
-                        <span className="font-bold tracking-tight text-white hidden sm:inline">Bripick</span>
+                        <span className="hidden font-bold tracking-tight text-white sm:inline">Bripick</span>
                     </div>
 
-                    {/* 버전 관리 */}
-                    <div className="flex items-center gap-1.5 border-l border-neutral-800 pl-3">
-                        <FileText size={14} className="text-neutral-500" />
+                    <div className="relative flex min-w-0 items-center border-l border-neutral-800 pl-3">
+                        <FileText size={14} className="mr-2 shrink-0 text-neutral-500" />
                         <input
                             type="text"
                             value={resume.versionName || ""}
                             onChange={(e) => updateVersionName(e.target.value)}
-                            className="w-36 bg-neutral-900 border border-neutral-700 hover:border-neutral-600 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 font-medium"
+                            className="w-36 min-w-0 border-0 bg-transparent px-1 py-1.5 text-sm font-medium text-neutral-200 outline-none placeholder:text-neutral-600 focus:text-white md:w-44"
                             title="현재 이력서 이름 수정"
                         />
-
-                        <select
-                            value={resume.id}
-                            onChange={(e) => switchResume(e.target.value)}
-                            className="bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-300 focus:outline-none cursor-pointer max-w-[120px] truncate"
-                        >
-                            {(resumeList || []).map((r) => (
-                                <option key={r.id} value={r.id}>
-                                    {r.versionName}
-                                </option>
-                            ))}
-                        </select>
-
                         <button
-                            onClick={duplicateCurrentResume}
-                            className="p-1 text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition"
-                            title="현재 이력서 복제 (사본 생성)"
+                            type="button"
+                            onClick={() => setOpenMenu(openMenu === "document" ? null : "document")}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-800 hover:text-white"
+                            aria-label="이력서 관리 메뉴"
+                            aria-expanded={openMenu === "document"}
                         >
-                            <Copy size={14} />
+                            <ChevronDown size={15} />
                         </button>
 
-                        <button
-                            onClick={() => createNewResume("새 이력서")}
-                            className="p-1 text-neutral-400 hover:text-blue-400 hover:bg-neutral-800 rounded transition"
-                            title="새 빈 이력서 생성"
-                        >
-                            <Plus size={15} />
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setDialog({
-                                    title: "이력서를 삭제할까요?",
-                                    message: `'${resume.versionName}' 이력서는 삭제 후 복구할 수 없습니다.`,
-                                    variant: "danger",
-                                    confirmLabel: "삭제",
-                                    cancelLabel: "취소",
-                                    action: () => deleteResume(resume.id),
-                                });
-                            }}
-                            disabled={(resumeList || []).length <= 1}
-                            className="p-1 text-neutral-500 hover:text-red-400 disabled:opacity-20 hover:bg-neutral-800 rounded transition"
-                            title="현재 이력서 삭제"
-                        >
-                            <Trash2 size={14} />
-                        </button>
+                        {openMenu === "document" && (
+                            <div className="absolute left-3 top-11 w-64 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                                <p className="px-2.5 pb-1.5 pt-1 text-[11px] font-medium text-neutral-500">내 이력서</p>
+                                {(resumeList || []).map((item) => (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        onClick={() => {
+                                            switchResume(item.id);
+                                            setOpenMenu(null);
+                                        }}
+                                        className="flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-xs text-neutral-200 transition hover:bg-neutral-800"
+                                    >
+                                        <span className="truncate">{item.versionName}</span>
+                                        {item.id === resume.id && <Check size={14} className="shrink-0 text-blue-400" />}
+                                    </button>
+                                ))}
+                                <div className="my-1 border-t border-neutral-800" />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        createNewResume("새 이력서");
+                                        setOpenMenu(null);
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                >
+                                    <Plus size={14} /> 새 이력서
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        duplicateCurrentResume();
+                                        setOpenMenu(null);
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                >
+                                    <Copy size={14} /> 현재 이력서 복제
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={(resumeList || []).length <= 1}
+                                    onClick={() => {
+                                        setOpenMenu(null);
+                                        setDialog({
+                                            title: "이력서를 삭제할까요?",
+                                            message: `'${resume.versionName}' 이력서는 삭제 후 복구할 수 없습니다.`,
+                                            variant: "danger",
+                                            confirmLabel: "삭제",
+                                            cancelLabel: "취소",
+                                            action: () => deleteResume(resume.id),
+                                        });
+                                    }}
+                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-400 transition hover:bg-red-500/10 hover:text-red-400 disabled:pointer-events-none disabled:opacity-30"
+                                >
+                                    <Trash2 size={14} /> 현재 이력서 삭제
+                                </button>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Undo / Redo */}
-                    <div className="flex items-center gap-0.5 border-l border-neutral-800 pl-3">
+                    <div className="flex shrink-0 items-center gap-0.5 border-l border-neutral-800 pl-3">
                         <button
                             onClick={undo}
                             disabled={!canUndo}
-                            className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 transition"
+                            className="rounded-md p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
                             title="실행 취소 (Ctrl+Z)"
                         >
                             <Undo2 size={15} />
@@ -356,58 +430,125 @@ export default function EditorHeader() {
                         <button
                             onClick={redo}
                             disabled={!canRedo}
-                            className="p-1.5 rounded text-neutral-400 hover:text-white hover:bg-neutral-800 disabled:opacity-30 transition"
+                            className="rounded-md p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
                             title="다시 실행 (Ctrl+Y)"
                         >
                             <Redo2 size={15} />
                         </button>
                     </div>
 
-                    {/* 블록 추가 버튼 */}
-                    <div className="hidden lg:flex items-center gap-1.5 border-l border-neutral-800 pl-4">
-                        <span className="text-xs text-neutral-400 mr-1 flex items-center gap-1">
-                            <Plus size={14} /> 블록:
-                        </span>
-                        {blockButtons.map((btn) => (
-                            <button
-                                key={btn.type}
-                                onClick={() => addBlock(btn.type)}
-                                className="text-xs px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-200 transition active:scale-95"
-                            >
-                                {btn.label}
-                            </button>
-                        ))}
+                    <div className="relative hidden shrink-0 sm:block">
+                        <button
+                            type="button"
+                            onClick={() => setOpenMenu(openMenu === "blocks" ? null : "blocks")}
+                            className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-xs font-medium text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-800"
+                            aria-expanded={openMenu === "blocks"}
+                        >
+                            <Plus size={14} /> 블록 추가 <ChevronDown size={13} className="ml-0.5 text-neutral-500" />
+                        </button>
+                        {openMenu === "blocks" && (
+                            <div className="absolute left-0 top-10 grid w-52 grid-cols-2 gap-1 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                                {blockButtons.map((button) => (
+                                    <button
+                                        key={button.type}
+                                        type="button"
+                                        onClick={() => {
+                                            addBlock(button.type);
+                                            setOpenMenu(null);
+                                        }}
+                                        className="rounded-lg px-2.5 py-2 text-left text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                    >
+                                        {button.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* 우측 유틸리티 버튼들 */}
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
+                    {shouldShowSample && (
+                        <button
+                            type="button"
+                            onClick={handleLoadPreset}
+                            className="hidden h-8 items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 text-xs font-medium text-blue-300 transition hover:border-blue-500/50 hover:bg-blue-500/20 sm:flex"
+                            title="Bripick 샘플 이력서로 시작하기"
+                        >
+                            <Sparkles size={14} /> 샘플로 시작
+                        </button>
+                    )}
+                    <button
+                        onClick={() => setIsAtsModalOpen(true)}
+                        className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 text-xs font-medium text-emerald-300 transition hover:bg-emerald-600/30 active:scale-95"
+                        title="ATS 이력서 완성도 진단"
+                    >
+                        <ShieldCheck size={14} className="text-emerald-400" />
+                        <span className="hidden sm:inline">ATS 검사</span>
+                    </button>
+                    <button
+                        onClick={handleExportPDF}
+                        className="flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500 active:scale-95"
+                    >
+                        <Download size={14} /> <span className="hidden sm:inline">PDF 저장</span>
+                    </button>
+
                     <button
                         type="button"
                         onClick={toggleTheme}
-                        className="flex h-8 w-8 items-center justify-center rounded border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
                         title={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
                         aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
                     >
                         {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
                     </button>
 
-                    {/* ATS 완성도 진단기 버튼 */}
-                    <button
-                        onClick={() => setIsAtsModalOpen(true)}
-                        className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded bg-emerald-600/20 border border-emerald-500/40 hover:bg-emerald-600/30 text-emerald-300 font-medium transition active:scale-95"
-                        title="ATS 이력서 완성도 진단"
-                    >
-                        <ShieldCheck size={14} className="text-emerald-400" /> ATS 검사
-                    </button>
-
-                    <button
-                        onClick={handleLoadPreset}
-                        className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded bg-purple-600/20 border border-purple-500/40 hover:bg-purple-600/30 text-purple-300 transition"
-                        title="완성형 개발자 샘플 불러오기"
-                    >
-                        <Sparkles size={13} className="text-purple-400" /> 샘플
-                    </button>
+                    <div className="relative">
+                        <button
+                            type="button"
+                            onClick={() => setOpenMenu(openMenu === "more" ? null : "more")}
+                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                            aria-label="더보기"
+                            aria-expanded={openMenu === "more"}
+                        >
+                            <MoreHorizontal size={17} />
+                        </button>
+                        {openMenu === "more" && (
+                            <div className="absolute right-0 top-10 w-48 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                                {!shouldShowSample && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setOpenMenu(null);
+                                            handleLoadPreset();
+                                        }}
+                                        className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                    >
+                                        <Sparkles size={14} /> 샘플 불러오기
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenMenu(null);
+                                        fileInputRef.current?.click();
+                                    }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                >
+                                    <Upload size={14} /> JSON 불러오기
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenMenu(null);
+                                        handleDownloadJSON();
+                                    }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                >
+                                    <FileCode size={14} /> JSON 백업
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     <input
                         type="file"
@@ -416,26 +557,6 @@ export default function EditorHeader() {
                         accept=".json"
                         className="hidden"
                     />
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
-                        title="JSON 파일로 불러오기"
-                    >
-                        <Upload size={13} /> 불러오기
-                    </button>
-                    <button
-                        onClick={handleDownloadJSON}
-                        className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-neutral-700 hover:bg-neutral-800 text-neutral-300 transition"
-                        title="JSON 파일로 백업"
-                    >
-                        <FileCode size={13} /> 백업
-                    </button>
-                    <button
-                        onClick={handleExportPDF}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 font-medium text-white transition shadow-sm active:scale-95"
-                    >
-                        <Download size={13} /> PDF 저장
-                    </button>
                 </div>
             </header>
 
