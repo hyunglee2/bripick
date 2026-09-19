@@ -28,9 +28,18 @@ export interface ProfileData {
     location: string;
     bio: string;
     photo?: string;
+    showPhoto?: boolean;
     blog?: string;
     github?: string;
     highlights?: string[];
+    contacts?: ProfileContact[];
+}
+
+export interface ProfileContact {
+    id: string;
+    label: string;
+    value: string;
+    inlineWithPrevious?: boolean;
 }
 
 export interface ExperienceItem {

@@ -3,6 +3,8 @@
 
 import { useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
+import { ProfileData } from "@/types/resume";
+import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import {
     Trash2,
     ChevronUp,
@@ -34,6 +36,9 @@ export default function InspectorPanel() {
 
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
     const currentBlock = blocks[currentIndex];
+    const profileContacts = currentBlock?.type === "profile"
+        ? getProfileContacts(currentBlock.data as ProfileData)
+        : [];
 
     const fontOptions = [
         { label: "Pretendard (기본 / 깔끔한 고딕)", value: "'Pretendard', -apple-system, sans-serif" },
@@ -255,6 +260,7 @@ export default function InspectorPanel() {
                 updateBlockData(currentBlock.id, {
                     ...currentBlock.data,
                     photo: canvas.toDataURL("image/jpeg", 0.86),
+                    showPhoto: true,
                 });
             };
             image.src = String(reader.result);
@@ -491,10 +497,10 @@ export default function InspectorPanel() {
     };
 
     return (
-        <aside className="inspector-panel w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
+        <aside className="inspector-panel inspector-panel--block w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
             <div className="space-y-6">
                 {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
-                <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+                <div className="inspector-heading flex items-center justify-between border-b border-neutral-800 pb-3">
                     <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                         <Layers size={14} className="text-blue-500" />
                         <span>{currentBlock.type} 설정</span>
@@ -504,7 +510,7 @@ export default function InspectorPanel() {
                             </span>
                         )}
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="inspector-actions flex items-center gap-1">
                         {/* 눈 모양 숨기기/보이기 토글 버튼 */}
                         <button
                             onClick={() => toggleBlockVisibility(currentBlock.id)}
@@ -543,7 +549,7 @@ export default function InspectorPanel() {
                     </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="inspector-field space-y-1.5">
                     <label className="text-xs font-medium text-neutral-300 block">블록 제목</label>
                     <input
                         type="text"
@@ -556,7 +562,7 @@ export default function InspectorPanel() {
                 </div>
 
                 {/* 1. 스타일 설정 섹션 */}
-                <div className="space-y-3">
+                <div className="inspector-card space-y-4">
                     <label className="text-xs font-medium text-neutral-300 block">
                         상하 여백 (padding: {currentBlock.style.paddingY}px)
                     </label>
@@ -606,14 +612,28 @@ export default function InspectorPanel() {
 
                 {/* [프로필 폼] */}
                 {currentBlock.type === "profile" && (
-                    <div className="space-y-3 border-t border-neutral-800 pt-4">
+                    <div className="inspector-section space-y-4 border-t border-neutral-800 pt-4">
                         <div>
-                            <label className="text-xs text-neutral-400 block mb-1">프로필 사진</label>
-                            <div className="flex items-center gap-3">
+                            <div className="mb-2 flex items-center justify-between">
+                                <label className="text-xs text-neutral-400">프로필 사진</label>
+                                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
+                                    <input
+                                        type="checkbox"
+                                        checked={currentBlock.data.showPhoto !== false}
+                                        onChange={(event) => updateBlockData(currentBlock.id, {
+                                            ...currentBlock.data,
+                                            showPhoto: event.target.checked,
+                                        })}
+                                        className="h-3.5 w-3.5 accent-[#2f80c3]"
+                                    />
+                                    사진 표시
+                                </label>
+                            </div>
+                            <div className={`inspector-photo-row flex items-center gap-3${currentBlock.data.showPhoto === false ? " opacity-45" : ""}`}>
                                 {currentBlock.data.photo && (
                                     <img src={currentBlock.data.photo} alt="프로필 미리보기" className="w-12 h-12 rounded-lg object-cover" />
                                 )}
-                                <label className="text-xs px-3 py-2 rounded border border-neutral-700 bg-neutral-900 text-neutral-300 hover:border-blue-500 cursor-pointer">
+                                <label className="inspector-upload-button cursor-pointer rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-xs text-neutral-300 hover:border-blue-500">
                                     사진 선택
                                     <input
                                         type="file"
@@ -633,14 +653,18 @@ export default function InspectorPanel() {
                             </div>
                         </div>
                         <div>
-                            <label className="text-xs text-neutral-400 block mb-1">이름</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.name || ""}
+                            <div className="mb-1 flex items-baseline justify-between gap-2">
+                                <label className="text-xs text-neutral-400">한 줄 소개</label>
+                                <span className="text-[10px] text-neutral-500">이름·직무 앞에 표시</span>
+                            </div>
+                            <textarea
+                                rows={2}
+                                value={currentBlock.data.bio || ""}
+                                placeholder="예: 사용자 중심의 서비스를 만드는"
                                 onChange={(e) =>
-                                    updateBlockData(currentBlock.id, { ...currentBlock.data, name: e.target.value })
+                                    updateBlockData(currentBlock.id, { ...currentBlock.data, bio: e.target.value })
                                 }
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
                             />
                         </div>
                         <div>
@@ -655,65 +679,114 @@ export default function InspectorPanel() {
                             />
                         </div>
                         <div>
-                            <label className="text-xs text-neutral-400 block mb-1">이메일</label>
+                            <label className="text-xs text-neutral-400 block mb-1">이름</label>
                             <input
                                 type="text"
-                                value={currentBlock.data.email || ""}
+                                value={currentBlock.data.name || ""}
                                 onChange={(e) =>
-                                    updateBlockData(currentBlock.id, { ...currentBlock.data, email: e.target.value })
+                                    updateBlockData(currentBlock.id, { ...currentBlock.data, name: e.target.value })
                                 }
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
                         </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">연락처</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.phone || ""}
-                                onChange={(e) =>
-                                    updateBlockData(currentBlock.id, { ...currentBlock.data, phone: e.target.value })
-                                }
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">소개 수식어</label>
-                            <textarea
-                                rows={2}
-                                value={currentBlock.data.bio || ""}
-                                placeholder="예: 사용자 중심의 서비스를 만드는"
-                                onChange={(e) =>
-                                    updateBlockData(currentBlock.id, { ...currentBlock.data, bio: e.target.value })
-                                }
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">거주 지역</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.location || ""}
-                                onChange={(e) => updateBlockData(currentBlock.id, { ...currentBlock.data, location: e.target.value })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">Blog</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.blog || ""}
-                                onChange={(e) => updateBlockData(currentBlock.id, { ...currentBlock.data, blog: e.target.value })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">GitHub</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.github || ""}
-                                onChange={(e) => updateBlockData(currentBlock.id, { ...currentBlock.data, github: e.target.value })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs text-neutral-400">CONTACTS</label>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const nextContacts = [
+                                            ...profileContacts,
+                                            { id: `contact-${Date.now()}`, label: "", value: "" },
+                                        ];
+                                        updateBlockData(
+                                            currentBlock.id,
+                                            withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                        );
+                                    }}
+                                    className="flex items-center gap-1 text-[11px] text-blue-400 transition hover:text-blue-300"
+                                >
+                                    <Plus size={12} /> 항목 추가
+                                </button>
+                            </div>
+                            {profileContacts.length === 0 && (
+                                <p className="rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
+                                    표시할 연락처 항목을 추가해 주세요.
+                                </p>
+                            )}
+                            {profileContacts.map((contact, contactIndex) => (
+                                <div key={contact.id} className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                        <input
+                                        type="text"
+                                        value={contact.label}
+                                        placeholder="항목명"
+                                        aria-label="연락처 항목명"
+                                        onChange={(event) => {
+                                            const nextContacts = profileContacts.map((item) => (
+                                                item.id === contact.id ? { ...item, label: event.target.value } : item
+                                            ));
+                                            updateBlockData(
+                                                currentBlock.id,
+                                                withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                            );
+                                        }}
+                                        className="w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                        />
+                                        <input
+                                        type="text"
+                                        value={contact.value}
+                                        placeholder="내용 또는 URL"
+                                        aria-label={`${contact.label || "연락처"} 내용`}
+                                        onChange={(event) => {
+                                            const nextContacts = profileContacts.map((item) => (
+                                                item.id === contact.id ? { ...item, value: event.target.value } : item
+                                            ));
+                                            updateBlockData(
+                                                currentBlock.id,
+                                                withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                            );
+                                        }}
+                                        className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                        />
+                                        <button
+                                        type="button"
+                                        onClick={() => {
+                                            const nextContacts = profileContacts.filter((item) => item.id !== contact.id);
+                                            updateBlockData(
+                                                currentBlock.id,
+                                                withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                            );
+                                        }}
+                                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-red-500/10 hover:text-red-400"
+                                        title={`${contact.label || "연락처"} 항목 삭제`}
+                                        >
+                                            <Trash2 size={13} />
+                                        </button>
+                                    </div>
+                                    {contactIndex > 0 && (
+                                        <label className="mt-1.5 flex cursor-pointer items-center gap-1.5 px-1 text-[11px] text-neutral-400">
+                                            <input
+                                                type="checkbox"
+                                                checked={Boolean(contact.inlineWithPrevious)}
+                                                onChange={(event) => {
+                                                    const nextContacts = profileContacts.map((item) => (
+                                                        item.id === contact.id
+                                                            ? { ...item, inlineWithPrevious: event.target.checked }
+                                                            : item
+                                                    ));
+                                                    updateBlockData(
+                                                        currentBlock.id,
+                                                        withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                                    );
+                                                }}
+                                                className="accent-[#2f80c3]"
+                                            />
+                                            앞 항목과 같은 줄에 표시
+                                        </label>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                         <div>
                             <label className="text-xs text-neutral-400 block mb-1">핵심 요약 (줄마다 한 항목)</label>
@@ -726,6 +799,16 @@ export default function InspectorPanel() {
                                 })}
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
                             />
+                        </div>
+                        <div className="border-t border-neutral-800 pt-3">
+                            <label className="text-xs text-neutral-400 block mb-1">거주 지역</label>
+                            <input
+                                type="text"
+                                value={currentBlock.data.location || ""}
+                                onChange={(e) => updateBlockData(currentBlock.id, { ...currentBlock.data, location: e.target.value })}
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                            />
+                            <p className="mt-1 text-[10px] text-neutral-500">Minimal 템플릿의 연락처 영역에서 사용됩니다.</p>
                         </div>
                     </div>
                 )}

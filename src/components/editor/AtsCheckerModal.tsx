@@ -3,6 +3,8 @@
 
 import { useResumeStore } from "@/store/useResumeStore";
 import { CheckCircle2, AlertCircle, X, ShieldCheck, TrendingUp } from "lucide-react";
+import { ProfileData } from "@/types/resume";
+import { getProfileContacts } from "@/lib/profileContacts";
 
 interface AtsCheckerModalProps {
     isOpen: boolean;
@@ -17,10 +19,14 @@ export default function AtsCheckerModal({ isOpen, onClose }: AtsCheckerModalProp
     // 1. 프로필 검사
     const profileBlock = blocks.find((b) => b.type === "profile");
     const pData = profileBlock?.data || {};
+    const profileContacts = getProfileContacts(pData as ProfileData);
     const hasName = Boolean(pData.name && pData.name.trim() !== "");
     const hasRole = Boolean(pData.role && pData.role.trim() !== "");
-    const hasEmail = Boolean(pData.email && pData.email.includes("@"));
-    const hasPhone = Boolean(pData.phone && pData.phone.trim() !== "");
+    const hasEmail = profileContacts.some((contact) => contact.value.includes("@"));
+    const hasPhone = profileContacts.some((contact) =>
+        /^(phone|mobile|tel|연락처|전화|휴대폰)$/i.test(contact.label.trim())
+        && contact.value.trim() !== ""
+    );
     const hasBio = Boolean(pData.bio && pData.bio.trim().length >= 30);
 
     // 2. 기술 스택 검사

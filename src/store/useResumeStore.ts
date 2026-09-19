@@ -76,8 +76,16 @@ const defaultResume: ResumeDocument = {
                 phone: "010-1234-5678",
                 location: "Seoul, Korea",
                 bio: "기획·디자인·개발로 사용자 중심의 서비스를 만드는",
-                blog: "",
-                github: "",
+                photo: "/profile_default.png",
+                showPhoto: true,
+                blog: "https://blog.coreluma.kr",
+                github: "https://github.coreluma.kr",
+                contacts: [
+                    { id: "contact-email", label: "Email", value: "dev.gildong@example.com" },
+                    { id: "contact-phone", label: "Phone", value: "010-1234-5678" },
+                    { id: "contact-blog", label: "Blog", value: "https://blog.coreluma.kr" },
+                    { id: "contact-github", label: "GitHub", value: "https://github.coreluma.kr", inlineWithPrevious: true },
+                ],
                 highlights: [
                     "제품의 전 과정을 경험하며 사용자 중심의 기능을 구현합니다.",
                     "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 만듭니다.",

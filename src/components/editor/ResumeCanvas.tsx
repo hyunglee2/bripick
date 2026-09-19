@@ -5,7 +5,8 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
 import { GripVertical, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
-import { ResumeBlock } from "@/types/resume";
+import { ProfileData, ResumeBlock } from "@/types/resume";
+import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 
 const A4_PAPER_HEIGHT = 1130;
 const FLOW_BLOCK_TYPES = new Set<ResumeBlock["type"]>([
@@ -276,19 +277,34 @@ export default function ResumeCanvas() {
     const renderBlockContent = (block: ResumeBlock, placement: BlockPlacement) => {
         const isContinuation = (placement.itemStart || 0) > 0 || (placement.descriptionStart || 0) > 0;
         switch (block.type) {
-            case "profile":
+            case "profile": {
+                const profileContacts = getProfileContacts(block.data as ProfileData);
+                const visibleProfileContacts = profileContacts.filter((contact) => (
+                    contact.label.trim() || contact.value.trim()
+                ));
+                const showProfilePhoto = block.data.showPhoto !== false;
+                const profileContactRows = visibleProfileContacts.reduce<typeof visibleProfileContacts[]>((rows, contact) => {
+                    if (contact.inlineWithPrevious && rows.length > 0) {
+                        rows[rows.length - 1].push(contact);
+                    } else {
+                        rows.push([contact]);
+                    }
+                    return rows;
+                }, []);
                 if (templateType === "modern") {
                     const highlights = Array.isArray(block.data.highlights) ? block.data.highlights : [];
                     return (
                         <div className="resume-profile-hero">
-                            <div className="resume-profile-main">
-                                <div className="resume-profile-photo">
-                                    {block.data.photo ? (
-                                        <img src={block.data.photo} alt="프로필" />
-                                    ) : (
-                                        <span>{String(block.data.name || "?").slice(0, 1)}</span>
-                                    )}
-                                </div>
+                            <div className={`resume-profile-main${showProfilePhoto ? "" : " resume-profile-main--no-photo"}`}>
+                                {showProfilePhoto && (
+                                    <div className="resume-profile-photo">
+                                        {block.data.photo ? (
+                                            <img src={block.data.photo} alt="프로필" />
+                                        ) : (
+                                            <span>{String(block.data.name || "?").slice(0, 1)}</span>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="resume-profile-copy">
                                     <EditableText
                                         tag="p"
@@ -314,17 +330,37 @@ export default function ResumeCanvas() {
                                         />
                                         <span className="resume-profile-suffix">입니다.</span>
                                     </div>
-                                    <div className="resume-profile-contacts">
-                                        <strong>CONTACTS</strong>
-                                        <div>
-                                            <span className="resume-contact-row"><b>▸</b> Email : <EditableText value={block.data.email || ""} placeholder="이메일" onChange={(email) => updateBlockData(block.id, { ...block.data, email })} /></span>
-                                            <span className="resume-contact-row"><b>▸</b> Phone : <EditableText value={block.data.phone || ""} placeholder="연락처" onChange={(phone) => updateBlockData(block.id, { ...block.data, phone })} /></span>
-                                            <span className="resume-contact-row resume-contact-links">
-                                                <b>▸</b> Blog : <span>{block.data.blog || "—"}</span>
-                                                <em>GitHub : <span>{block.data.github || "—"}</span></em>
-                                            </span>
+                                    {visibleProfileContacts.length > 0 && (
+                                        <div className="resume-profile-contacts">
+                                            <strong>CONTACTS</strong>
+                                            <div className="resume-contact-list">
+                                            {profileContactRows.map((row) => (
+                                                <div key={row.map((contact) => contact.id).join("-")} className="resume-contact-line">
+                                                    {row.map((contact) => (
+                                                        <span key={contact.id} className="resume-contact-row">
+                                                            <b>▸</b>
+                                                            <span className="resume-contact-label">{contact.label} :</span>
+                                                            <EditableText
+                                                                value={contact.value}
+                                                                placeholder="내용"
+                                                                className={/^https?:\/\//i.test(contact.value) ? "resume-contact-link" : ""}
+                                                                onChange={(value) => {
+                                                                    const nextContacts = profileContacts.map((item) => (
+                                                                        item.id === contact.id ? { ...item, value } : item
+                                                                    ));
+                                                                    updateBlockData(
+                                                                        block.id,
+                                                                        withProfileContacts(block.data as ProfileData, nextContacts),
+                                                                    );
+                                                                }}
+                                                            />
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                             {highlights.length > 0 && (
@@ -367,18 +403,13 @@ export default function ResumeCanvas() {
                             />
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500 font-medium">
-                            <EditableText
-                                value={block.data.email || ""}
-                                placeholder="이메일"
-                                onChange={(newEmail) => updateBlockData(block.id, { ...block.data, email: newEmail })}
-                            />
-                            <span>|</span>
-                            <EditableText
-                                value={block.data.phone || ""}
-                                placeholder="연락처"
-                                onChange={(newPhone) => updateBlockData(block.id, { ...block.data, phone: newPhone })}
-                            />
-                            <span>|</span>
+                            {visibleProfileContacts.map((contact, index) => (
+                                <span key={contact.id} className="inline-flex items-center gap-2">
+                                    {index > 0 && <span>|</span>}
+                                    <span>{contact.label}: {contact.value}</span>
+                                </span>
+                            ))}
+                            {visibleProfileContacts.length > 0 && <span>|</span>}
                             <EditableText
                                 value={block.data.location || ""}
                                 placeholder="거주 지역"
@@ -397,6 +428,7 @@ export default function ResumeCanvas() {
                         </div>
                     </div>
                 );
+            }
 
             case "experience":
                 return (
@@ -863,7 +895,7 @@ export default function ResumeCanvas() {
                                             paddingTop: `${block.style.paddingY}px`,
                                             paddingBottom: `${block.style.paddingY}px`,
                                         }}
-                                        className={`resume-block-item relative cursor-pointer transition-all ${templateType === "modern"
+                                        className={`resume-block-item relative cursor-pointer transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${templateType === "modern"
                                             ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
                                             : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
                                             } ${isSelected ? "resume-block-selected" : ""

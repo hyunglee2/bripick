@@ -262,25 +262,39 @@ body,
   background-color: var(--brand-primary) !important;
 }
 
+.resume-block-item {
+  isolation: isolate;
+}
+
 .resume-block-selected {
   border-color: transparent !important;
   outline: none !important;
-  border-radius: 14px !important;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(241, 245, 249, 0.48)) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.resume-block-item::after {
+  content: "";
+  position: absolute;
+  inset: -2px -16px;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(241, 245, 249, 0.48));
   box-shadow:
     0 16px 36px rgba(15, 23, 42, 0.13),
     0 4px 12px rgba(15, 23, 42, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px) saturate(1.15);
-  width: calc(100% + 32px);
-  margin-left: -16px;
-  margin-right: -16px;
-  padding-left: 16px !important;
-  padding-right: 16px !important;
-  translate: 0 -2px;
-  scale: 1.01;
+  opacity: 0;
+  transform: translateY(-2px) scale(1.01);
+  transition: opacity 150ms ease, transform 150ms ease;
 }
 
+.resume-block-item.resume-block-selected::after {
+  opacity: 1;
+  transform: translateY(-2px) scale(1);
+}
 
 /* src/app/globals.css 하단에 추가 */
 
@@ -427,17 +441,8 @@ body,
 }
 
 .reference-template .resume-block-item.resume-block-selected {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(238, 244, 250, 0.5)) !important;
-  border-radius: 14px !important;
-  box-shadow:
-    0 16px 36px rgba(15, 23, 42, 0.13),
-    0 4px 12px rgba(15, 23, 42, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
-  width: calc(100% + 32px);
-  margin-left: -16px !important;
-  margin-right: -16px !important;
-  padding-left: 16px !important;
-  padding-right: 16px !important;
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .reference-template .resume-block-item h2 {
@@ -473,7 +478,15 @@ body,
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);
   gap: 18px;
-  align-items: start;
+  align-items: end;
+}
+
+.resume-profile-main--no-photo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.resume-profile-main--no-photo .resume-profile-copy {
+  padding-top: 0;
 }
 
 .resume-profile-photo {
@@ -539,6 +552,7 @@ body,
   margin-top: 15px;
   font-size: calc(var(--resume-caption-size) + 1px) !important;
   color: #27272a;
+  padding-bottom: 4px;
 }
 
 .resume-profile-contacts>strong {
@@ -549,10 +563,19 @@ body,
   letter-spacing: -0.025em;
 }
 
-.resume-profile-contacts>div {
+.resume-contact-list {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.resume-contact-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  column-gap: 18px;
+  row-gap: 2px;
   min-width: 0;
 }
 
@@ -565,12 +588,18 @@ body,
   align-items: baseline;
   gap: 5px;
   white-space: nowrap;
-  line-height: 1.25;
+  line-height: 1.15;
 }
 
 .resume-contact-row>b {
   color: #111827;
-  font-size: 8px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.resume-contact-link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .resume-contact-links>span {
@@ -653,6 +682,175 @@ body,
 }
 
 /* 넓어진 인스펙터 패널에 맞춰 편집 UI의 가독성을 높입니다. */
+.inspector-panel {
+  --inspector-surface: #111319;
+  --inspector-card: #151820;
+  --inspector-input: #0d0f14;
+  --inspector-border: #2a2e38;
+  --inspector-border-strong: #3a404d;
+  --inspector-muted: #8b93a1;
+  --inspector-text: #f3f4f6;
+  background: var(--inspector-surface) !important;
+}
+
+.inspector-panel--block .inspector-heading {
+  min-height: 44px;
+  padding-bottom: 14px;
+}
+
+.inspector-panel--block .inspector-heading>div:first-child {
+  color: #d5d8df;
+  letter-spacing: 0.04em;
+}
+
+.inspector-panel--block .inspector-heading svg.text-blue-500 {
+  color: var(--brand-primary);
+}
+
+.inspector-actions button {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+}
+
+.inspector-actions button:hover:not(:disabled) {
+  border-color: var(--inspector-border);
+  background: #1b1e26;
+}
+
+.inspector-panel .inspector-field,
+.inspector-panel .inspector-section {
+  position: relative;
+}
+
+.inspector-panel .inspector-card {
+  padding: 16px;
+  border: 1px solid var(--inspector-border);
+  border-radius: 12px;
+  background: var(--inspector-card);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.025) inset;
+}
+
+.inspector-panel .inspector-section {
+  border-top-color: var(--inspector-border) !important;
+  padding-top: 20px !important;
+}
+
+.inspector-panel input:not([type="range"]):not([type="checkbox"]):not([type="color"]):not([type="file"]),
+.inspector-panel select,
+.inspector-panel textarea {
+  border-color: var(--inspector-border) !important;
+  border-radius: 8px !important;
+  background: var(--inspector-input) !important;
+  color: var(--inspector-text) !important;
+  padding: 9px 11px !important;
+  outline: none !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+}
+
+.inspector-panel input:not([type="range"]):not([type="checkbox"]):not([type="color"]):not([type="file"]):hover,
+.inspector-panel select:hover,
+.inspector-panel textarea:hover {
+  border-color: var(--inspector-border-strong) !important;
+}
+
+.inspector-panel input:not([type="range"]):not([type="checkbox"]):not([type="color"]):not([type="file"]):focus,
+.inspector-panel select:focus,
+.inspector-panel textarea:focus {
+  border-color: var(--brand-primary) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 22%, transparent);
+}
+
+.inspector-panel input::placeholder,
+.inspector-panel textarea::placeholder {
+  color: #626a78;
+}
+
+.inspector-panel input[type="checkbox"] {
+  appearance: none;
+  position: relative;
+  width: 34px !important;
+  height: 19px !important;
+  flex: 0 0 34px;
+  cursor: pointer;
+  border: 1px solid #3a404b;
+  border-radius: 999px;
+  background: #252932;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.inspector-panel input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #a7adb8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  transition: translate 150ms ease, background-color 150ms ease;
+}
+
+.inspector-panel input[type="checkbox"]:checked {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary);
+}
+
+.inspector-panel input[type="checkbox"]:checked::after {
+  translate: 15px 0;
+  background: #fff;
+}
+
+.inspector-panel input[type="checkbox"]:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--brand-primary) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.inspector-panel input[type="range"] {
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: #303540;
+}
+
+.inspector-panel input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--brand-primary);
+  border-radius: 50%;
+  background: #f8fafc;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.inspector-panel .inspector-upload-button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  border-color: var(--inspector-border) !important;
+  border-radius: 8px !important;
+  background: #191c23 !important;
+  font-weight: 600;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.inspector-panel .inspector-upload-button:hover {
+  border-color: var(--inspector-border-strong) !important;
+  background: #1f232c !important;
+}
+
+.inspector-panel .inspector-photo-row img {
+  border: 1px solid var(--inspector-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+}
+
 .inspector-panel input,
 .inspector-panel select,
 .inspector-panel textarea {
@@ -683,7 +881,35 @@ body,
   line-height: 0.9375rem;
 }
 
+[data-theme="light"] .inspector-panel {
+  --inspector-surface: #ffffff;
+  --inspector-card: #f8fafc;
+  --inspector-input: #ffffff;
+  --inspector-border: #e2e8f0;
+  --inspector-border-strong: #cbd5e1;
+  --inspector-muted: #64748b;
+  --inspector-text: #172033;
+}
+
+[data-theme="light"] .inspector-panel input[type="checkbox"] {
+  border-color: #cbd5e1;
+  background: #e2e8f0 !important;
+}
+
+[data-theme="light"] .inspector-panel input[type="checkbox"]:checked {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary) !important;
+}
+
+[data-theme="light"] .inspector-panel input[type="range"] {
+  background: #dbe2ea !important;
+}
+
 @media print {
+  .resume-block-item::after {
+    display: none !important;
+  }
+
   .reference-template .resume-block-item.resume-block-selected {
     background: transparent !important;
     box-shadow: none !important;
