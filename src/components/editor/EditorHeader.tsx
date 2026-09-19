@@ -346,17 +346,17 @@ export default function EditorHeader() {
         <>
             <header
                 ref={headerRef}
-                className="editor-header sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b border-neutral-800 bg-[#12131a] px-5"
+                className="editor-header editor-header--shadcn sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b border-neutral-800 bg-[#12131a] px-5"
             >
                 <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex shrink-0 items-center gap-2 pr-1">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-black text-white shadow-sm">
+                    <div className="header-brand flex shrink-0 items-center gap-2 pr-1">
+                        <div className="header-brand-mark flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-black text-white shadow-sm">
                             B
                         </div>
                         <span className="hidden font-bold tracking-tight text-white sm:inline">Bripick</span>
                     </div>
 
-                    <div className="relative flex min-w-0 items-center border-l border-neutral-800 pl-3">
+                    <div className="header-document relative flex min-w-0 items-center border-l border-neutral-800 pl-3">
                         <FileText size={14} className="mr-2 shrink-0 text-neutral-500" />
                         <input
                             type="text"
@@ -376,7 +376,7 @@ export default function EditorHeader() {
                         </button>
 
                         {openMenu === "document" && (
-                            <div className="absolute left-3 top-11 w-64 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                            <div className="header-menu absolute left-3 top-11 w-64 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
                                 <p className="px-2.5 pb-1.5 pt-1 text-[11px] font-medium text-neutral-500">내 이력서</p>
                                 {(resumeList || []).map((item) => (
                                     <button
@@ -435,11 +435,11 @@ export default function EditorHeader() {
                         )}
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-0.5 border-l border-neutral-800 pl-3">
+                    <div className="header-history flex shrink-0 items-center gap-0.5 border-l border-neutral-800 pl-3">
                         <button
                             onClick={undo}
                             disabled={!canUndo}
-                            className="rounded-md p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
+                            className="header-icon-button rounded-md p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
                             title="실행 취소 (Ctrl+Z)"
                         >
                             <Undo2 size={15} />
@@ -447,7 +447,7 @@ export default function EditorHeader() {
                         <button
                             onClick={redo}
                             disabled={!canRedo}
-                            className="rounded-md p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
+                            className="header-icon-button rounded-md p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
                             title="다시 실행 (Ctrl+Y)"
                         >
                             <Redo2 size={15} />
@@ -458,13 +458,13 @@ export default function EditorHeader() {
                         <button
                             type="button"
                             onClick={() => setOpenMenu(openMenu === "blocks" ? null : "blocks")}
-                            className="flex h-8 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-xs font-medium text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-800"
+                            className="header-button header-button--outline flex h-8 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-xs font-medium text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-800"
                             aria-expanded={openMenu === "blocks"}
                         >
                             <Plus size={14} /> 블록 추가 <ChevronDown size={13} className="ml-0.5 text-neutral-500" />
                         </button>
                         {openMenu === "blocks" && (
-                            <div className="absolute left-0 top-10 grid w-52 grid-cols-2 gap-1 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                            <div className="header-menu absolute left-0 top-10 grid w-52 grid-cols-2 gap-1 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
                                 {blockButtons.map((button) => (
                                     <button
                                         key={button.type}
@@ -488,7 +488,7 @@ export default function EditorHeader() {
                         <button
                             type="button"
                             onClick={handleLoadPreset}
-                            className="hidden h-8 items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 text-xs font-medium text-blue-300 transition hover:border-blue-500/50 hover:bg-blue-500/20 sm:flex"
+                            className="header-button header-button--secondary hidden h-8 items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 text-xs font-medium text-blue-300 transition hover:border-blue-500/50 hover:bg-blue-500/20 sm:flex"
                             title="Bripick 샘플 이력서로 시작하기"
                         >
                             <Sparkles size={14} /> 샘플로 시작
@@ -496,7 +496,7 @@ export default function EditorHeader() {
                     )}
                     <button
                         onClick={() => setIsAtsModalOpen(true)}
-                        className="flex h-8 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 text-xs font-medium text-emerald-300 transition hover:bg-emerald-600/30 active:scale-95"
+                        className="header-button header-button--ats flex h-8 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 text-xs font-medium text-emerald-300 transition hover:bg-emerald-600/30 active:scale-95"
                         title="ATS 이력서 완성도 진단"
                     >
                         <ShieldCheck size={14} className="text-emerald-400" />
@@ -504,7 +504,7 @@ export default function EditorHeader() {
                     </button>
                     <button
                         onClick={handleExportPDF}
-                        className="flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500 active:scale-95"
+                        className="header-button header-button--primary flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500 active:scale-95"
                     >
                         <Download size={14} /> <span className="hidden sm:inline">PDF 저장</span>
                     </button>
@@ -512,7 +512,7 @@ export default function EditorHeader() {
                     <button
                         type="button"
                         onClick={toggleTheme}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                        className="header-icon-button flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
                         title={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
                         aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
                     >
@@ -523,14 +523,14 @@ export default function EditorHeader() {
                         <button
                             type="button"
                             onClick={() => setOpenMenu(openMenu === "more" ? null : "more")}
-                            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                            className="header-icon-button flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
                             aria-label="더보기"
                             aria-expanded={openMenu === "more"}
                         >
                             <MoreHorizontal size={17} />
                         </button>
                         {openMenu === "more" && (
-                            <div className="absolute right-0 top-10 w-48 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                            <div className="header-menu absolute right-0 top-10 w-48 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
                                 {!shouldShowSample && (
                                     <button
                                         type="button"
