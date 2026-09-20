@@ -3,8 +3,31 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://coreluma.kr"),
   title: "Bripick - 모듈식 이력서 빌더",
   description: "Next.js 기반 고성능 인터랙티브 이력서 제작기",
+  openGraph: {
+    title: "Bripick - 모듈식 이력서 빌더",
+    description: "Next.js 기반 고성능 인터랙티브 이력서 제작기",
+    url: "/",
+    siteName: "Bripick",
+    locale: "ko_KR",
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Bripick 모듈식 이력서 빌더",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bripick - 모듈식 이력서 빌더",
+    description: "Next.js 기반 고성능 인터랙티브 이력서 제작기",
+    images: ["/opengraph-image.png"],
+  },
 };
 
 export default function RootLayout({

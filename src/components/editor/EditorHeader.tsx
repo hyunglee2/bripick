@@ -349,11 +349,21 @@ export default function EditorHeader() {
                 className="editor-header editor-header--shadcn sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b border-neutral-800 bg-[#12131a] px-5"
             >
                 <div className="flex min-w-0 items-center gap-3">
-                    <div className="header-brand flex shrink-0 items-center gap-2 pr-1">
-                        <div className="header-brand-mark flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 text-xs font-black text-white shadow-sm">
-                            B
+                    <div className="header-brand shrink-0 pr-1">
+                        <div className="header-brand-logo" role="img" aria-label="Bripick">
+                            <img
+                                src="/bripick_header_logo_light.svg"
+                                alt=""
+                                aria-hidden="true"
+                                className="header-brand-logo-light"
+                            />
+                            <img
+                                src="/bripick_header_logo_dark.svg"
+                                alt=""
+                                aria-hidden="true"
+                                className="header-brand-logo-dark"
+                            />
                         </div>
-                        <span className="hidden font-bold tracking-tight text-white sm:inline">Bripick</span>
                     </div>
 
                     <div className="header-document relative flex min-w-0 items-center border-l border-neutral-800 pl-3">
