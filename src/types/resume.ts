@@ -18,6 +18,7 @@ export interface BlockStyle {
     columns: number;
     showDivider: boolean;
     keepTogether?: boolean;
+    useCustomPadding?: boolean;
 }
 
 export interface ProfileData {

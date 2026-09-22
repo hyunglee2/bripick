@@ -917,8 +917,8 @@ export default function ResumeCanvas() {
                                         onDragEnd={handleDragEnd}
                                         onClick={() => setSelectedBlockId(block.id)}
                                         style={{
-                                            paddingTop: `${block.style.paddingY}px`,
-                                            paddingBottom: `${block.style.paddingY}px`,
+                                            paddingTop: block.style.useCustomPadding ? `${block.style.paddingY}px` : "0px",
+                                            paddingBottom: block.style.useCustomPadding ? `${block.style.paddingY}px` : "0px",
                                             marginBottom: "var(--resume-block-gap)",
                                         }}
                                         className={`resume-block-item relative cursor-pointer transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${templateType === "modern"

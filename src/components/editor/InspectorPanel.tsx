@@ -624,52 +624,68 @@ export default function InspectorPanel() {
                     <p className="text-[10px] text-neutral-500">캔버스와 PDF의 섹션 제목에 바로 반영됩니다.</p>
                 </div>
 
-                {/* 1. 스타일 설정 섹션 */}
-                <div className="inspector-card space-y-4">
-                    <label className="text-xs font-medium text-neutral-300 block">
-                        상하 여백 (padding: {currentBlock.style.paddingY}px)
-                    </label>
-                    <input
-                        type="range"
-                        min="4"
-                        max="48"
-                        step="4"
-                        value={currentBlock.style.paddingY}
-                        onChange={(e) =>
-                            updateBlockStyle(currentBlock.id, {
-                                paddingY: Number(e.target.value),
-                            })
-                        }
-                        className="w-full accent-blue-500 cursor-pointer"
-                    />
-
-                    <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs text-neutral-300">하단 구분선 표시</span>
-                        <input
-                            type="checkbox"
-                            checked={currentBlock.style.showDivider}
-                            onChange={(e) =>
-                                updateBlockStyle(currentBlock.id, {
-                                    showDivider: e.target.checked,
-                                })
-                            }
-                            className="accent-blue-500 w-4 h-4 cursor-pointer"
-                        />
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
-                        <div>
-                            <span className="text-xs text-neutral-300 block">한 페이지에 묶기</span>
-                            <span className="text-[10px] text-neutral-500">끄면 긴 내용을 다음 장에 이어서 표시합니다.</span>
+                {/* 1. 고급 스타일 설정 */}
+                <details className="inspector-advanced group">
+                    <summary className="inspector-advanced__summary">
+                        <span>고급 설정</span>
+                        <ChevronDown size={15} aria-hidden="true" />
+                    </summary>
+                    <div className="inspector-advanced__body space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <span className="block text-xs text-neutral-300">개별 간격 사용</span>
+                                <span className="mt-0.5 block text-[10px] text-neutral-500">전역 블록 간격에 내부 여백을 추가합니다.</span>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={currentBlock.style.useCustomPadding === true}
+                                onChange={(e) => updateBlockStyle(currentBlock.id, { useCustomPadding: e.target.checked })}
+                                className="h-4 w-4 cursor-pointer accent-blue-500"
+                            />
                         </div>
-                        <input
-                            type="checkbox"
-                            checked={currentBlock.style.keepTogether === true}
-                            onChange={(e) => updateBlockStyle(currentBlock.id, { keepTogether: e.target.checked })}
-                            className="accent-blue-500 w-4 h-4 cursor-pointer"
-                        />
+
+                        {currentBlock.style.useCustomPadding === true && (
+                            <div className="space-y-2 rounded-lg bg-neutral-950/40 p-3">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-neutral-300">내부 상하 여백</span>
+                                    <span className="font-mono text-neutral-400">{currentBlock.style.paddingY}px</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="4"
+                                    max="48"
+                                    step="4"
+                                    value={currentBlock.style.paddingY}
+                                    onChange={(e) => updateBlockStyle(currentBlock.id, { paddingY: Number(e.target.value) })}
+                                    className="w-full cursor-pointer accent-blue-500"
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-neutral-300">하단 구분선 표시</span>
+                            <input
+                                type="checkbox"
+                                checked={currentBlock.style.showDivider}
+                                onChange={(e) => updateBlockStyle(currentBlock.id, { showDivider: e.target.checked })}
+                                className="h-4 w-4 cursor-pointer accent-blue-500"
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <span className="block text-xs text-neutral-300">한 페이지에 묶기</span>
+                                <span className="text-[10px] text-neutral-500">끄면 긴 내용을 다음 장에 이어서 표시합니다.</span>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={currentBlock.style.keepTogether === true}
+                                onChange={(e) => updateBlockStyle(currentBlock.id, { keepTogether: e.target.checked })}
+                                className="h-4 w-4 cursor-pointer accent-blue-500"
+                            />
+                        </div>
                     </div>
-                </div>
+                </details>
 
                 {/* 2. 블록별 데이터 입력 폼 */}
 
