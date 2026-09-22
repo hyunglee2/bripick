@@ -186,7 +186,15 @@ export const useResumeStore = create<ResumeState>()(
                     } else if (type === "custom_text") {
                         defaultData = { content: "" };
                     } else if (type === "skills") {
-                        defaultData = { skills: ["TypeScript", "React", "Next.js"] };
+                        defaultData = {
+                            categories: [
+                                {
+                                    id: `skill-category-${Date.now()}`,
+                                    name: "Frontend",
+                                    skills: ["TypeScript", "React", "Next.js"],
+                                },
+                            ],
+                        };
                     } else if (type === "education") {
                         defaultData = [
                             {

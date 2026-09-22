@@ -104,6 +104,18 @@ export interface GlobalStyle {
     template?: TemplateStyle;
 }
 
+export interface SkillCategory {
+    id: string;
+    name: string;
+    skills: string[];
+}
+
+export interface SkillsData {
+    categories?: SkillCategory[];
+    /** 이전에 저장된 이력서와의 호환을 위한 단일 배열 형식 */
+    skills?: string[];
+}
+
 export interface ResumeDocument {
     id: string;
     versionName: string;

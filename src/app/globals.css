@@ -438,6 +438,11 @@ body,
   --resume-item-title-size: 15px;
   --resume-body-size: 14px;
   --resume-caption-size: 12px;
+  --resume-section-content-gap: 12px;
+  --resume-bullet-font-size: var(--resume-body-size);
+  --resume-bullet-line-height: 1.5;
+  --resume-bullet-item-gap: 2px;
+  --resume-bullet-letter-spacing: -0.018em;
   font-size: var(--resume-body-size);
 }
 
@@ -662,14 +667,14 @@ body,
 }
 
 .resume-profile-highlights {
-  margin-top: 17px;
+  margin-top: var(--resume-section-content-gap);
   margin-bottom: 0;
   padding-left: 16px;
   list-style-type: square;
   color: #18181b;
-  font-size: max(calc(var(--resume-body-size) + 1px), 13px);
-  line-height: 1.5;
-  letter-spacing: -0.018em;
+  font-size: var(--resume-bullet-font-size);
+  line-height: var(--resume-bullet-line-height);
+  letter-spacing: var(--resume-bullet-letter-spacing);
 }
 
 .resume-profile-highlights li::marker {
@@ -679,12 +684,24 @@ body,
 
 .resume-profile-introduction {
   display: block;
-  margin-top: 17px;
+  margin-top: var(--resume-section-content-gap);
   margin-bottom: 0;
   color: #18181b;
   font-size: max(calc(var(--resume-body-size) + 1px), 13px);
   line-height: 1.65;
   letter-spacing: -0.018em;
+}
+
+/* 모든 일반 블록에서 섹션 제목과 첫 콘텐츠 사이 간격을 동일하게 유지합니다. */
+.resume-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--resume-section-content-gap);
+}
+
+.resume-section> :not(:first-child) {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .reference-template [data-pagination-item-index] {
@@ -717,7 +734,25 @@ body,
 
 .reference-template [data-pagination-item-index] li {
   padding-left: 2px;
-  line-height: 1.55;
+  line-height: var(--resume-bullet-line-height);
+}
+
+/* 프로필 자기소개와 경력·프로젝트 불렛의 타이포그래피 리듬을 공유합니다. */
+.resume-profile-highlights,
+.reference-template [data-pagination-item-index] ul {
+  font-size: var(--resume-bullet-font-size) !important;
+  line-height: var(--resume-bullet-line-height) !important;
+  letter-spacing: var(--resume-bullet-letter-spacing);
+}
+
+.resume-profile-highlights>li,
+.reference-template [data-pagination-item-index] ul>li {
+  line-height: var(--resume-bullet-line-height) !important;
+}
+
+.resume-profile-highlights>li+li,
+.reference-template [data-pagination-item-index] ul>li+li {
+  margin-top: var(--resume-bullet-item-gap) !important;
 }
 
 .reference-template [data-block-type="skills"] span[class*="rounded"] {
@@ -730,7 +765,7 @@ body,
 
 .reference-template [data-block-type="experience"]>div,
 .reference-template [data-block-type="project"]>div {
-  gap: 9px;
+  gap: var(--resume-section-content-gap);
 }
 
 /* 넓어진 인스펙터 패널에 맞춰 편집 UI의 가독성을 높입니다. */
@@ -1069,6 +1104,82 @@ body,
 
 .inspector-panel .inspector-badge button:hover {
   background: color-mix(in srgb, #ef4444 12%, transparent);
+}
+
+.inspector-panel .inspector-skill-category {
+  overflow: hidden;
+  border: 1px solid var(--inspector-border);
+  border-radius: 9px;
+  background: var(--inspector-surface);
+}
+
+.inspector-panel .inspector-skill-category__header {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px 5px 5px;
+}
+
+.inspector-panel .inspector-skill-category__trigger {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  color: var(--inspector-text);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.inspector-panel .inspector-skill-category__trigger svg {
+  flex: 0 0 auto;
+  color: var(--inspector-muted);
+  transition: transform 140ms ease;
+}
+
+.inspector-panel .inspector-skill-category__trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.inspector-panel .inspector-skill-category__count {
+  margin-left: auto;
+  color: var(--inspector-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.inspector-panel .inspector-skill-category__body {
+  padding: 12px;
+  border-top: 1px solid var(--inspector-border);
+  background: var(--inspector-card);
+}
+
+.resume-skill-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.resume-skill-category {
+  display: grid;
+  grid-template-columns: minmax(90px, 120px) minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.resume-skill-category--unnamed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.resume-skill-category>strong {
+  padding-top: 2px;
+  color: #111827;
+  font-size: var(--resume-body-size);
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .inspector-panel .inspector-suggestion-chip {

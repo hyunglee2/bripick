@@ -5,8 +5,9 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
 import { FileText, GripVertical, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
-import { ProfileData, ResumeBlock } from "@/types/resume";
+import { ProfileData, ResumeBlock, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
+import { getSkillCategories } from "@/lib/skills";
 
 const A4_PAPER_HEIGHT = 1130;
 const FLOW_BLOCK_TYPES = new Set<ResumeBlock["type"]>([
@@ -440,7 +441,7 @@ export default function ResumeCanvas() {
 
             case "experience":
                 return (
-                    <div className="space-y-3">
+                    <div className="resume-section">
                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
@@ -541,7 +542,7 @@ export default function ResumeCanvas() {
 
             case "project":
                 return (
-                    <div className="space-y-3">
+                    <div className="resume-section">
                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
@@ -647,24 +648,35 @@ export default function ResumeCanvas() {
                 );
 
             case "skills":
+                const skillCategories = getSkillCategories(block.data as SkillsData);
                 return (
-                    <div className="space-y-2.5">
+                    <div className="resume-section">
                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
                             <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">{block.title || "SKILLS"}</h2>
                         </div>
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                            {((block.data as any)?.skills || []).map((skill: string) => (
-                                <span
-                                    key={skill}
-                                    style={templateType === "modern" ? { borderColor: `${primaryColor}30`, backgroundColor: `${primaryColor}10`, color: primaryColor } : {}}
-                                    className={`px-2 py-0.5 rounded text-xs font-medium ${templateType === "modern" ? "border" : "bg-neutral-100 text-neutral-800 border border-neutral-200"
-                                        }`}
+                        <div className="resume-skill-categories pt-1">
+                            {skillCategories.map((category) => (
+                                <div
+                                    key={category.id}
+                                    className={`resume-skill-category ${category.name ? "" : "resume-skill-category--unnamed"}`}
                                 >
-                                    {skill}
-                                </span>
+                                    {category.name && <strong>{category.name}</strong>}
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {category.skills.map((skill) => (
+                                            <span
+                                                key={skill}
+                                                style={templateType === "modern" ? { borderColor: `${primaryColor}30`, backgroundColor: `${primaryColor}10`, color: primaryColor } : {}}
+                                                className={`px-2 py-0.5 rounded text-xs font-medium ${templateType === "modern" ? "border" : "bg-neutral-100 text-neutral-800 border border-neutral-200"
+                                                    }`}
+                                            >
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
                             ))}
                         </div>
                     </div>
@@ -672,7 +684,7 @@ export default function ResumeCanvas() {
 
             case "education":
                 return (
-                    <div className="space-y-3">
+                    <div className="resume-section">
                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
@@ -750,7 +762,7 @@ export default function ResumeCanvas() {
 
             case "certification":
                 return (
-                    <div className="space-y-3">
+                    <div className="resume-section">
                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
@@ -805,7 +817,7 @@ export default function ResumeCanvas() {
                 const paragraphs = String(block.data?.content || "").split("\n");
                 const paragraphStart = placement.itemStart ?? 0;
                 return (
-                    <div className="space-y-2">
+                    <div className="resume-section">
                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />

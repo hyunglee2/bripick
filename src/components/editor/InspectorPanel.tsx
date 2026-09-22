@@ -3,8 +3,9 @@
 
 import { useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
-import { ProfileData } from "@/types/resume";
+import { ProfileData, SkillCategory, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
+import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import {
     Trash2,
     ChevronUp,
@@ -47,7 +48,8 @@ export default function InspectorPanel() {
     const reorderBlocks = useResumeStore((state) => state.reorderBlocks);
     const toggleBlockVisibility = useResumeStore((state) => state.toggleBlockVisibility);
 
-    const [newSkillInput, setNewSkillInput] = useState("");
+    const [newSkillInputs, setNewSkillInputs] = useState<Record<string, string>>({});
+    const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
 
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
     const currentBlock = blocks[currentIndex];
@@ -506,24 +508,37 @@ export default function InspectorPanel() {
     };
 
     // --- 스킬(Skills) 핸들러 ---
-    const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter" && newSkillInput.trim()) {
+    const skillCategories = currentBlock?.type === "skills"
+        ? getSkillCategories(currentBlock.data as SkillsData)
+        : [];
+
+    const updateSkillCategories = (categories: SkillCategory[]) => {
+        if (currentBlock.type !== "skills") return;
+        updateBlockData(
+            currentBlock.id,
+            withSkillCategories(currentBlock.data as SkillsData, categories),
+        );
+    };
+
+    const handleAddSkill = (e: React.KeyboardEvent<HTMLInputElement>, categoryId: string) => {
+        const input = newSkillInputs[categoryId]?.trim() || "";
+        if (e.key === "Enter" && input) {
             e.preventDefault();
-            const currentSkills = (currentBlock.data as any)?.skills || [];
-            if (!currentSkills.includes(newSkillInput.trim())) {
-                updateBlockData(currentBlock.id, {
-                    skills: [...currentSkills, newSkillInput.trim()],
-                });
-            }
-            setNewSkillInput("");
+            updateSkillCategories(skillCategories.map((category) => (
+                category.id === categoryId && !category.skills.includes(input)
+                    ? { ...category, skills: [...category.skills, input] }
+                    : category
+            )));
+            setNewSkillInputs((current) => ({ ...current, [categoryId]: "" }));
         }
     };
 
-    const handleRemoveSkill = (skillToRemove: string) => {
-        const currentSkills = (currentBlock.data as any)?.skills || [];
-        updateBlockData(currentBlock.id, {
-            skills: currentSkills.filter((s: string) => s !== skillToRemove),
-        });
+    const handleRemoveSkill = (categoryId: string, skillToRemove: string) => {
+        updateSkillCategories(skillCategories.map((category) => (
+            category.id === categoryId
+                ? { ...category, skills: category.skills.filter((skill) => skill !== skillToRemove) }
+                : category
+        )));
     };
 
     return (
@@ -1156,33 +1171,101 @@ export default function InspectorPanel() {
                 {/* [스킬 폼] */}
                 {currentBlock.type === "skills" && (
                     <div className="space-y-3 border-t border-neutral-800 pt-4">
-                        <label className="text-xs font-semibold text-neutral-300 block">
-                            스킬 태그 입력 (Enter로 추가)
-                        </label>
-                        <input
-                            type="text"
-                            placeholder="예: TypeScript, Next.js"
-                            value={newSkillInput}
-                            onChange={(e) => setNewSkillInput(e.target.value)}
-                            onKeyDown={handleAddSkill}
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                        />
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <span className="block text-xs font-semibold text-neutral-300">스킬 카테고리</span>
+                                <span className="mt-0.5 block text-[10px] text-neutral-500">직무 영역별로 기술을 묶어 표시합니다.</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const id = `skill-category-${Date.now()}`;
+                                    updateSkillCategories([...skillCategories, { id, name: "새 카테고리", skills: [] }]);
+                                    setExpandedSkillCategoryId(id);
+                                }}
+                                className="flex items-center gap-1 text-[11px] text-blue-400 transition hover:text-blue-300"
+                            >
+                                <Plus size={12} /> 카테고리 추가
+                            </button>
+                        </div>
 
-                        <div className="flex flex-wrap gap-1.5 pt-2">
-                            {(((currentBlock.data as any)?.skills || []) as string[]).map((skill: string) => (
-                                <span
-                                    key={skill}
-                                    className="inspector-badge inline-flex items-center gap-1 text-xs bg-neutral-800 border border-neutral-700 text-neutral-200 px-2 py-1 rounded"
-                                >
-                                    {skill}
-                                    <button
-                                        onClick={() => handleRemoveSkill(skill)}
-                                        className="hover:text-red-400 text-neutral-400 transition"
-                                    >
-                                        <X size={12} />
-                                    </button>
-                                </span>
-                            ))}
+                        {skillCategories.length === 0 && (
+                            <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
+                                카테고리를 추가해 기술 스택을 정리해 주세요.
+                            </p>
+                        )}
+
+                        <div className="space-y-2">
+                            {skillCategories.map((category) => {
+                                const isExpanded = expandedSkillCategoryId === category.id;
+                                return (
+                                <div key={category.id} className="inspector-skill-category">
+                                    <div className="inspector-skill-category__header">
+                                        <button
+                                            type="button"
+                                            onClick={() => setExpandedSkillCategoryId(isExpanded ? null : category.id)}
+                                            className="inspector-skill-category__trigger"
+                                            aria-expanded={isExpanded}
+                                        >
+                                            <ChevronDown size={14} aria-hidden="true" />
+                                            <span>{category.name || "이름 없는 카테고리"}</span>
+                                            <span className="inspector-skill-category__count">{category.skills.length}개</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                updateSkillCategories(skillCategories.filter((item) => item.id !== category.id));
+                                                if (isExpanded) setExpandedSkillCategoryId(null);
+                                            }}
+                                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-red-500/10 hover:text-red-400"
+                                            title={`${category.name || "스킬"} 카테고리 삭제`}
+                                            aria-label={`${category.name || "스킬"} 카테고리 삭제`}
+                                        >
+                                            <Trash2 size={13} />
+                                        </button>
+                                    </div>
+                                    {isExpanded && (
+                                        <div className="inspector-skill-category__body">
+                                            <label className="block text-[10px] font-medium text-neutral-500">카테고리명</label>
+                                            <input
+                                                type="text"
+                                                value={category.name}
+                                                placeholder="카테고리명"
+                                                aria-label="스킬 카테고리명"
+                                                onChange={(event) => updateSkillCategories(skillCategories.map((item) => (
+                                                    item.id === category.id ? { ...item, name: event.target.value } : item
+                                                )))}
+                                                className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs font-semibold text-neutral-200 outline-none focus:border-blue-500"
+                                            />
+                                            <label className="mt-3 block text-[10px] font-medium text-neutral-500">기술</label>
+                                            <input
+                                                type="text"
+                                                placeholder="기술 입력 후 Enter"
+                                                value={newSkillInputs[category.id] || ""}
+                                                onChange={(event) => setNewSkillInputs((current) => ({ ...current, [category.id]: event.target.value }))}
+                                                onKeyDown={(event) => handleAddSkill(event, category.id)}
+                                                className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                            />
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                {category.skills.map((skill) => (
+                                                    <span key={skill} className="inspector-badge inline-flex items-center gap-1 text-xs">
+                                                        {skill}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveSkill(category.id, skill)}
+                                                            className="text-neutral-400 transition hover:text-red-400"
+                                                            aria-label={`${skill} 삭제`}
+                                                        >
+                                                            <X size={12} />
+                                                        </button>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

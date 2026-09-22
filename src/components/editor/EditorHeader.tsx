@@ -281,14 +281,10 @@ export default function EditorHeader() {
                     order: 1,
                     style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
                     data: {
-                        skills: [
-                            "TypeScript",
-                            "Next.js",
-                            "React",
-                            "Zustand",
-                            "Tailwind CSS",
-                            "Web Performance",
-                            "Design System",
+                        categories: [
+                            { id: "skills-frontend", name: "Frontend", skills: ["React", "Next.js", "Tailwind CSS", "TypeScript"] },
+                            { id: "skills-collaboration", name: "Collaboration", skills: ["GitHub", "Figma", "Notion", "Slack"] },
+                            { id: "skills-language", name: "Language", skills: ["JavaScript (ES6+)", "HTML5", "Python"] },
                         ],
                     } as any,
                 },
