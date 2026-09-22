@@ -28,6 +28,7 @@ const DEFAULT_GLOBAL_STYLE = {
     primaryColor: "#2f80c3",
     contentWidth: 800,
     basePadding: 36,
+    blockGap: 18,
     displayTitleFontSize: 24,
     sectionTitleFontSize: 24,
     itemTitleFontSize: 15,
@@ -214,6 +215,23 @@ export default function InspectorPanel() {
                             step="4"
                             value={globalStyle?.basePadding || 36}
                             onChange={(e) => updateGlobalStyle({ basePadding: Number(e.target.value) })}
+                            className="w-full accent-blue-500 cursor-pointer"
+                        />
+                    </div>
+
+                    {/* 블록 사이 간격 */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-neutral-300">블록 사이 간격</span>
+                            <span className="text-neutral-400 font-mono">{globalStyle?.blockGap ?? 18}px</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="40"
+                            step="2"
+                            value={globalStyle?.blockGap ?? 18}
+                            onChange={(e) => updateGlobalStyle({ blockGap: Number(e.target.value) })}
                             className="w-full accent-blue-500 cursor-pointer"
                         />
                     </div>

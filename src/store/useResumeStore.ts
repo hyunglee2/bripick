@@ -54,6 +54,7 @@ const defaultResume: ResumeDocument = {
         primaryColor: "#2f80c3",
         contentWidth: 800,
         basePadding: 36,
+        blockGap: 18,
         displayTitleFontSize: 24,
         sectionTitleFontSize: 24,
         itemTitleFontSize: 15,

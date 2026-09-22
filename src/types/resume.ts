@@ -96,6 +96,7 @@ export interface GlobalStyle {
     primaryColor: string;
     contentWidth: number;
     basePadding: number;
+    blockGap?: number;
     displayTitleFontSize?: number;
     sectionTitleFontSize?: number;
     itemTitleFontSize?: number;

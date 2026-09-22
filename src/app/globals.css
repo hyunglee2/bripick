@@ -439,6 +439,7 @@ body,
   --resume-body-size: 14px;
   --resume-caption-size: 12px;
   --resume-section-content-gap: 12px;
+  --resume-block-gap: 18px;
   --resume-bullet-font-size: var(--resume-body-size);
   --resume-bullet-line-height: 1.5;
   --resume-bullet-item-gap: 2px;
@@ -479,7 +480,7 @@ body,
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  margin-bottom: 18px !important;
+  margin-bottom: var(--resume-block-gap) !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
@@ -518,7 +519,7 @@ body,
 
 .reference-template [data-block-type="profile"] {
   border-bottom: 0 !important;
-  margin-bottom: 20px !important;
+  margin-bottom: var(--resume-block-gap) !important;
 }
 
 .resume-profile-main {

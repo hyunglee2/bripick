@@ -62,6 +62,7 @@ export default function ResumeCanvas() {
         "--resume-item-title-size": `${globalStyle?.itemTitleFontSize ?? 15}px`,
         "--resume-body-size": `${globalStyle?.bodyFontSize ?? 14}px`,
         "--resume-caption-size": `${globalStyle?.captionFontSize ?? 12}px`,
+        "--resume-block-gap": `${globalStyle?.blockGap ?? 18}px`,
     } as React.CSSProperties;
 
     const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 10, 150));
@@ -269,6 +270,7 @@ export default function ResumeCanvas() {
         globalStyle?.itemTitleFontSize,
         globalStyle?.bodyFontSize,
         globalStyle?.captionFontSize,
+        globalStyle?.blockGap,
         pagePlacements,
         paperPadding,
         templateType,
@@ -917,6 +919,7 @@ export default function ResumeCanvas() {
                                         style={{
                                             paddingTop: `${block.style.paddingY}px`,
                                             paddingBottom: `${block.style.paddingY}px`,
+                                            marginBottom: "var(--resume-block-gap)",
                                         }}
                                         className={`resume-block-item relative cursor-pointer transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${templateType === "modern"
                                             ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
