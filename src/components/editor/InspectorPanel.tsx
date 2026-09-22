@@ -18,7 +18,22 @@ import {
     Type,
     Eye,
     EyeOff,
+    Check,
+    RotateCcw,
 } from "lucide-react";
+
+const DEFAULT_GLOBAL_STYLE = {
+    fontFamily: "'Pretendard', sans-serif",
+    primaryColor: "#2f80c3",
+    contentWidth: 800,
+    basePadding: 36,
+    displayTitleFontSize: 24,
+    sectionTitleFontSize: 24,
+    itemTitleFontSize: 15,
+    bodyFontSize: 14,
+    captionFontSize: 12,
+    template: "modern" as const,
+};
 
 export default function InspectorPanel() {
     const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
@@ -69,13 +84,29 @@ export default function InspectorPanel() {
     // 1. 블록 미선택 시: 문서 전역 설정 패널
     if (!currentBlock) {
         return (
-            <aside className="inspector-panel w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
+            <aside className="inspector-panel inspector-panel--global w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
                 <div className="space-y-6">
-                    <div className="flex items-center gap-2 border-b border-neutral-800 pb-3">
-                        <Sliders size={15} className="text-blue-500" />
-                        <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
-                            문서 전역 설정
-                        </span>
+                    <div className="flex items-center justify-between gap-3 border-b border-neutral-800 pb-3">
+                        <div className="flex items-center gap-2">
+                            <Sliders size={15} className="text-blue-500" />
+                            <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
+                                문서 전역 설정
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => updateGlobalStyle(DEFAULT_GLOBAL_STYLE)}
+                            className="inspector-reset-button"
+                            title="문서 전역 설정을 기본값으로 복원"
+                        >
+                            <RotateCcw size={12} aria-hidden="true" />
+                            기본값 복원
+                        </button>
+                    </div>
+
+                    <div className="inspector-context-banner" role="note">
+                        <Sparkles size={15} aria-hidden="true" />
+                        <p>캔버스의 빈 영역을 클릭하면 언제든 전역 설정으로 돌아올 수 있어요.</p>
                     </div>
 
                     {/* 서체(폰트) 선택 */}
@@ -156,7 +187,7 @@ export default function InspectorPanel() {
                                             title={`${color.label} ${color.value}`}
                                             aria-label={`${color.label} ${color.value}`}
                                             aria-pressed={isSelected}
-                                            className={`h-5 w-5 rounded-full border-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#2f80c3]/70 ${isSelected
+                                        className={`inspector-color-swatch h-5 w-5 rounded-full border-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#2f80c3]/70 ${isSelected
                                                     ? "border-white shadow-[0_0_0_2px_rgba(47,128,195,0.55)]"
                                                     : "border-neutral-700 hover:border-neutral-400"
                                                 }`}
@@ -210,30 +241,29 @@ export default function InspectorPanel() {
                         <div className="grid grid-cols-2 gap-2">
                             <button
                                 onClick={() => updateGlobalStyle({ template: "modern" })}
-                                className={`p-2.5 rounded text-xs font-medium border text-left transition ${(globalStyle?.template || "modern") === "modern"
-                                        ? "bg-blue-600/20 border-blue-500 text-blue-300"
-                                        : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
-                                    }`}
+                                aria-pressed={(globalStyle?.template || "modern") === "modern"}
+                                className="inspector-template-card"
                             >
-                                <div className="font-bold">Modern</div>
-                                <div className="text-[10px] opacity-75">Bripick 시그니처 디자인</div>
+                                <span className="inspector-template-card__copy">
+                                    <span className="inspector-template-card__title">Modern</span>
+                                    <span className="inspector-template-card__description">Bripick 시그니처 디자인</span>
+                                </span>
+                                <Check className="inspector-template-card__check" aria-hidden="true" />
                             </button>
                             <button
                                 onClick={() => updateGlobalStyle({ template: "minimal" })}
-                                className={`p-2.5 rounded text-xs font-medium border text-left transition ${globalStyle?.template === "minimal"
-                                        ? "bg-blue-600/20 border-blue-500 text-blue-300"
-                                        : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-600"
-                                    }`}
+                                aria-pressed={globalStyle?.template === "minimal"}
+                                className="inspector-template-card"
                             >
-                                <div className="font-bold">Minimal</div>
-                                <div className="text-[10px] opacity-75">군더더기 없는 선형</div>
+                                <span className="inspector-template-card__copy">
+                                    <span className="inspector-template-card__title">Minimal</span>
+                                    <span className="inspector-template-card__description">군더더기 없는 선형</span>
+                                </span>
+                                <Check className="inspector-template-card__check" aria-hidden="true" />
                             </button>
                         </div>
                     </div>
 
-                    <div className="p-3 bg-neutral-900/60 rounded border border-neutral-800 text-[11px] text-neutral-400 leading-relaxed">
-                        캔버스의 빈 영역을 클릭하면 언제든 이 전역 설정 화면으로 돌아옵니다.
-                    </div>
                 </div>
             </aside>
         );
@@ -710,12 +740,12 @@ export default function InspectorPanel() {
                                 </button>
                             </div>
                             {profileContacts.length === 0 && (
-                                <p className="rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
+                                <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
                                     표시할 연락처 항목을 추가해 주세요.
                                 </p>
                             )}
                             {profileContacts.map((contact, contactIndex) => (
-                                <div key={contact.id} className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-1.5">
+                                <div key={contact.id} className="inspector-repeat-card inspector-contact-row">
                                     <div className="flex items-center gap-1.5">
                                         <input
                                         type="text"
@@ -749,6 +779,50 @@ export default function InspectorPanel() {
                                         }}
                                         className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                         />
+                                        <div className="inspector-contact-order flex shrink-0 items-center rounded-md border border-neutral-800 bg-neutral-950/70 p-0.5">
+                                            <button
+                                                type="button"
+                                                disabled={contactIndex === 0}
+                                                onClick={() => {
+                                                    const nextContacts = [...profileContacts];
+                                                    [nextContacts[contactIndex - 1], nextContacts[contactIndex]] = [
+                                                        nextContacts[contactIndex],
+                                                        nextContacts[contactIndex - 1],
+                                                    ];
+                                                    nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
+                                                    updateBlockData(
+                                                        currentBlock.id,
+                                                        withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                                    );
+                                                }}
+                                                className="flex h-6 w-6 items-center justify-center rounded text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200 disabled:pointer-events-none disabled:opacity-25"
+                                                title={`${contact.label || "연락처"} 항목 위로 이동`}
+                                                aria-label={`${contact.label || "연락처"} 항목 위로 이동`}
+                                            >
+                                                <ChevronUp size={13} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={contactIndex === profileContacts.length - 1}
+                                                onClick={() => {
+                                                    const nextContacts = [...profileContacts];
+                                                    [nextContacts[contactIndex], nextContacts[contactIndex + 1]] = [
+                                                        nextContacts[contactIndex + 1],
+                                                        nextContacts[contactIndex],
+                                                    ];
+                                                    nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
+                                                    updateBlockData(
+                                                        currentBlock.id,
+                                                        withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                                    );
+                                                }}
+                                                className="flex h-6 w-6 items-center justify-center rounded text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200 disabled:pointer-events-none disabled:opacity-25"
+                                                title={`${contact.label || "연락처"} 항목 아래로 이동`}
+                                                aria-label={`${contact.label || "연락처"} 항목 아래로 이동`}
+                                            >
+                                                <ChevronDown size={13} />
+                                            </button>
+                                        </div>
                                         <button
                                         type="button"
                                         onClick={() => {
@@ -788,8 +862,42 @@ export default function InspectorPanel() {
                                 </div>
                             ))}
                         </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">핵심 요약 (줄마다 한 항목)</label>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between gap-3">
+                                <label className="text-xs text-neutral-400">자기소개</label>
+                                <div className="inspector-toggle-group flex rounded-lg border border-neutral-800 bg-neutral-950/70 p-0.5" aria-label="자기소개 표시 방식">
+                                    <button
+                                        type="button"
+                                        onClick={() => updateBlockData(currentBlock.id, {
+                                            ...currentBlock.data,
+                                            introductionStyle: "bullets",
+                                        })}
+                                        className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
+                                            (currentBlock.data.introductionStyle || "bullets") === "bullets"
+                                                ? "bg-[#2f80c3] text-white shadow-sm"
+                                                : "text-neutral-500 hover:text-neutral-300"
+                                        }`}
+                                        aria-pressed={(currentBlock.data.introductionStyle || "bullets") === "bullets"}
+                                    >
+                                        불렛형
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => updateBlockData(currentBlock.id, {
+                                            ...currentBlock.data,
+                                            introductionStyle: "paragraph",
+                                        })}
+                                        className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
+                                            currentBlock.data.introductionStyle === "paragraph"
+                                                ? "bg-[#2f80c3] text-white shadow-sm"
+                                                : "text-neutral-500 hover:text-neutral-300"
+                                        }`}
+                                        aria-pressed={currentBlock.data.introductionStyle === "paragraph"}
+                                    >
+                                        줄글형
+                                    </button>
+                                </div>
+                            </div>
                             <textarea
                                 rows={5}
                                 value={(currentBlock.data.highlights || []).join("\n")}
@@ -799,16 +907,9 @@ export default function InspectorPanel() {
                                 })}
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
                             />
-                        </div>
-                        <div className="border-t border-neutral-800 pt-3">
-                            <label className="text-xs text-neutral-400 block mb-1">거주 지역</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.location || ""}
-                                onChange={(e) => updateBlockData(currentBlock.id, { ...currentBlock.data, location: e.target.value })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                            <p className="mt-1 text-[10px] text-neutral-500">Minimal 템플릿의 연락처 영역에서 사용됩니다.</p>
+                            <p className="text-[10px] text-neutral-500">
+                                문장별로 줄을 나눠 입력하세요. 줄글형에서는 자연스럽게 이어서 표시됩니다.
+                            </p>
                         </div>
                     </div>
                 )}
@@ -830,7 +931,7 @@ export default function InspectorPanel() {
                             currentBlock.data.map((exp: any) => (
                                 <div
                                     key={exp.id}
-                                    className="bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-3 relative"
+                                    className="inspector-repeat-card bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-3 relative"
                                 >
                                     <button
                                         onClick={() => handleRemoveExpItem(exp.id)}
@@ -898,7 +999,7 @@ export default function InspectorPanel() {
                                                 onClick={() =>
                                                     handleAddExpBullet(exp.id, "Next.js 마이그레이션을 통해 초기 로딩 속도 40% 단축")
                                                 }
-                                                className="text-[10px] bg-blue-950/60 border border-blue-800/60 text-blue-300 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-blue-900/60 transition"
+                                                className="inspector-suggestion-chip text-[10px] bg-blue-950/60 border border-blue-800/60 text-blue-300 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-blue-900/60 transition"
                                             >
                                                 <Sparkles size={10} /> 성능 개선형
                                             </button>
@@ -906,7 +1007,7 @@ export default function InspectorPanel() {
                                                 onClick={() =>
                                                     handleAddExpBullet(exp.id, "디자인 시스템 공통 컴포넌트 구축으로 개발 리드타임 30% 개선")
                                                 }
-                                                className="text-[10px] bg-neutral-800 border border-neutral-700 text-neutral-300 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-neutral-700 transition"
+                                                className="inspector-suggestion-chip text-[10px] bg-neutral-800 border border-neutral-700 text-neutral-300 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-neutral-700 transition"
                                             >
                                                 <Sparkles size={10} /> 생산성 향상형
                                             </button>
@@ -954,7 +1055,7 @@ export default function InspectorPanel() {
                             currentBlock.data.map((proj: any) => (
                                 <div
                                     key={proj.id}
-                                    className="bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-3 relative"
+                                    className="inspector-repeat-card bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-3 relative"
                                 >
                                     <button
                                         onClick={() => handleRemoveProjectItem(proj.id)}
@@ -1071,7 +1172,7 @@ export default function InspectorPanel() {
                             {(((currentBlock.data as any)?.skills || []) as string[]).map((skill: string) => (
                                 <span
                                     key={skill}
-                                    className="inline-flex items-center gap-1 text-xs bg-neutral-800 border border-neutral-700 text-neutral-200 px-2 py-1 rounded"
+                                    className="inspector-badge inline-flex items-center gap-1 text-xs bg-neutral-800 border border-neutral-700 text-neutral-200 px-2 py-1 rounded"
                                 >
                                     {skill}
                                     <button
@@ -1103,7 +1204,7 @@ export default function InspectorPanel() {
                             currentBlock.data.map((edu: any) => (
                                 <div
                                     key={edu.id}
-                                    className="bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-2.5 relative"
+                                    className="inspector-repeat-card bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-2.5 relative"
                                 >
                                     <button
                                         onClick={() => handleRemoveEduItem(edu.id)}
@@ -1197,7 +1298,7 @@ export default function InspectorPanel() {
                             currentBlock.data.map((cert: any) => (
                                 <div
                                     key={cert.id}
-                                    className="bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-2.5 relative"
+                                    className="inspector-repeat-card bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-2.5 relative"
                                 >
                                     <button
                                         onClick={() => handleRemoveCertItem(cert.id)}

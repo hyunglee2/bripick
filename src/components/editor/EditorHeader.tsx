@@ -157,6 +157,7 @@ export default function EditorHeader() {
     };
 
     const blockButtons: { label: string; type: BlockType }[] = [
+        { label: "프로필", type: "profile" },
         { label: "경력", type: "experience" },
         { label: "프로젝트", type: "project" },
         { label: "기술 스택", type: "skills" },
@@ -252,7 +253,6 @@ export default function EditorHeader() {
                         role: "Frontend Architect",
                         email: "bripick.dev@gmail.com",
                         phone: "010-1234-5678",
-                        location: "Seoul, Korea",
                         bio: "사용자 경험과 비즈니스 성과를 연결하는",
                         photo: "/profile_default.png",
                         showPhoto: true,
@@ -264,6 +264,13 @@ export default function EditorHeader() {
                             { id: "contact-blog", label: "Blog", value: "https://blog.coreluma.kr" },
                             { id: "contact-github", label: "GitHub", value: "https://github.coreluma.kr", inlineWithPrevious: true },
                         ],
+                        highlights: [
+                            "기획부터 디자인·개발·QA까지 제품의 전 과정을 경험한 프론트엔드 개발자입니다.",
+                            "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 구현합니다.",
+                            "실시간 통신과 결제 기능을 포함한 글로벌 웹 서비스 개발 및 운영 경험이 있습니다.",
+                            "로그와 데이터를 기반으로 문제를 분석하고 사용자 경험과 서비스 품질을 개선합니다.",
+                        ],
+                        introductionStyle: "bullets",
                     },
                 },
                 {
@@ -506,10 +513,10 @@ export default function EditorHeader() {
                     )}
                     <button
                         onClick={() => setIsAtsModalOpen(true)}
-                        className="header-button header-button--ats flex h-8 items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-600/20 px-3 text-xs font-medium text-emerald-300 transition hover:bg-emerald-600/30 active:scale-95"
+                        className="header-button header-button--ats flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition active:scale-[0.98]"
                         title="ATS 이력서 완성도 진단"
                     >
-                        <ShieldCheck size={14} className="text-emerald-400" />
+                        <ShieldCheck size={14} aria-hidden="true" />
                         <span className="hidden sm:inline">ATS 검사</span>
                     </button>
                     <button

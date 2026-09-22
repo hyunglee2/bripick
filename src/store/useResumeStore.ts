@@ -74,7 +74,6 @@ const defaultResume: ResumeDocument = {
                 role: "Frontend Engineer",
                 email: "dev.gildong@example.com",
                 phone: "010-1234-5678",
-                location: "Seoul, Korea",
                 bio: "기획·디자인·개발로 사용자 중심의 서비스를 만드는",
                 photo: "/profile_default.png",
                 showPhoto: true,
@@ -91,6 +90,7 @@ const defaultResume: ResumeDocument = {
                     "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 만듭니다.",
                     "데이터와 피드백을 기반으로 사용자 경험과 서비스 품질을 개선합니다.",
                 ],
+                introductionStyle: "bullets",
             },
         },
         {
@@ -159,7 +159,31 @@ export const useResumeStore = create<ResumeState>()(
                     const newBlockId = `block-${Date.now()}`;
 
                     let defaultData: any = [];
-                    if (type === "custom_text") {
+                    if (type === "profile") {
+                        defaultData = {
+                            name: "홍길동",
+                            role: "Frontend Engineer",
+                            email: "dev.gildong@example.com",
+                            phone: "010-1234-5678",
+                            bio: "기획·디자인·개발로 사용자 중심의 서비스를 만드는",
+                            photo: "/profile_default.png",
+                            showPhoto: true,
+                            blog: "https://blog.coreluma.kr",
+                            github: "https://github.coreluma.kr",
+                            contacts: [
+                                { id: `contact-email-${Date.now()}`, label: "Email", value: "dev.gildong@example.com" },
+                                { id: `contact-phone-${Date.now()}`, label: "Phone", value: "010-1234-5678" },
+                                { id: `contact-blog-${Date.now()}`, label: "Blog", value: "https://blog.coreluma.kr" },
+                                { id: `contact-github-${Date.now()}`, label: "GitHub", value: "https://github.coreluma.kr", inlineWithPrevious: true },
+                            ],
+                            highlights: [
+                                "제품의 전 과정을 경험하며 사용자 중심의 기능을 구현합니다.",
+                                "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 만듭니다.",
+                                "데이터와 피드백을 기반으로 사용자 경험과 서비스 품질을 개선합니다.",
+                            ],
+                            introductionStyle: "bullets",
+                        };
+                    } else if (type === "custom_text") {
                         defaultData = { content: "" };
                     } else if (type === "skills") {
                         defaultData = { skills: ["TypeScript", "React", "Next.js"] };
@@ -197,6 +221,8 @@ export const useResumeStore = create<ResumeState>()(
                         title:
                             type === "page_break"
                                 ? "PAGE BREAK"
+                                : type === "profile"
+                                    ? "기본 정보"
                                 : type === "education"
                                     ? "EDUCATION"
                                     : type === "certification"

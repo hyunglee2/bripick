@@ -25,13 +25,14 @@ export interface ProfileData {
     role: string;
     email: string;
     phone: string;
-    location: string;
+    location?: string;
     bio: string;
     photo?: string;
     showPhoto?: boolean;
     blog?: string;
     github?: string;
     highlights?: string[];
+    introductionStyle?: "bullets" | "paragraph";
     contacts?: ProfileContact[];
 }
 

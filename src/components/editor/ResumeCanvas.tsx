@@ -4,7 +4,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
-import { GripVertical, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { FileText, GripVertical, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { ProfileData, ResumeBlock } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 
@@ -52,7 +52,7 @@ export default function ResumeCanvas() {
     const templateType = globalStyle?.template || "modern";
     const primaryColor = globalStyle?.primaryColor || "#2f80c3";
     const fontFamily = globalStyle?.fontFamily || "'Pretendard', sans-serif";
-    const paperPadding = templateType === "modern" ? 56 : (globalStyle?.basePadding || 36);
+    const paperPadding = globalStyle?.basePadding ?? 36;
     const typographyStyle = {
         "--resume-blue": primaryColor,
         "--resume-display-title-size": `${globalStyle?.displayTitleFontSize ?? 24}px`,
@@ -293,6 +293,7 @@ export default function ResumeCanvas() {
                 }, []);
                 if (templateType === "modern") {
                     const highlights = Array.isArray(block.data.highlights) ? block.data.highlights : [];
+                    const introductionStyle = block.data.introductionStyle || "bullets";
                     return (
                         <div className="resume-profile-hero">
                             <div className={`resume-profile-main${showProfilePhoto ? "" : " resume-profile-main--no-photo"}`}>
@@ -363,13 +364,13 @@ export default function ResumeCanvas() {
                                     )}
                                 </div>
                             </div>
-                            {highlights.length > 0 && (
+                            {highlights.length > 0 && introductionStyle === "bullets" && (
                                 <ul className="resume-profile-highlights">
                                     {highlights.map((highlight: string, index: number) => (
                                         <li key={index}>
                                             <EditableText
                                                 value={highlight}
-                                                placeholder="핵심 강점을 입력하세요"
+                                                placeholder="자기소개를 입력하세요"
                                                 onChange={(value) => {
                                                     const updated = [...highlights];
                                                     updated[index] = value;
@@ -379,6 +380,19 @@ export default function ResumeCanvas() {
                                         </li>
                                     ))}
                                 </ul>
+                            )}
+                            {highlights.length > 0 && introductionStyle === "paragraph" && (
+                                <EditableText
+                                    tag="p"
+                                    multiline
+                                    value={highlights.join("\n")}
+                                    placeholder="자기소개를 입력하세요"
+                                    className="resume-profile-introduction"
+                                    onChange={(value) => updateBlockData(block.id, {
+                                        ...block.data,
+                                        highlights: value.split(/\r?\n/).filter((line) => line.trim()),
+                                    })}
+                                />
                             )}
                         </div>
                     );
@@ -409,12 +423,6 @@ export default function ResumeCanvas() {
                                     <span>{contact.label}: {contact.value}</span>
                                 </span>
                             ))}
-                            {visibleProfileContacts.length > 0 && <span>|</span>}
-                            <EditableText
-                                value={block.data.location || ""}
-                                placeholder="거주 지역"
-                                onChange={(newLoc) => updateBlockData(block.id, { ...block.data, location: newLoc })}
-                            />
                         </div>
                         <div className="pt-2 border-t border-neutral-200/50 mt-2">
                             <EditableText
@@ -856,10 +864,13 @@ export default function ResumeCanvas() {
                     <div key={page.pageIndex} className="resume-page relative flex flex-col items-center">
                         {/* 페이지 상단 번호 표시기 (인쇄 시 제외) */}
                         <div className="no-print w-full flex justify-between items-center mb-2 text-xs text-neutral-400 font-medium">
-                            <span className="resume-page-indicator px-2.5 py-0.5 rounded text-[11px] border">
-                                📄 A4 Page {page.pageIndex}
+                            <span className="resume-page-indicator">
+                                <FileText aria-hidden="true" />
+                                <span>A4</span>
+                                <span className="resume-page-indicator__divider" aria-hidden="true" />
+                                <span>Page {page.pageIndex}</span>
                             </span>
-                            <span className="text-[10px] text-neutral-500">210mm × 297mm 규격</span>
+                            <span className="resume-page-size">210 × 297 mm</span>
                         </div>
 
                         {/* 실제 A4 단일 시트 */}
