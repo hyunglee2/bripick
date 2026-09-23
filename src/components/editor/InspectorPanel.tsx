@@ -1,7 +1,7 @@
 // src/components/editor/InspectorPanel.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { ProfileData, SkillCategory, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
@@ -21,6 +21,9 @@ import {
     EyeOff,
     Check,
     RotateCcw,
+    GripVertical,
+    Link2,
+    MoreHorizontal,
 } from "lucide-react";
 
 const DEFAULT_GLOBAL_STYLE = {
@@ -51,6 +54,12 @@ export default function InspectorPanel() {
 
     const [newSkillInputs, setNewSkillInputs] = useState<Record<string, string>>({});
     const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
+    const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
+    const blockPanelRef = useRef<HTMLElement>(null);
+
+    useEffect(() => {
+        blockPanelRef.current?.scrollTo({ top: 0 });
+    }, [selectedBlockId]);
 
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
     const currentBlock = blocks[currentIndex];
@@ -100,7 +109,7 @@ export default function InspectorPanel() {
                             type="button"
                             onClick={() => updateGlobalStyle(DEFAULT_GLOBAL_STYLE)}
                             className="inspector-reset-button"
-                            title="문서 전역 설정을 기본값으로 복원"
+                            data-tooltip="문서 전역 설정을 기본값으로 복원"
                         >
                             <RotateCcw size={12} aria-hidden="true" />
                             기본값 복원
@@ -187,7 +196,7 @@ export default function InspectorPanel() {
                                             key={color.value}
                                             type="button"
                                             onClick={() => updateGlobalStyle({ primaryColor: color.value })}
-                                            title={`${color.label} ${color.value}`}
+                                            data-tooltip={`${color.label} ${color.value}`}
                                             aria-label={`${color.label} ${color.value}`}
                                             aria-pressed={isSelected}
                                         className={`inspector-color-swatch h-5 w-5 rounded-full border-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#2f80c3]/70 ${isSelected
@@ -560,7 +569,7 @@ export default function InspectorPanel() {
     };
 
     return (
-        <aside className="inspector-panel inspector-panel--block w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
+        <aside ref={blockPanelRef} className="inspector-panel inspector-panel--block w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
             <div className="space-y-6">
                 {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
                 <div className="inspector-heading flex items-center justify-between border-b border-neutral-800 pb-3">
@@ -581,7 +590,7 @@ export default function InspectorPanel() {
                                     ? "text-red-400 hover:text-red-300 hover:bg-red-950/40"
                                     : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                                 }`}
-                            title={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
+                            data-tooltip={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
                         >
                             {currentBlock.isVisible === false ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -590,7 +599,7 @@ export default function InspectorPanel() {
                             onClick={handleMoveUp}
                             disabled={currentIndex === 0}
                             className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                            title="위로 이동"
+                            data-tooltip="위로 이동"
                         >
                             <ChevronUp size={16} />
                         </button>
@@ -598,14 +607,14 @@ export default function InspectorPanel() {
                             onClick={handleMoveDown}
                             disabled={currentIndex === blocks.length - 1}
                             className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                            title="아래로 이동"
+                            data-tooltip="아래로 이동"
                         >
                             <ChevronDown size={16} />
                         </button>
                         <button
                             onClick={() => removeBlock(currentBlock.id)}
                             className="p-1 text-neutral-500 hover:text-red-400 transition ml-1"
-                            title="블록 삭제"
+                            data-tooltip="블록 삭제"
                         >
                             <Trash2 size={15} />
                         </button>
@@ -624,13 +633,9 @@ export default function InspectorPanel() {
                     <p className="text-[10px] text-neutral-500">캔버스와 PDF의 섹션 제목에 바로 반영됩니다.</p>
                 </div>
 
-                {/* 1. 고급 스타일 설정 */}
-                <details className="inspector-advanced group">
-                    <summary className="inspector-advanced__summary">
-                        <span>고급 설정</span>
-                        <ChevronDown size={15} aria-hidden="true" />
-                    </summary>
-                    <div className="inspector-advanced__body space-y-4">
+                <section className="inspector-options-section space-y-2">
+                    <h3 className="inspector-section-heading">블록 옵션</h3>
+                    <div className="inspector-options-card space-y-4">
                         <div className="flex items-center justify-between gap-3">
                             <div>
                                 <span className="block text-xs text-neutral-300">개별 간격 사용</span>
@@ -685,15 +690,15 @@ export default function InspectorPanel() {
                             />
                         </div>
                     </div>
-                </details>
+                </section>
 
-                {/* 2. 블록별 데이터 입력 폼 */}
+                {/* 블록별 데이터 입력 폼 */}
 
                 {/* [프로필 폼] */}
                 {currentBlock.type === "profile" && (
-                    <div className="inspector-section space-y-4 border-t border-neutral-800 pt-4">
-                        <div>
-                            <div className="mb-2 flex items-center justify-between">
+                    <div className="inspector-section inspector-form-stack border-t border-neutral-800 pt-4">
+                        <div className="inspector-field">
+                            <div className="flex items-center justify-between">
                                 <label className="text-xs text-neutral-400">프로필 사진</label>
                                 <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
                                     <input
@@ -731,8 +736,8 @@ export default function InspectorPanel() {
                                 )}
                             </div>
                         </div>
-                        <div>
-                            <div className="mb-1 flex items-baseline justify-between gap-2">
+                        <div className="inspector-field">
+                            <div className="flex items-baseline justify-between gap-2">
                                 <label className="text-xs text-neutral-400">한 줄 소개</label>
                                 <span className="text-[10px] text-neutral-500">이름·직무 앞에 표시</span>
                             </div>
@@ -746,8 +751,8 @@ export default function InspectorPanel() {
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
                             />
                         </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">직무(Role)</label>
+                        <div className="inspector-field">
+                            <label className="text-xs text-neutral-400 block">직무</label>
                             <input
                                 type="text"
                                 value={currentBlock.data.role || ""}
@@ -757,8 +762,8 @@ export default function InspectorPanel() {
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
                         </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">이름</label>
+                        <div className="inspector-field">
+                            <label className="text-xs text-neutral-400 block">이름</label>
                             <input
                                 type="text"
                                 value={currentBlock.data.name || ""}
@@ -768,25 +773,9 @@ export default function InspectorPanel() {
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <label className="text-xs text-neutral-400">CONTACTS</label>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const nextContacts = [
-                                            ...profileContacts,
-                                            { id: `contact-${Date.now()}`, label: "", value: "" },
-                                        ];
-                                        updateBlockData(
-                                            currentBlock.id,
-                                            withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                        );
-                                    }}
-                                    className="flex items-center gap-1 text-[11px] text-blue-400 transition hover:text-blue-300"
-                                >
-                                    <Plus size={12} /> 항목 추가
-                                </button>
+                        <div className="inspector-field inspector-contact-list">
+                            <div>
+                                <label className="text-xs text-neutral-400">연락처</label>
                             </div>
                             {profileContacts.length === 0 && (
                                 <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
@@ -794,8 +783,41 @@ export default function InspectorPanel() {
                                 </p>
                             )}
                             {profileContacts.map((contact, contactIndex) => (
-                                <div key={contact.id} className="inspector-repeat-card inspector-contact-row">
-                                    <div className="flex items-center gap-1.5">
+                                <div
+                                    key={contact.id}
+                                    className={`inspector-repeat-card inspector-contact-row${contactIndex === 0 ? " is-first" : ""}${draggedContactIndex === contactIndex ? " is-dragging" : ""}`}
+                                    draggable
+                                    onDragStart={(event) => {
+                                        if (!(event.target as HTMLElement).closest(".inspector-contact-drag")) {
+                                            event.preventDefault();
+                                            return;
+                                        }
+                                        setDraggedContactIndex(contactIndex);
+                                    }}
+                                    onDragEnd={() => setDraggedContactIndex(null)}
+                                    onDragOver={(event) => event.preventDefault()}
+                                    onDrop={(event) => {
+                                        event.preventDefault();
+                                        if (draggedContactIndex === null || draggedContactIndex === contactIndex) return;
+                                        const nextContacts = [...profileContacts];
+                                        const [movedContact] = nextContacts.splice(draggedContactIndex, 1);
+                                        nextContacts.splice(contactIndex, 0, movedContact);
+                                        nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
+                                        updateBlockData(
+                                            currentBlock.id,
+                                            withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                        );
+                                        setDraggedContactIndex(null);
+                                    }}
+                                >
+                                    <div className="inspector-contact-main">
+                                        <span
+                                            className="inspector-contact-drag tooltip-anchor"
+                                            data-tooltip="드래그하여 순서 변경"
+                                            aria-label={`${contact.label || "연락처"} 항목 순서 변경`}
+                                        >
+                                            <GripVertical size={15} />
+                                        </span>
                                         <input
                                         type="text"
                                         value={contact.label}
@@ -810,7 +832,7 @@ export default function InspectorPanel() {
                                                 withProfileContacts(currentBlock.data as ProfileData, nextContacts),
                                             );
                                         }}
-                                        className="w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                        className="inspector-contact-label w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                         />
                                         <input
                                         type="text"
@@ -828,74 +850,14 @@ export default function InspectorPanel() {
                                         }}
                                         className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                         />
-                                        <div className="inspector-contact-order flex shrink-0 items-center rounded-md border border-neutral-800 bg-neutral-950/70 p-0.5">
+                                        {contactIndex > 0 ? (
                                             <button
                                                 type="button"
-                                                disabled={contactIndex === 0}
+                                                aria-pressed={Boolean(contact.inlineWithPrevious)}
                                                 onClick={() => {
-                                                    const nextContacts = [...profileContacts];
-                                                    [nextContacts[contactIndex - 1], nextContacts[contactIndex]] = [
-                                                        nextContacts[contactIndex],
-                                                        nextContacts[contactIndex - 1],
-                                                    ];
-                                                    nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
-                                                    updateBlockData(
-                                                        currentBlock.id,
-                                                        withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                                    );
-                                                }}
-                                                className="flex h-6 w-6 items-center justify-center rounded text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200 disabled:pointer-events-none disabled:opacity-25"
-                                                title={`${contact.label || "연락처"} 항목 위로 이동`}
-                                                aria-label={`${contact.label || "연락처"} 항목 위로 이동`}
-                                            >
-                                                <ChevronUp size={13} />
-                                            </button>
-                                            <button
-                                                type="button"
-                                                disabled={contactIndex === profileContacts.length - 1}
-                                                onClick={() => {
-                                                    const nextContacts = [...profileContacts];
-                                                    [nextContacts[contactIndex], nextContacts[contactIndex + 1]] = [
-                                                        nextContacts[contactIndex + 1],
-                                                        nextContacts[contactIndex],
-                                                    ];
-                                                    nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
-                                                    updateBlockData(
-                                                        currentBlock.id,
-                                                        withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                                    );
-                                                }}
-                                                className="flex h-6 w-6 items-center justify-center rounded text-neutral-500 transition hover:bg-neutral-800 hover:text-neutral-200 disabled:pointer-events-none disabled:opacity-25"
-                                                title={`${contact.label || "연락처"} 항목 아래로 이동`}
-                                                aria-label={`${contact.label || "연락처"} 항목 아래로 이동`}
-                                            >
-                                                <ChevronDown size={13} />
-                                            </button>
-                                        </div>
-                                        <button
-                                        type="button"
-                                        onClick={() => {
-                                            const nextContacts = profileContacts.filter((item) => item.id !== contact.id);
-                                            updateBlockData(
-                                                currentBlock.id,
-                                                withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                            );
-                                        }}
-                                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-red-500/10 hover:text-red-400"
-                                        title={`${contact.label || "연락처"} 항목 삭제`}
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </div>
-                                    {contactIndex > 0 && (
-                                        <label className="mt-1.5 flex cursor-pointer items-center gap-1.5 px-1 text-[11px] text-neutral-400">
-                                            <input
-                                                type="checkbox"
-                                                checked={Boolean(contact.inlineWithPrevious)}
-                                                onChange={(event) => {
                                                     const nextContacts = profileContacts.map((item) => (
                                                         item.id === contact.id
-                                                            ? { ...item, inlineWithPrevious: event.target.checked }
+                                                            ? { ...item, inlineWithPrevious: !item.inlineWithPrevious }
                                                             : item
                                                     ));
                                                     updateBlockData(
@@ -903,49 +865,94 @@ export default function InspectorPanel() {
                                                         withProfileContacts(currentBlock.data as ProfileData, nextContacts),
                                                     );
                                                 }}
-                                                className="accent-[#2f80c3]"
-                                            />
-                                            앞 항목과 같은 줄에 표시
-                                        </label>
-                                    )}
+                                                className="inspector-contact-link"
+                                                data-tooltip={contact.inlineWithPrevious ? "앞 항목과 줄 연결 해제" : "앞 항목과 같은 줄에 표시"}
+                                                aria-label={contact.inlineWithPrevious ? "앞 항목과 줄 연결 해제" : "앞 항목과 같은 줄에 표시"}
+                                            >
+                                                <Link2 size={14} />
+                                            </button>
+                                        ) : (
+                                            <span className="inspector-contact-link-spacer" aria-hidden="true" />
+                                        )}
+                                        <details className="inspector-contact-menu">
+                                            <summary
+                                                data-tooltip={`${contact.label || "연락처"} 항목 메뉴`}
+                                                aria-label={`${contact.label || "연락처"} 항목 메뉴`}
+                                            >
+                                                <MoreHorizontal size={16} />
+                                            </summary>
+                                            <div className="inspector-contact-menu__popover">
+                                                <button
+                                                    type="button"
+                                                    disabled={contactIndex === 0}
+                                                    onClick={() => {
+                                                        const nextContacts = [...profileContacts];
+                                                        [nextContacts[contactIndex - 1], nextContacts[contactIndex]] = [nextContacts[contactIndex], nextContacts[contactIndex - 1]];
+                                                        nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
+                                                        updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
+                                                    }}
+                                                >
+                                                    <ChevronUp size={13} /> 위로 이동
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={contactIndex === profileContacts.length - 1}
+                                                    onClick={() => {
+                                                        const nextContacts = [...profileContacts];
+                                                        [nextContacts[contactIndex], nextContacts[contactIndex + 1]] = [nextContacts[contactIndex + 1], nextContacts[contactIndex]];
+                                                        nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
+                                                        updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
+                                                    }}
+                                                >
+                                                    <ChevronDown size={13} /> 아래로 이동
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="is-danger"
+                                                    onClick={() => {
+                                                        const nextContacts = profileContacts.filter((item) => item.id !== contact.id);
+                                                        updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
+                                                    }}
+                                                >
+                                                    <Trash2 size={13} /> 삭제
+                                                </button>
+                                            </div>
+                                        </details>
+                                    </div>
                                 </div>
                             ))}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const nextContacts = [
+                                        ...profileContacts,
+                                        { id: `contact-${Date.now()}`, label: "", value: "" },
+                                    ];
+                                    updateBlockData(
+                                        currentBlock.id,
+                                        withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                    );
+                                }}
+                                className="inspector-contact-add"
+                            >
+                                <Plus size={14} /> 연락처 항목 추가
+                            </button>
                         </div>
-                        <div className="space-y-2">
+                        <div className="inspector-field">
                             <div className="flex items-center justify-between gap-3">
                                 <label className="text-xs text-neutral-400">자기소개</label>
-                                <div className="inspector-toggle-group flex rounded-lg border border-neutral-800 bg-neutral-950/70 p-0.5" aria-label="자기소개 표시 방식">
-                                    <button
-                                        type="button"
-                                        onClick={() => updateBlockData(currentBlock.id, {
+                                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
+                                    <input
+                                        type="checkbox"
+                                        checked={(currentBlock.data.introductionStyle || "bullets") === "bullets"}
+                                        onChange={(event) => updateBlockData(currentBlock.id, {
                                             ...currentBlock.data,
-                                            introductionStyle: "bullets",
+                                            introductionStyle: event.target.checked ? "bullets" : "paragraph",
                                         })}
-                                        className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
-                                            (currentBlock.data.introductionStyle || "bullets") === "bullets"
-                                                ? "bg-[#2f80c3] text-white shadow-sm"
-                                                : "text-neutral-500 hover:text-neutral-300"
-                                        }`}
-                                        aria-pressed={(currentBlock.data.introductionStyle || "bullets") === "bullets"}
-                                    >
-                                        불렛형
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => updateBlockData(currentBlock.id, {
-                                            ...currentBlock.data,
-                                            introductionStyle: "paragraph",
-                                        })}
-                                        className={`rounded-md px-2.5 py-1 text-[11px] font-medium transition ${
-                                            currentBlock.data.introductionStyle === "paragraph"
-                                                ? "bg-[#2f80c3] text-white shadow-sm"
-                                                : "text-neutral-500 hover:text-neutral-300"
-                                        }`}
-                                        aria-pressed={currentBlock.data.introductionStyle === "paragraph"}
-                                    >
-                                        줄글형
-                                    </button>
-                                </div>
+                                        aria-label="자기소개를 불렛형으로 표시"
+                                    />
+                                    {(currentBlock.data.introductionStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
+                                </label>
                             </div>
                             <textarea
                                 rows={5}
@@ -965,16 +972,15 @@ export default function InspectorPanel() {
 
                 {/* [경력 폼] */}
                 {currentBlock.type === "experience" && (
-                    <div className="space-y-4 border-t border-neutral-800 pt-4">
-                        <div className="flex items-center justify-between">
+                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
+                        <div>
                             <span className="text-xs font-semibold text-neutral-300">경력 목록</span>
-                            <button
-                                onClick={handleAddExperienceItem}
-                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
-                            >
-                                <Plus size={13} /> 회사 추가
-                            </button>
                         </div>
+                        {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
+                            <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
+                                경력 항목을 추가해 주세요.
+                            </p>
+                        )}
 
                         {Array.isArray(currentBlock.data) &&
                             currentBlock.data.map((exp: any) => (
@@ -985,7 +991,7 @@ export default function InspectorPanel() {
                                     <button
                                         onClick={() => handleRemoveExpItem(exp.id)}
                                         className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        title="경력 삭제"
+                                        data-tooltip="경력 삭제"
                                     >
                                         <Trash2 size={13} />
                                     </button>
@@ -1033,14 +1039,8 @@ export default function InspectorPanel() {
 
                                     {/* 성과 불릿 목록 & STAR 칩 */}
                                     <div className="space-y-2 pt-1 border-t border-neutral-800">
-                                        <div className="flex items-center justify-between">
+                                        <div>
                                             <label className="text-[11px] text-neutral-300 font-medium">성과 불릿 목록</label>
-                                            <button
-                                                onClick={() => handleAddExpBullet(exp.id)}
-                                                className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-0.5"
-                                            >
-                                                <Plus size={12} /> 불릿 추가
-                                            </button>
                                         </div>
 
                                         <div className="flex flex-wrap gap-1">
@@ -1074,31 +1074,40 @@ export default function InspectorPanel() {
                                                     <button
                                                         onClick={() => handleRemoveExpBullet(exp.id, bIdx)}
                                                         className="text-neutral-500 hover:text-red-400 p-1 transition"
-                                                        title="불릿 삭제"
+                                                        data-tooltip="불릿 삭제"
                                                     >
                                                         <X size={13} />
                                                     </button>
                                                 </div>
                                             ))}
                                         </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddExpBullet(exp.id)}
+                                            className="inspector-inline-add"
+                                        >
+                                            <Plus size={13} /> 불릿 추가
+                                        </button>
                                     </div>
                                 </div>
                             ))}
+                        <button type="button" onClick={handleAddExperienceItem} className="inspector-list-add">
+                            <Plus size={14} /> 회사 추가
+                        </button>
                     </div>
                 )}
 
                 {/* [프로젝트 폼] */}
                 {currentBlock.type === "project" && (
-                    <div className="space-y-4 border-t border-neutral-800 pt-4">
-                        <div className="flex items-center justify-between">
+                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
+                        <div>
                             <span className="text-xs font-semibold text-neutral-300">프로젝트 목록</span>
-                            <button
-                                onClick={handleAddProjectItem}
-                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
-                            >
-                                <Plus size={13} /> 프로젝트 추가
-                            </button>
                         </div>
+                        {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
+                            <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
+                                프로젝트 항목을 추가해 주세요.
+                            </p>
+                        )}
 
                         {Array.isArray(currentBlock.data) &&
                             currentBlock.data.map((proj: any) => (
@@ -1109,7 +1118,7 @@ export default function InspectorPanel() {
                                     <button
                                         onClick={() => handleRemoveProjectItem(proj.id)}
                                         className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        title="프로젝트 삭제"
+                                        data-tooltip="프로젝트 삭제"
                                     >
                                         <Trash2 size={13} />
                                     </button>
@@ -1167,14 +1176,8 @@ export default function InspectorPanel() {
                                     </div>
 
                                     <div className="space-y-2 pt-1 border-t border-neutral-800">
-                                        <div className="flex items-center justify-between">
+                                        <div>
                                             <label className="text-[11px] text-neutral-300 font-medium">기여/성과 불릿 목록</label>
-                                            <button
-                                                onClick={() => handleAddProjBullet(proj.id)}
-                                                className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-0.5"
-                                            >
-                                                <Plus size={12} /> 불릿 추가
-                                            </button>
                                         </div>
 
                                         <div className="space-y-1.5">
@@ -1189,38 +1192,37 @@ export default function InspectorPanel() {
                                                     <button
                                                         onClick={() => handleRemoveProjBullet(proj.id, bIdx)}
                                                         className="text-neutral-500 hover:text-red-400 p-1 transition"
-                                                        title="불릿 삭제"
+                                                        data-tooltip="불릿 삭제"
                                                     >
                                                         <X size={13} />
                                                     </button>
                                                 </div>
                                             ))}
                                         </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddProjBullet(proj.id)}
+                                            className="inspector-inline-add"
+                                        >
+                                            <Plus size={13} /> 불릿 추가
+                                        </button>
                                     </div>
                                 </div>
                             ))}
+                        <button type="button" onClick={handleAddProjectItem} className="inspector-list-add">
+                            <Plus size={14} /> 프로젝트 추가
+                        </button>
                     </div>
                 )}
 
                 {/* [스킬 폼] */}
                 {currentBlock.type === "skills" && (
-                    <div className="space-y-3 border-t border-neutral-800 pt-4">
-                        <div className="flex items-center justify-between gap-3">
+                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
+                        <div>
                             <div>
                                 <span className="block text-xs font-semibold text-neutral-300">스킬 카테고리</span>
                                 <span className="mt-0.5 block text-[10px] text-neutral-500">직무 영역별로 기술을 묶어 표시합니다.</span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const id = `skill-category-${Date.now()}`;
-                                    updateSkillCategories([...skillCategories, { id, name: "새 카테고리", skills: [] }]);
-                                    setExpandedSkillCategoryId(id);
-                                }}
-                                className="flex items-center gap-1 text-[11px] text-blue-400 transition hover:text-blue-300"
-                            >
-                                <Plus size={12} /> 카테고리 추가
-                            </button>
                         </div>
 
                         {skillCategories.length === 0 && (
@@ -1252,7 +1254,7 @@ export default function InspectorPanel() {
                                                 if (isExpanded) setExpandedSkillCategoryId(null);
                                             }}
                                             className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-red-500/10 hover:text-red-400"
-                                            title={`${category.name || "스킬"} 카테고리 삭제`}
+                                            data-tooltip={`${category.name || "스킬"} 카테고리 삭제`}
                                             aria-label={`${category.name || "스킬"} 카테고리 삭제`}
                                         >
                                             <Trash2 size={13} />
@@ -1301,21 +1303,31 @@ export default function InspectorPanel() {
                                 );
                             })}
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const id = `skill-category-${Date.now()}`;
+                                updateSkillCategories([...skillCategories, { id, name: "새 카테고리", skills: [] }]);
+                                setExpandedSkillCategoryId(id);
+                            }}
+                            className="inspector-list-add"
+                        >
+                            <Plus size={14} /> 카테고리 추가
+                        </button>
                     </div>
                 )}
 
                 {/* [학력(Education) 폼] */}
                 {currentBlock.type === "education" && (
-                    <div className="space-y-4 border-t border-neutral-800 pt-4">
-                        <div className="flex items-center justify-between">
+                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
+                        <div>
                             <span className="text-xs font-semibold text-neutral-300">학력 목록</span>
-                            <button
-                                onClick={handleAddEducationItem}
-                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
-                            >
-                                <Plus size={13} /> 학교 추가
-                            </button>
                         </div>
+                        {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
+                            <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
+                                학력 항목을 추가해 주세요.
+                            </p>
+                        )}
 
                         {Array.isArray(currentBlock.data) &&
                             currentBlock.data.map((edu: any) => (
@@ -1326,7 +1338,7 @@ export default function InspectorPanel() {
                                     <button
                                         onClick={() => handleRemoveEduItem(edu.id)}
                                         className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        title="학력 삭제"
+                                        data-tooltip="학력 삭제"
                                     >
                                         <Trash2 size={13} />
                                     </button>
@@ -1395,21 +1407,23 @@ export default function InspectorPanel() {
                                     </div>
                                 </div>
                             ))}
+                        <button type="button" onClick={handleAddEducationItem} className="inspector-list-add">
+                            <Plus size={14} /> 학교 추가
+                        </button>
                     </div>
                 )}
 
                 {/* [자격/수상(Certification) 폼] */}
                 {currentBlock.type === "certification" && (
-                    <div className="space-y-4 border-t border-neutral-800 pt-4">
-                        <div className="flex items-center justify-between">
+                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
+                        <div>
                             <span className="text-xs font-semibold text-neutral-300">자격 및 수상 목록</span>
-                            <button
-                                onClick={handleAddCertItem}
-                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 transition"
-                            >
-                                <Plus size={13} /> 항목 추가
-                            </button>
                         </div>
+                        {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
+                            <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
+                                자격·수상 항목을 추가해 주세요.
+                            </p>
+                        )}
 
                         {Array.isArray(currentBlock.data) &&
                             currentBlock.data.map((cert: any) => (
@@ -1420,7 +1434,7 @@ export default function InspectorPanel() {
                                     <button
                                         onClick={() => handleRemoveCertItem(cert.id)}
                                         className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        title="항목 삭제"
+                                        data-tooltip="항목 삭제"
                                     >
                                         <Trash2 size={13} />
                                     </button>
@@ -1457,14 +1471,17 @@ export default function InspectorPanel() {
                                     </div>
                                 </div>
                             ))}
+                        <button type="button" onClick={handleAddCertItem} className="inspector-list-add">
+                            <Plus size={14} /> 자격·수상 항목 추가
+                        </button>
                     </div>
                 )}
 
                 {/* [자유 텍스트 폼] */}
                 {currentBlock.type === "custom_text" && (
-                    <div className="space-y-3 border-t border-neutral-800 pt-4">
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">섹션 제목</label>
+                    <div className="inspector-form-stack border-t border-neutral-800 pt-4">
+                        <div className="inspector-field">
+                            <label className="text-xs text-neutral-400 block">섹션 제목</label>
                             <input
                                 type="text"
                                 value={currentBlock.title}
@@ -1472,8 +1489,8 @@ export default function InspectorPanel() {
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
                         </div>
-                        <div>
-                            <label className="text-xs text-neutral-400 block mb-1">내용</label>
+                        <div className="inspector-field">
+                            <label className="text-xs text-neutral-400 block">내용</label>
                             <textarea
                                 rows={6}
                                 value={currentBlock.data?.content || ""}
@@ -1484,6 +1501,7 @@ export default function InspectorPanel() {
                         </div>
                     </div>
                 )}
+
             </div>
         </aside>
     );

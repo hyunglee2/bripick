@@ -377,7 +377,6 @@ export default function EditorHeader() {
                             value={resume.versionName || ""}
                             onChange={(e) => updateVersionName(e.target.value)}
                             className="w-36 min-w-0 border-0 bg-transparent px-1 py-1.5 text-sm font-medium text-neutral-200 outline-none placeholder:text-neutral-600 focus:text-white md:w-44"
-                            title="현재 이력서 이름 수정"
                         />
                         <button
                             type="button"
@@ -454,7 +453,7 @@ export default function EditorHeader() {
                             onClick={undo}
                             disabled={!canUndo}
                             className="header-icon-button rounded-md p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
-                            title="실행 취소 (Ctrl+Z)"
+                            data-tooltip="실행 취소 (Ctrl+Z)"
                         >
                             <Undo2 size={15} />
                         </button>
@@ -462,7 +461,7 @@ export default function EditorHeader() {
                             onClick={redo}
                             disabled={!canRedo}
                             className="header-icon-button rounded-md p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-white disabled:opacity-30"
-                            title="다시 실행 (Ctrl+Y)"
+                            data-tooltip="다시 실행 (Ctrl+Y)"
                         >
                             <Redo2 size={15} />
                         </button>
@@ -503,7 +502,7 @@ export default function EditorHeader() {
                             type="button"
                             onClick={handleLoadPreset}
                             className="header-button header-button--secondary hidden h-8 items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 text-xs font-medium text-blue-300 transition hover:border-blue-500/50 hover:bg-blue-500/20 sm:flex"
-                            title="Bripick 샘플 이력서로 시작하기"
+                            data-tooltip="Bripick 샘플 이력서로 시작하기"
                         >
                             <Sparkles size={14} /> 샘플로 시작
                         </button>
@@ -511,7 +510,7 @@ export default function EditorHeader() {
                     <button
                         onClick={() => setIsAtsModalOpen(true)}
                         className="header-button header-button--ats flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition active:scale-[0.98]"
-                        title="ATS 이력서 완성도 진단"
+                        data-tooltip="ATS 이력서 완성도 진단"
                     >
                         <ShieldCheck size={14} aria-hidden="true" />
                         <span className="hidden sm:inline">ATS 검사</span>
@@ -527,7 +526,7 @@ export default function EditorHeader() {
                         type="button"
                         onClick={toggleTheme}
                         className="header-icon-button flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
-                        title={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
+                        data-tooltip={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
                         aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
                     >
                         {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}

@@ -7,7 +7,7 @@ import EditableText from "@/components/editor/EditableText";
 import { FileText, GripVertical, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { ProfileData, ResumeBlock, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
-import { getSkillCategories } from "@/lib/skills";
+import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 
 const A4_PAPER_HEIGHT = 1130;
 const FLOW_BLOCK_TYPES = new Set<ResumeBlock["type"]>([
@@ -42,6 +42,7 @@ export default function ResumeCanvas() {
     const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
     const updateBlockData = useResumeStore((state) => state.updateBlockData);
+    const updateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
     const reorderBlocks = useResumeStore((state) => state.reorderBlocks);
 
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -373,6 +374,7 @@ export default function ResumeCanvas() {
                                         <li key={index}>
                                             <EditableText
                                                 value={highlight}
+                                                width="full"
                                                 placeholder="자기소개를 입력하세요"
                                                 onChange={(value) => {
                                                     const updated = [...highlights];
@@ -449,7 +451,13 @@ export default function ResumeCanvas() {
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
                             <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
-                                {block.title}{isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
+                                <EditableText
+                                    value={block.title}
+                                    appearance="plain"
+                                    placeholder="경력"
+                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                />
+                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
                         </div>
                         {Array.isArray(block.data) && block.data.length > 0 ? (
@@ -475,6 +483,7 @@ export default function ResumeCanvas() {
                                                     <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
                                                         <EditableText
                                                             value={exp.startDate}
+                                                            width="short"
                                                             placeholder="시작일"
                                                             onChange={(newDate) => {
                                                                 const updated = [...block.data];
@@ -485,6 +494,7 @@ export default function ResumeCanvas() {
                                                         <span>~</span>
                                                         <EditableText
                                                             value={exp.endDate}
+                                                            width="short"
                                                             placeholder="종료일"
                                                             onChange={(newDate) => {
                                                                 const updated = [...block.data];
@@ -518,6 +528,7 @@ export default function ResumeCanvas() {
                                                                 <li key={i} data-pagination-description-index={i} className="list-item">
                                                                     <EditableText
                                                                         value={desc}
+                                                                        width="full"
                                                                         placeholder="성과 및 업무 내용"
                                                                         onChange={(newDesc) => {
                                                                             const updated = [...block.data];
@@ -550,7 +561,13 @@ export default function ResumeCanvas() {
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
                             <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
-                                {block.title || "PROJECTS"}{isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
+                                <EditableText
+                                    value={block.title || "PROJECTS"}
+                                    appearance="plain"
+                                    placeholder="프로젝트"
+                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                />
+                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
                         </div>
                         {Array.isArray(block.data) && block.data.length > 0 ? (
@@ -583,6 +600,7 @@ export default function ResumeCanvas() {
                                                     <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
                                                         <EditableText
                                                             value={proj.startDate}
+                                                            width="short"
                                                             placeholder="시작일"
                                                             onChange={(newDate) => {
                                                                 const updated = [...block.data];
@@ -593,6 +611,7 @@ export default function ResumeCanvas() {
                                                         <span>~</span>
                                                         <EditableText
                                                             value={proj.endDate}
+                                                            width="short"
                                                             placeholder="종료일"
                                                             onChange={(newDate) => {
                                                                 const updated = [...block.data];
@@ -625,6 +644,7 @@ export default function ResumeCanvas() {
                                                                 <li key={i} data-pagination-description-index={i} className="list-item">
                                                                     <EditableText
                                                                         value={desc}
+                                                                        width="full"
                                                                         placeholder="성과 및 주요 내용"
                                                                         onChange={(newDesc) => {
                                                                             const updated = [...block.data];
@@ -651,30 +671,71 @@ export default function ResumeCanvas() {
 
             case "skills":
                 const skillCategories = getSkillCategories(block.data as SkillsData);
+                const updateCanvasSkillCategories = (categories: typeof skillCategories) => {
+                    updateBlockData(
+                        block.id,
+                        withSkillCategories(block.data as SkillsData, categories),
+                    );
+                };
                 return (
                     <div className="resume-section">
                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
-                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">{block.title || "SKILLS"}</h2>
+                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                                <EditableText
+                                    value={block.title || "SKILLS"}
+                                    appearance="plain"
+                                    placeholder="스킬"
+                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                />
+                            </h2>
                         </div>
                         <div className="resume-skill-categories pt-1">
-                            {skillCategories.map((category) => (
+                            {skillCategories.map((category, categoryIndex) => (
                                 <div
                                     key={category.id}
                                     className={`resume-skill-category ${category.name ? "" : "resume-skill-category--unnamed"}`}
                                 >
-                                    {category.name && <strong>{category.name}</strong>}
+                                    {category.name && (
+                                        <strong>
+                                            <EditableText
+                                                value={category.name}
+                                                appearance="plain"
+                                                placeholder="카테고리명"
+                                                onChange={(name) => updateCanvasSkillCategories(
+                                                    skillCategories.map((item, index) => (
+                                                        index === categoryIndex ? { ...item, name } : item
+                                                    )),
+                                                )}
+                                            />
+                                        </strong>
+                                    )}
                                     <div className="flex flex-wrap gap-1.5">
-                                        {category.skills.map((skill) => (
+                                        {category.skills.map((skill, skillIndex) => (
                                             <span
-                                                key={skill}
+                                                key={`${category.id}-${skillIndex}`}
                                                 style={templateType === "modern" ? { borderColor: `${primaryColor}30`, backgroundColor: `${primaryColor}10`, color: primaryColor } : {}}
                                                 className={`px-2 py-0.5 rounded text-xs font-medium ${templateType === "modern" ? "border" : "bg-neutral-100 text-neutral-800 border border-neutral-200"
                                                     }`}
                                             >
-                                                {skill}
+                                                <EditableText
+                                                    value={skill}
+                                                    placeholder="기술"
+                                                    onChange={(nextSkill) => updateCanvasSkillCategories(
+                                                        skillCategories.map((item, index) => (
+                                                            index === categoryIndex
+                                                                ? {
+                                                                    ...item,
+                                                                    skills: item.skills.map((currentSkill, currentIndex) => (
+                                                                        currentIndex === skillIndex ? nextSkill : currentSkill
+                                                                    )),
+                                                                }
+                                                                : item
+                                                        )),
+                                                    )}
+                                                />
                                             </span>
                                         ))}
                                     </div>
@@ -692,7 +753,13 @@ export default function ResumeCanvas() {
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
                             <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
-                                {block.title || "EDUCATION"}{isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
+                                <EditableText
+                                    value={block.title || "EDUCATION"}
+                                    appearance="plain"
+                                    placeholder="학력"
+                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                />
+                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
                         </div>
                         {Array.isArray(block.data) && block.data.length > 0 ? (
@@ -731,6 +798,7 @@ export default function ResumeCanvas() {
                                                     <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
                                                         <EditableText
                                                             value={edu.startDate}
+                                                            width="short"
                                                             placeholder="입학일"
                                                             onChange={(newDate) => {
                                                                 const updated = [...block.data];
@@ -741,6 +809,7 @@ export default function ResumeCanvas() {
                                                         <span>~</span>
                                                         <EditableText
                                                             value={edu.endDate}
+                                                            width="short"
                                                             placeholder="졸업일"
                                                             onChange={(newDate) => {
                                                                 const updated = [...block.data];
@@ -770,7 +839,13 @@ export default function ResumeCanvas() {
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
                             <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
-                                {block.title || "CERTIFICATIONS"}{isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
+                                <EditableText
+                                    value={block.title || "CERTIFICATIONS"}
+                                    appearance="plain"
+                                    placeholder="자격 및 수상"
+                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                />
+                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
                         </div>
                         {Array.isArray(block.data) && block.data.length > 0 ? (
@@ -797,6 +872,7 @@ export default function ResumeCanvas() {
                                                 </div>
                                                 <EditableText
                                                     value={cert.date}
+                                                    width="short"
                                                     placeholder="취득일"
                                                     onChange={(newDate) => {
                                                         const updated = [...block.data];
@@ -825,7 +901,13 @@ export default function ResumeCanvas() {
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
                             <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
-                                {block.title}{isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
+                                <EditableText
+                                    value={block.title}
+                                    appearance="plain"
+                                    placeholder="섹션 제목"
+                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                />
+                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
                         </div>
                         <div className="space-y-1 pt-1">
@@ -917,8 +999,12 @@ export default function ResumeCanvas() {
                                         onDragEnd={handleDragEnd}
                                         onClick={() => setSelectedBlockId(block.id)}
                                         style={{
-                                            paddingTop: block.style.useCustomPadding ? `${block.style.paddingY}px` : "0px",
-                                            paddingBottom: block.style.useCustomPadding ? `${block.style.paddingY}px` : "0px",
+                                            ...(block.style.useCustomPadding
+                                                ? {
+                                                    paddingTop: `${block.style.paddingY}px`,
+                                                    paddingBottom: `${block.style.paddingY}px`,
+                                                }
+                                                : {}),
                                             marginBottom: "var(--resume-block-gap)",
                                         }}
                                         className={`resume-block-item relative cursor-pointer transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${templateType === "modern"
@@ -938,7 +1024,7 @@ export default function ResumeCanvas() {
 
                                         <div
                                             className="no-print absolute -left-7 top-1/2 -translate-y-1/2 text-neutral-400 opacity-0 group-hover:opacity-100 hover:text-neutral-700 cursor-grab active:cursor-grabbing p-1 transition"
-                                            title="끌어서 순서 변경"
+                                            data-tooltip="끌어서 순서 변경"
                                         >
                                             <GripVertical size={16} />
                                         </div>
@@ -965,7 +1051,7 @@ export default function ResumeCanvas() {
                     onClick={handleZoomOut}
                     disabled={zoomLevel <= 50}
                     className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                    title="축소"
+                    data-tooltip="축소"
                 >
                     <ZoomOut size={14} />
                 </button>
@@ -976,7 +1062,7 @@ export default function ResumeCanvas() {
                     onClick={handleZoomIn}
                     disabled={zoomLevel >= 150}
                     className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                    title="확대"
+                    data-tooltip="확대"
                 >
                     <ZoomIn size={14} />
                 </button>
@@ -984,7 +1070,7 @@ export default function ResumeCanvas() {
                 <button
                     onClick={handleZoomReset}
                     className="p-1 text-neutral-400 hover:text-white transition"
-                    title="100%로 리셋"
+                    data-tooltip="100%로 리셋"
                 >
                     <RotateCcw size={12} />
                 </button>

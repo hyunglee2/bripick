@@ -11,6 +11,8 @@ interface EditableTextProps {
     multiline?: boolean;
     style?: React.CSSProperties;
     tag?: "h1" | "h2" | "h3" | "p" | "span" | "div";
+    width?: "content" | "short" | "full";
+    appearance?: "default" | "plain";
 }
 
 export default function EditableText({
@@ -21,6 +23,8 @@ export default function EditableText({
     multiline = false,
     style = {},
     tag: Tag = "span",
+    width = "content",
+    appearance = "default",
 }: EditableTextProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [currentText, setCurrentText] = useState(value);
@@ -53,6 +57,16 @@ export default function EditableText({
         }
     };
 
+    const contentVisualLength = Array.from(currentText || placeholder).reduce((length, character) => (
+        length + (/[^\u0000-\u00ff]/.test(character) ? 2 : 1)
+    ), 0);
+    const contentWidth = `${Math.min(Math.max(contentVisualLength + 3, 10), 42)}ch`;
+    const editorStyle: React.CSSProperties = {
+        ...style,
+        ...(width === "content" ? { width: contentWidth, maxWidth: "100%" } : {}),
+        ...(width === "short" ? { width: "11ch", maxWidth: "100%" } : {}),
+    };
+
     if (isEditing) {
         if (multiline) {
             return (
@@ -77,8 +91,8 @@ export default function EditableText({
                 onChange={(e) => setCurrentText(e.target.value)}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
-                style={style}
-                className={`w-full bg-white/90 border border-blue-500 rounded px-1.5 py-0.5 outline-none text-neutral-900 shadow-inner ${className}`}
+                style={editorStyle}
+                className={`${width === "full" ? "w-full" : "w-auto"} min-w-0 max-w-full bg-white/90 border border-blue-500 rounded px-1.5 py-0.5 outline-none text-neutral-900 shadow-inner ${className}`}
             />
         );
     }
@@ -90,8 +104,10 @@ export default function EditableText({
                 e.stopPropagation();
                 setIsEditing(true);
             }}
-            title="클릭하여 즉시 수정"
-            className={`cursor-text hover:bg-neutral-100/80 rounded px-1 -mx-1 transition duration-150 group-hover:border-dashed group-hover:border-b group-hover:border-neutral-300 ${className}`}
+            className={`cursor-text transition duration-150 ${appearance === "plain"
+                ? "hover:opacity-75"
+                : "hover:bg-neutral-100/80 rounded px-1 -mx-1 group-hover:border-dashed group-hover:border-b group-hover:border-neutral-300"
+                } ${className}`}
         >
             {value ? value : <span className="text-neutral-400 italic font-normal">{placeholder}</span>}
         </Tag>
