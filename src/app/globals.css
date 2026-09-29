@@ -720,6 +720,11 @@ body,
   background: var(--resume-blue);
 }
 
+/* 다음 페이지로 이어진 불릿 조각에는 항목 시작 마커를 다시 표시하지 않습니다. */
+.reference-template [data-description-start]:not([data-description-start="0"]) [data-pagination-item-index]::before {
+  content: none;
+}
+
 .reference-template [data-pagination-item-index]>.flex:first-child,
 .reference-template [data-pagination-item-index]>.space-y-0\.5:first-child {
   font-size: 15px;
@@ -756,6 +761,74 @@ body,
   margin-top: var(--resume-bullet-item-gap) !important;
 }
 
+/* 레퍼런스 프로젝트 레이아웃: 제목 행은 들여쓰고 요약과 성과는 본문 축에 맞춥니다. */
+.reference-template .resume-project-list {
+  gap: 0;
+}
+
+.reference-template .resume-project-item {
+  padding-left: 18px;
+}
+
+.reference-template .resume-project-item--separated {
+  margin-top: 26px;
+}
+
+.reference-template .resume-project-header {
+  min-height: 20px;
+}
+
+.reference-template .resume-project-header .font-bold {
+  font-weight: 800 !important;
+}
+
+.reference-template .resume-project-summary {
+  display: block;
+  margin-top: 6px;
+  margin-left: -18px;
+  color: #737373 !important;
+  font-weight: 400 !important;
+  line-height: 1.55 !important;
+}
+
+.reference-template [data-pagination-item-index] .resume-project-bullets {
+  margin-top: 14px !important;
+  margin-left: -18px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 24px !important;
+}
+
+.reference-template [data-pagination-item-index] .resume-project-bullets>li {
+  color: #404040;
+  padding-left: 2px;
+  list-style-position: outside !important;
+  list-style-type: square !important;
+}
+
+.reference-template .resume-project-bullets>li::marker {
+  color: currentColor;
+}
+
+.reference-template .resume-project-bullets>li[data-bullet-level="2"] {
+  margin-left: 30px;
+  list-style-type: disc !important;
+}
+
+.reference-template .resume-project-bullets>li[data-bullet-level="3"] {
+  margin-left: 48px;
+  list-style-type: none !important;
+}
+
+.reference-template .resume-project-bullets>li[data-bullet-level="3"]::before {
+  content: "–";
+  display: inline-block;
+  width: 1.15em;
+  margin-left: -1.15em;
+  color: currentColor;
+  font-weight: 400;
+}
+
 .reference-template [data-block-type="skills"] span[class*="rounded"] {
   color: #1f2937 !important;
   background: #f1f3f5 !important;
@@ -784,6 +857,56 @@ body,
 .inspector-panel--block .inspector-heading {
   min-height: 44px;
   padding-bottom: 14px;
+}
+
+.project-bullet-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  border: 1px solid var(--inspector-border);
+  border-radius: 8px;
+  background: var(--inspector-input);
+}
+
+.project-bullet-editor:focus-within {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgb(59 130 246 / 18%);
+}
+
+.project-bullet-editor__row {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  min-height: 28px;
+}
+
+.project-bullet-editor__marker {
+  color: #a3a3a3;
+  font-size: 13px;
+  line-height: 28px;
+  text-align: center;
+  user-select: none;
+}
+
+.project-bullet-editor__content {
+  min-width: 0;
+  padding: 5px 6px;
+  border-radius: 4px;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 18px;
+  outline: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.project-bullet-editor__content:hover {
+  background: rgb(255 255 255 / 3%);
+}
+
+.project-bullet-editor__content:focus {
+  background: rgb(255 255 255 / 5%);
 }
 
 .inspector-panel--block .inspector-heading>div:first-child {
@@ -1020,6 +1143,139 @@ body,
 .inspector-panel .inspector-repeat-card:focus-within {
   border-color: color-mix(in srgb, var(--brand-primary) 52%, var(--inspector-border)) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-primary) 10%, transparent);
+}
+
+.inspector-panel .inspector-project-card {
+  gap: 0;
+  overflow: visible;
+  padding: 0 !important;
+}
+
+.inspector-panel .inspector-project-card:focus-within {
+  border-color: var(--inspector-border) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.025) inset, 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.inspector-panel .inspector-project-card__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+}
+
+.inspector-panel .inspector-project-card__toggle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 6px;
+  border-radius: 7px;
+  text-align: left;
+}
+
+.inspector-panel .inspector-project-card__toggle:hover {
+  background: var(--inspector-hover);
+}
+
+.inspector-panel .inspector-project-card__toggle > svg {
+  flex: 0 0 auto;
+  color: var(--inspector-muted);
+  transition: transform 160ms ease;
+}
+
+.inspector-panel .inspector-project-card__summary-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.inspector-panel .inspector-project-card__summary-copy strong,
+.inspector-panel .inspector-project-card__summary-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-panel .inspector-project-card__summary-copy strong {
+  color: var(--inspector-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.inspector-panel .inspector-project-card__summary-copy span {
+  color: var(--inspector-muted);
+  font-size: 10px;
+}
+
+.inspector-panel .inspector-project-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--inspector-border);
+}
+
+.inspector-panel .inspector-project-card__dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.inspector-panel .inspector-project-card__bullets {
+  padding-top: 0;
+}
+
+.inspector-panel .inspector-project-card .project-bullet-editor {
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.inspector-panel .inspector-shortcut-guide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-top: 6px;
+  color: var(--inspector-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.inspector-panel .inspector-shortcut-guide>span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.ui-kbd-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--inspector-muted);
+}
+
+.ui-kbd {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border: 1px solid var(--inspector-border-strong);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--inspector-card) 86%, white 3%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 1px 1px rgba(0, 0, 0, 0.22);
+  color: color-mix(in srgb, var(--inspector-text) 78%, var(--inspector-muted));
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* 연락처는 카드 중첩 대신 평평한 목록으로 표현합니다. */

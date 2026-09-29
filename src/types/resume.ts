@@ -62,6 +62,8 @@ export interface ProjectItem {
     endDate: string;
     link?: string;
     description: string[];
+    descriptionLevels?: number[];
+    descriptionHtml?: string[];
 }
 
 export interface EducationItem {

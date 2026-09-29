@@ -8,6 +8,8 @@ import { FileText, GripVertical, ZoomIn, ZoomOut, RotateCcw } from "lucide-react
 import { ProfileData, ResumeBlock, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
+import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
+import RichTextEditable from "@/components/editor/RichTextEditable";
 
 const A4_PAPER_HEIGHT = 1130;
 const FLOW_BLOCK_TYPES = new Set<ResumeBlock["type"]>([
@@ -50,6 +52,7 @@ export default function ResumeCanvas() {
     const [zoomLevel, setZoomLevel] = useState<number>(100);
     const [pagePlacements, setPagePlacements] = useState<BlockPlacement[][]>(() => getInitialPlacements(blocks));
     const canvasRef = useRef<HTMLDivElement>(null);
+    const paginationFrameRef = useRef<number | null>(null);
 
     const templateType = globalStyle?.template || "modern";
     const primaryColor = globalStyle?.primaryColor || "#2f80c3";
@@ -112,14 +115,18 @@ export default function ResumeCanvas() {
     useLayoutEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+        let disposed = false;
 
         const repaginate = () => {
+            if (disposed) return;
             const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2);
             const measuredBlockHeights = new Map<number, number>();
             const measuredItemHeights = new Map<string, number>();
             const measuredDescriptionHeights = new Map<string, number>();
             const measuredItemChromeHeights = new Map<string, number>();
+            const measuredContinuationItemChromeHeights = new Map<string, number>();
             const measuredBaseHeights = new Map<number, number>();
+            const measuredContinuationBaseHeights = new Map<number, number>();
 
             canvas.querySelectorAll<HTMLElement>("[data-resume-block-index]").forEach((element) => {
                 const index = Number(element.dataset.resumeBlockIndex);
@@ -129,6 +136,7 @@ export default function ResumeCanvas() {
                     + Number.parseFloat(style.marginTop || "0")
                     + Number.parseFloat(style.marginBottom || "0");
                 measuredBlockHeights.set(index, Math.max(measuredBlockHeights.get(index) || 0, outerHeight));
+                const isDescriptionContinuation = Number(element.dataset.descriptionStart || "0") > 0;
 
                 let itemsHeight = 0;
                 element.querySelectorAll<HTMLElement>("[data-pagination-item-index]").forEach((item) => {
@@ -137,7 +145,10 @@ export default function ResumeCanvas() {
                     const itemHeight = item.offsetHeight
                         + Number.parseFloat(itemStyle.marginTop || "0")
                         + Number.parseFloat(itemStyle.marginBottom || "0");
-                    measuredItemHeights.set(`${index}:${itemIndex}`, itemHeight);
+                    measuredItemHeights.set(
+                        `${index}:${itemIndex}`,
+                        Math.max(measuredItemHeights.get(`${index}:${itemIndex}`) || 0, itemHeight),
+                    );
                     itemsHeight += itemHeight;
 
                     let descriptionsHeight = 0;
@@ -147,15 +158,44 @@ export default function ResumeCanvas() {
                         const descriptionHeight = description.offsetHeight
                             + Number.parseFloat(descriptionStyle.marginTop || "0")
                             + Number.parseFloat(descriptionStyle.marginBottom || "0");
-                        measuredDescriptionHeights.set(`${index}:${itemIndex}:${descriptionIndex}`, descriptionHeight);
+                        measuredDescriptionHeights.set(
+                            `${index}:${itemIndex}:${descriptionIndex}`,
+                            Math.max(
+                                measuredDescriptionHeights.get(`${index}:${itemIndex}:${descriptionIndex}`) || 0,
+                                descriptionHeight,
+                            ),
+                        );
                         descriptionsHeight += descriptionHeight;
                     });
-                    measuredItemChromeHeights.set(`${index}:${itemIndex}`, Math.max(0, itemHeight - descriptionsHeight));
+                    const itemChromeHeights = isDescriptionContinuation
+                        ? measuredContinuationItemChromeHeights
+                        : measuredItemChromeHeights;
+                    itemChromeHeights.set(
+                        `${index}:${itemIndex}`,
+                        Math.max(itemChromeHeights.get(`${index}:${itemIndex}`) || 0, Math.max(0, itemHeight - descriptionsHeight)),
+                    );
                 });
 
                 if (itemsHeight > 0) {
-                    measuredBaseHeights.set(index, Math.max(measuredBaseHeights.get(index) || 0, outerHeight - itemsHeight));
+                    const baseHeights = isDescriptionContinuation
+                        ? measuredContinuationBaseHeights
+                        : measuredBaseHeights;
+                    baseHeights.set(index, Math.max(baseHeights.get(index) || 0, outerHeight - itemsHeight));
                 }
+            });
+
+            // 조각으로 렌더링된 항목도 전체 bullet 높이를 합산해 원래 항목 높이를 복원한다.
+            blocks.forEach((block, blockIndex) => {
+                if (!Array.isArray(block.data)) return;
+                block.data.forEach((item: { description?: string[] }, itemIndex: number) => {
+                    if (!Array.isArray(item.description) || item.description.length === 0) return;
+                    const itemChromeHeight = measuredItemChromeHeights.get(`${blockIndex}:${itemIndex}`);
+                    if (itemChromeHeight === undefined) return;
+                    const descriptionsHeight = item.description.reduce((height, _description, descriptionIndex) => (
+                        height + (measuredDescriptionHeights.get(`${blockIndex}:${itemIndex}:${descriptionIndex}`) || 24)
+                    ), 0);
+                    measuredItemHeights.set(`${blockIndex}:${itemIndex}`, itemChromeHeight + descriptionsHeight);
+                });
             });
 
             const nextPages: BlockPlacement[][] = [[]];
@@ -173,8 +213,9 @@ export default function ResumeCanvas() {
                 }
 
                 const itemCount = getFlowItemCount(block);
-                if (FLOW_BLOCK_TYPES.has(block.type) && itemCount > 0 && block.style.keepTogether !== true) {
+                if (FLOW_BLOCK_TYPES.has(block.type) && itemCount > 0) {
                     const baseHeight = measuredBaseHeights.get(index) || 80;
+                    const keepItemTogether = block.style.keepTogether === true;
                     let itemStart = 0;
 
                     while (itemStart < itemCount) {
@@ -183,14 +224,29 @@ export default function ResumeCanvas() {
                             : undefined;
                         const itemHeight = measuredItemHeights.get(`${index}:${itemStart}`) || 80;
 
-                        // 단일 경력/프로젝트 항목이 한 장보다 크면 설명 bullet 단위로 이어서 배치한다.
+                        // 한 페이지보다 긴 항목은 항상 bullet 단위로 나눠 배치한다.
+                        // 묶기를 끄면 현재 페이지의 남은 공간부터 bullet 단위로 채운다.
+                        const itemDoesNotFitPage = baseHeight + itemHeight > availableHeight;
+                        const itemDoesNotFitRemainingSpace = usedHeight + baseHeight + itemHeight > availableHeight;
                         if (Array.isArray(descriptions) && descriptions.length > 0
-                            && baseHeight + itemHeight > availableHeight) {
+                            && (itemDoesNotFitPage || (!keepItemTogether && itemDoesNotFitRemainingSpace))) {
+                            // 묶기가 켜진 항목 자체가 한 페이지보다 길다면 현재 페이지의
+                            // 남은 공간을 사용하지 않고 새 페이지에서 항목을 시작한다.
+                            if (keepItemTogether && itemDoesNotFitPage && nextPages.at(-1)!.length > 0) {
+                                startNewPage();
+                            }
                             const itemChromeHeight = measuredItemChromeHeights.get(`${index}:${itemStart}`) || 60;
                             let descriptionStart = 0;
 
                             while (descriptionStart < descriptions.length) {
-                                let fragmentHeight = baseHeight + itemChromeHeight;
+                                const isContinuationFragment = descriptionStart > 0;
+                                const fragmentBaseHeight = isContinuationFragment
+                                    ? (measuredContinuationBaseHeights.get(index) || 40)
+                                    : baseHeight;
+                                const fragmentChromeHeight = isContinuationFragment
+                                    ? (measuredContinuationItemChromeHeights.get(`${index}:${itemStart}`) || 8)
+                                    : itemChromeHeight;
+                                let fragmentHeight = fragmentBaseHeight + fragmentChromeHeight;
                                 let descriptionEnd = descriptionStart;
 
                                 while (descriptionEnd < descriptions.length) {
@@ -252,9 +308,15 @@ export default function ResumeCanvas() {
                 usedHeight += blockHeight;
             });
 
-            setPagePlacements((current) => (
-                JSON.stringify(current) === JSON.stringify(nextPages) ? current : nextPages
-            ));
+            const nextSignature = JSON.stringify(nextPages);
+            if (paginationFrameRef.current !== null) cancelAnimationFrame(paginationFrameRef.current);
+            paginationFrameRef.current = requestAnimationFrame(() => {
+                paginationFrameRef.current = null;
+                if (disposed) return;
+                setPagePlacements((current) => (
+                    JSON.stringify(current) === nextSignature ? current : nextPages
+                ));
+            });
         };
 
         repaginate();
@@ -262,7 +324,14 @@ export default function ResumeCanvas() {
         canvas.querySelectorAll<HTMLElement>("[data-resume-block-index]").forEach((element) => observer.observe(element));
         document.fonts.ready.then(repaginate);
 
-        return () => observer.disconnect();
+        return () => {
+            disposed = true;
+            observer.disconnect();
+            if (paginationFrameRef.current !== null) {
+                cancelAnimationFrame(paginationFrameRef.current);
+                paginationFrameRef.current = null;
+            }
+        };
     }, [
         blocks,
         globalStyle?.contentWidth,
@@ -279,7 +348,8 @@ export default function ResumeCanvas() {
 
     // 단일 블록 렌더러 함수
     const renderBlockContent = (block: ResumeBlock, placement: BlockPlacement) => {
-        const isContinuation = (placement.itemStart || 0) > 0 || (placement.descriptionStart || 0) > 0;
+        const isDescriptionContinuation = (placement.descriptionStart ?? 0) > 0;
+        const isBlockContinuation = (placement.itemStart ?? 0) > 0 || isDescriptionContinuation;
         switch (block.type) {
             case "profile": {
                 const profileContacts = getProfileContacts(block.data as ProfileData);
@@ -446,7 +516,7 @@ export default function ResumeCanvas() {
             case "experience":
                 return (
                     <div className="resume-section">
-                        <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
+                        {!isBlockContinuation && <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
@@ -457,9 +527,8 @@ export default function ResumeCanvas() {
                                     placeholder="경력"
                                     onChange={(title) => updateBlockTitle(block.id, title)}
                                 />
-                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
-                        </div>
+                        </div>}
                         {Array.isArray(block.data) && block.data.length > 0 ? (
                             <div className="space-y-3 pt-1">
                                 {block.data
@@ -468,7 +537,7 @@ export default function ResumeCanvas() {
                                         const expIndex = (placement.itemStart ?? 0) + localIndex;
                                         return (
                                             <div key={exp.id} data-pagination-item-index={expIndex} className="space-y-1">
-                                                <div className="flex justify-between items-baseline gap-2">
+                                                {!isDescriptionContinuation && <div className="flex justify-between items-baseline gap-2">
                                                     <EditableText
                                                         tag="span"
                                                         value={exp.company}
@@ -503,8 +572,8 @@ export default function ResumeCanvas() {
                                                             }}
                                                         />
                                                     </div>
-                                                </div>
-                                                <EditableText
+                                                </div>}
+                                                {!isDescriptionContinuation && <EditableText
                                                     tag="div"
                                                     value={exp.role}
                                                     placeholder="직책 및 역할"
@@ -515,7 +584,7 @@ export default function ResumeCanvas() {
                                                         updateBlockData(block.id, updated);
                                                     }}
                                                     className="text-xs font-semibold"
-                                                />
+                                                />}
                                                 <ul className="list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1">
                                                     {exp.description
                                                         ?.slice(
@@ -556,7 +625,7 @@ export default function ResumeCanvas() {
             case "project":
                 return (
                     <div className="resume-section">
-                        <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
+                        {!isBlockContinuation && <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
@@ -567,18 +636,21 @@ export default function ResumeCanvas() {
                                     placeholder="프로젝트"
                                     onChange={(title) => updateBlockTitle(block.id, title)}
                                 />
-                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
-                        </div>
+                        </div>}
                         {Array.isArray(block.data) && block.data.length > 0 ? (
-                            <div className="space-y-3 pt-1">
+                            <div className="resume-project-list pt-1">
                                 {block.data
                                     .slice(placement.itemStart ?? 0, placement.itemEnd ?? block.data.length)
                                     .map((proj: any, localIndex: number) => {
                                         const projIndex = (placement.itemStart ?? 0) + localIndex;
                                         return (
-                                            <div key={proj.id} data-pagination-item-index={projIndex} className="space-y-1">
-                                                <div className="flex justify-between items-baseline gap-2">
+                                            <div
+                                                key={proj.id}
+                                                data-pagination-item-index={projIndex}
+                                                className={`resume-project-item space-y-1 ${localIndex > 0 ? "resume-project-item--separated" : ""}`}
+                                            >
+                                                {!isDescriptionContinuation && <div className="resume-project-header flex justify-between items-baseline gap-2">
                                                     <div className="flex items-center gap-2">
                                                         <EditableText
                                                             tag="span"
@@ -620,8 +692,8 @@ export default function ResumeCanvas() {
                                                             }}
                                                         />
                                                     </div>
-                                                </div>
-                                                <EditableText
+                                                </div>}
+                                                {!isDescriptionContinuation && <EditableText
                                                     tag="div"
                                                     value={proj.role}
                                                     placeholder="프로젝트 역할"
@@ -630,9 +702,9 @@ export default function ResumeCanvas() {
                                                         updated[projIndex] = { ...proj, role: newRole };
                                                         updateBlockData(block.id, updated);
                                                     }}
-                                                    className="text-xs font-semibold text-neutral-600"
-                                                />
-                                                <ul className="list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1">
+                                                    className="resume-project-summary text-xs text-neutral-500"
+                                                />}
+                                                <ul className="resume-project-bullets list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1">
                                                     {proj.description
                                                         ?.slice(
                                                             placement.descriptionStart ?? 0,
@@ -640,20 +712,42 @@ export default function ResumeCanvas() {
                                                         )
                                                         .map((desc: string, localDescriptionIndex: number) => {
                                                             const i = (placement.descriptionStart ?? 0) + localDescriptionIndex;
+                                                            const bulletLevel = Math.max(
+                                                                1,
+                                                                Math.min(3, Number(proj.descriptionLevels?.[i]) || 1),
+                                                            );
+                                                            const bulletHtml = sanitizeInlineRichText(
+                                                                proj.descriptionHtml?.[i] || escapeHtml(desc),
+                                                            );
                                                             return (
-                                                                <li key={i} data-pagination-description-index={i} className="list-item">
-                                                                    <EditableText
-                                                                        value={desc}
-                                                                        width="full"
-                                                                        placeholder="성과 및 주요 내용"
-                                                                        onChange={(newDesc) => {
+                                                                <li
+                                                                    key={i}
+                                                                    data-pagination-description-index={i}
+                                                                    data-bullet-level={bulletLevel}
+                                                                    className="list-item"
+                                                                >
+                                                                    <RichTextEditable
+                                                                        html={bulletHtml}
+                                                                        ariaLabel="프로젝트 성과"
+                                                                        className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
+                                                                        onKeyDown={(event) => {
+                                                                            if (event.key === "Enter") event.preventDefault();
+                                                                        }}
+                                                                        onChange={(newHtml) => {
                                                                             const updated = [...block.data];
                                                                             const newDescriptions = [...proj.description];
-                                                                            newDescriptions[i] = newDesc;
-                                                                            updated[projIndex] = { ...proj, description: newDescriptions };
+                                                                            const newDescriptionHtml = Array.isArray(proj.descriptionHtml)
+                                                                                ? [...proj.descriptionHtml]
+                                                                                : proj.description.map((text: string) => escapeHtml(text));
+                                                                            newDescriptions[i] = richTextToPlainText(newHtml);
+                                                                            newDescriptionHtml[i] = newHtml;
+                                                                            updated[projIndex] = {
+                                                                                ...proj,
+                                                                                description: newDescriptions,
+                                                                                descriptionHtml: newDescriptionHtml,
+                                                                            };
                                                                             updateBlockData(block.id, updated);
                                                                         }}
-                                                                        className="inline"
                                                                     />
                                                                 </li>
                                                             );
@@ -759,7 +853,6 @@ export default function ResumeCanvas() {
                                     placeholder="학력"
                                     onChange={(title) => updateBlockTitle(block.id, title)}
                                 />
-                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
                         </div>
                         {Array.isArray(block.data) && block.data.length > 0 ? (
@@ -845,7 +938,6 @@ export default function ResumeCanvas() {
                                     placeholder="자격 및 수상"
                                     onChange={(title) => updateBlockTitle(block.id, title)}
                                 />
-                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
                         </div>
                         {Array.isArray(block.data) && block.data.length > 0 ? (
@@ -907,7 +999,6 @@ export default function ResumeCanvas() {
                                     placeholder="섹션 제목"
                                     onChange={(title) => updateBlockTitle(block.id, title)}
                                 />
-                                {isContinuation && <span className="ml-1 text-[10px] text-neutral-400">— 계속</span>}
                             </h2>
                         </div>
                         <div className="space-y-1 pt-1">
@@ -981,7 +1072,7 @@ export default function ResumeCanvas() {
                             }}
                             className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : ""}`}
                         >
-                            {page.blocks.map(({ block, globalIdx, placement }) => {
+                            {page.blocks.map(({ block, globalIdx, placement }, fragmentIndex) => {
                                 const isSelected = selectedBlockId === block.id;
                                 const isBeingDragged = draggedIndex === globalIdx;
                                 const isTargeted = dragOverIndex === globalIdx && draggedIndex !== globalIdx;
@@ -989,9 +1080,10 @@ export default function ResumeCanvas() {
 
                                 return (
                                     <div
-                                        key={block.id}
+                                        key={`${page.pageIndex}-${block.id}-${placement.itemStart ?? "all"}-${placement.descriptionStart ?? "all"}-${fragmentIndex}`}
                                         data-resume-block-index={globalIdx}
                                         data-block-type={block.type}
+                                        data-description-start={placement.descriptionStart ?? 0}
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, globalIdx)}
                                         onDragOver={(e) => handleDragOver(e, globalIdx)}

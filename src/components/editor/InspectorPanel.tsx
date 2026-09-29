@@ -6,6 +6,9 @@ import { useResumeStore } from "@/store/useResumeStore";
 import { ProfileData, SkillCategory, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
+import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
+import ProjectBulletDocumentEditor from "@/components/editor/ProjectBulletDocumentEditor";
+import { Kbd, KbdGroup } from "@/components/ui/Kbd";
 import {
     Trash2,
     ChevronUp,
@@ -55,6 +58,7 @@ export default function InspectorPanel() {
     const [newSkillInputs, setNewSkillInputs] = useState<Record<string, string>>({});
     const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
     const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
+    const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
     const blockPanelRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -66,6 +70,19 @@ export default function InspectorPanel() {
     const profileContacts = currentBlock?.type === "profile"
         ? getProfileContacts(currentBlock.data as ProfileData)
         : [];
+
+    useEffect(() => {
+        if (currentBlock?.type !== "project" || !Array.isArray(currentBlock.data)) {
+            setExpandedProjectId(null);
+            return;
+        }
+
+        setExpandedProjectId((current) => (
+            current && currentBlock.data.some((project: any) => project.id === current)
+                ? current
+                : currentBlock.data[0]?.id ?? null
+        ));
+    }, [currentBlock]);
 
     const fontOptions = [
         { label: "Pretendard (기본 / 깔끔한 고딕)", value: "'Pretendard', -apple-system, sans-serif" },
@@ -347,6 +364,7 @@ export default function InspectorPanel() {
             description: ["주요 업무 및 달성한 성과를 입력하세요."],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
+        setExpandedProjectId(newItem.id);
     };
 
     const handleUpdateExpField = (expId: string, field: string, value: any) => {
@@ -429,10 +447,21 @@ export default function InspectorPanel() {
 
     const handleRemoveProjectItem = (projId: string) => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        updateBlockData(
-            currentBlock.id,
-            prevData.filter((item: any) => item.id !== projId)
-        );
+        const nextData = prevData.filter((item: any) => item.id !== projId);
+        updateBlockData(currentBlock.id, nextData);
+        if (expandedProjectId === projId) {
+            setExpandedProjectId(nextData[0]?.id ?? null);
+        }
+    };
+
+    const handleReorderProject = (fromIndex: number, toIndex: number) => {
+        if (fromIndex === toIndex) return;
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        const nextData = [...prevData];
+        const [movedProject] = nextData.splice(fromIndex, 1);
+        if (!movedProject) return;
+        nextData.splice(toIndex, 0, movedProject);
+        updateBlockData(currentBlock.id, nextData);
     };
 
     const handleAddProjBullet = (projId: string, text = "") => {
@@ -442,22 +471,61 @@ export default function InspectorPanel() {
             prevData.map((item: any) => {
                 if (item.id !== projId) return item;
                 const currentDesc = Array.isArray(item.description) ? item.description : [];
-                return { ...item, description: [...currentDesc, text || "새로운 기여 항목"] };
+                const currentLevels = Array.isArray(item.descriptionLevels) ? item.descriptionLevels : [];
+                const currentHtml = Array.isArray(item.descriptionHtml)
+                    ? item.descriptionHtml
+                    : currentDesc.map((description: string) => escapeHtml(description));
+                return {
+                    ...item,
+                    description: [...currentDesc, text],
+                    descriptionLevels: [...currentLevels, 1],
+                    descriptionHtml: [...currentHtml, escapeHtml(text)],
+                };
             })
         );
     };
 
-    const handleUpdateProjBullet = (projId: string, index: number, value: string) => {
+    const handleUpdateProjBulletRichText = (projId: string, index: number, html: string) => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         updateBlockData(
             currentBlock.id,
             prevData.map((item: any) => {
                 if (item.id !== projId) return item;
+                const sanitizedHtml = sanitizeInlineRichText(html);
                 const newDesc = [...item.description];
-                newDesc[index] = value;
-                return { ...item, description: newDesc };
+                const newHtml = Array.isArray(item.descriptionHtml)
+                    ? [...item.descriptionHtml]
+                    : item.description.map((description: string) => escapeHtml(description));
+                newDesc[index] = richTextToPlainText(sanitizedHtml);
+                newHtml[index] = sanitizedHtml;
+                return { ...item, description: newDesc, descriptionHtml: newHtml };
             })
         );
+    };
+
+    const focusProjectBullet = (projId: string, index: number) => {
+        requestAnimationFrame(() => {
+            document.querySelector<HTMLElement>(`[data-project-bullet-editor="${projId}-${index}"]`)?.focus();
+        });
+    };
+
+    const handleInsertProjBullet = (projId: string, index: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(currentBlock.id, prevData.map((item: any) => {
+            if (item.id !== projId) return item;
+            const description = [...item.description];
+            const descriptionLevels = item.description.map((_: string, bulletIndex: number) => (
+                Number(item.descriptionLevels?.[bulletIndex]) || 1
+            ));
+            const descriptionHtml = Array.isArray(item.descriptionHtml)
+                ? [...item.descriptionHtml]
+                : item.description.map((text: string) => escapeHtml(text));
+            description.splice(index + 1, 0, "");
+            descriptionLevels.splice(index + 1, 0, descriptionLevels[index] || 1);
+            descriptionHtml.splice(index + 1, 0, "");
+            return { ...item, description, descriptionLevels, descriptionHtml };
+        }));
+        focusProjectBullet(projId, index + 1);
     };
 
     const handleRemoveProjBullet = (projId: string, index: number) => {
@@ -469,9 +537,88 @@ export default function InspectorPanel() {
                 return {
                     ...item,
                     description: item.description.filter((_: any, i: number) => i !== index),
+                    descriptionLevels: (Array.isArray(item.descriptionLevels)
+                        ? item.descriptionLevels
+                        : item.description.map(() => 1)
+                    ).filter((_: number, i: number) => i !== index),
+                    descriptionHtml: (Array.isArray(item.descriptionHtml)
+                        ? item.descriptionHtml
+                        : item.description.map((description: string) => escapeHtml(description))
+                    ).filter((_: string, i: number) => i !== index),
                 };
             })
         );
+    };
+
+    const handleSetProjBulletLevel = (projId: string, index: number, requestedLevel: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => {
+                if (item.id !== projId) return item;
+                const levels = item.description.map((_: string, bulletIndex: number) => (
+                    Number(item.descriptionLevels?.[bulletIndex]) || 1
+                ));
+                const previousLevel = index > 0 ? levels[index - 1] : 1;
+                const maxLevel = index === 0 ? 1 : Math.min(3, previousLevel + 1);
+                levels[index] = Math.max(1, Math.min(maxLevel, requestedLevel));
+                return { ...item, descriptionLevels: levels };
+            }),
+        );
+    };
+
+    const handleProjectBulletKeyDown = (
+        event: React.KeyboardEvent<HTMLDivElement>,
+        proj: any,
+        index: number,
+    ) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
+            event.preventDefault();
+            document.execCommand("bold");
+            handleUpdateProjBulletRichText(proj.id, index, event.currentTarget.innerHTML);
+            return;
+        }
+        if (event.key === "Tab" || event.code === "Tab") {
+            event.preventDefault();
+            event.stopPropagation();
+            const renderedLevel = Number(event.currentTarget.closest<HTMLElement>("[data-level]")?.dataset.level) || 1;
+            handleSetProjBulletLevel(proj.id, index, renderedLevel + (event.shiftKey ? -1 : 1));
+            focusProjectBullet(proj.id, index);
+            return;
+        }
+        if (event.key === "Enter") {
+            event.preventDefault();
+            handleInsertProjBullet(proj.id, index);
+            return;
+        }
+        if (event.key === "Backspace" && !event.currentTarget.textContent) {
+            event.preventDefault();
+            event.stopPropagation();
+            const renderedLevel = Number(event.currentTarget.closest<HTMLElement>("[data-level]")?.dataset.level) || 1;
+            if (renderedLevel > 1) {
+                handleSetProjBulletLevel(proj.id, index, renderedLevel - 1);
+                focusProjectBullet(proj.id, index);
+                return;
+            }
+            if (proj.description.length > 1) {
+                handleRemoveProjBullet(proj.id, index);
+                focusProjectBullet(proj.id, Math.max(0, index - 1));
+            }
+        }
+    };
+
+    const handleUpdateProjBulletDocument = (
+        projId: string,
+        description: string[],
+        descriptionLevels: number[],
+        descriptionHtml: string[],
+    ) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(currentBlock.id, prevData.map((item: any) => (
+            item.id === projId
+                ? { ...item, description, descriptionLevels, descriptionHtml }
+                : item
+        )));
     };
 
     // --- 학력(Education) 핸들러 ---
@@ -637,7 +784,7 @@ export default function InspectorPanel() {
                     <h3 className="inspector-section-heading">블록 옵션</h3>
                     <div className="inspector-options-card space-y-4">
                         <div className="flex items-center justify-between gap-3">
-                            <div>
+                            <div className="min-w-0 flex-1">
                                 <span className="block text-xs text-neutral-300">개별 간격 사용</span>
                                 <span className="mt-0.5 block text-[10px] text-neutral-500">전역 블록 간격에 내부 여백을 추가합니다.</span>
                             </div>
@@ -678,9 +825,15 @@ export default function InspectorPanel() {
                         </div>
 
                         <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <span className="block text-xs text-neutral-300">한 페이지에 묶기</span>
-                                <span className="text-[10px] text-neutral-500">끄면 긴 내용을 다음 장에 이어서 표시합니다.</span>
+                            <div className="min-w-0 flex-1">
+                                <span className="block text-xs text-neutral-300">
+                                    {currentBlock.type === "project" ? "프로젝트 자동 페이지 맞춤" : "항목 자동 페이지 맞춤"}
+                                </span>
+                                <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
+                                    {currentBlock.type === "project"
+                                        ? "프로젝트가 페이지 경계에서 잘리지 않도록 다음 페이지 상단부터 깔끔하게 시작합니다."
+                                        : "항목이 페이지 경계에서 잘리지 않도록 다음 페이지 상단부터 깔끔하게 시작합니다."}
+                                </span>
                             </div>
                             <input
                                 type="checkbox"
@@ -1110,103 +1263,140 @@ export default function InspectorPanel() {
                         )}
 
                         {Array.isArray(currentBlock.data) &&
-                            currentBlock.data.map((proj: any) => (
+                            currentBlock.data.map((proj: any, projectIndex: number) => (
                                 <div
                                     key={proj.id}
-                                    className="inspector-repeat-card bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-3 relative"
+                                    className="inspector-repeat-card inspector-project-card"
                                 >
-                                    <button
-                                        onClick={() => handleRemoveProjectItem(proj.id)}
-                                        className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        data-tooltip="프로젝트 삭제"
-                                    >
-                                        <Trash2 size={13} />
-                                    </button>
+                                    <div className="inspector-project-card__summary">
+                                        <button
+                                            type="button"
+                                            className="inspector-project-card__toggle"
+                                            onClick={() => setExpandedProjectId((current) => current === proj.id ? null : proj.id)}
+                                            aria-expanded={expandedProjectId === proj.id}
+                                        >
+                                            <span className="inspector-project-card__summary-copy">
+                                                <strong>{proj.title || "제목 없는 프로젝트"}</strong>
+                                                <span>{[proj.startDate, proj.endDate].filter(Boolean).join(" ~ ") || "기간 미입력"}</span>
+                                            </span>
+                                            <ChevronDown className={expandedProjectId === proj.id ? "rotate-180" : ""} size={15} />
+                                        </button>
+                                        <details className="inspector-contact-menu inspector-project-menu">
+                                            <summary
+                                                data-tooltip={`${proj.title || "프로젝트"} 항목 메뉴`}
+                                                aria-label={`${proj.title || "프로젝트"} 항목 메뉴`}
+                                            >
+                                                <MoreHorizontal size={16} />
+                                            </summary>
+                                            <div className="inspector-contact-menu__popover">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleReorderProject(projectIndex, projectIndex - 1)}
+                                                    disabled={projectIndex === 0}
+                                                >
+                                                    <ChevronUp size={13} /> 위로 이동
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleReorderProject(projectIndex, projectIndex + 1)}
+                                                    disabled={projectIndex === currentBlock.data.length - 1}
+                                                >
+                                                    <ChevronDown size={13} /> 아래로 이동
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="is-danger"
+                                                    onClick={() => handleRemoveProjectItem(proj.id)}
+                                                >
+                                                    <Trash2 size={13} /> 삭제
+                                                </button>
+                                            </div>
+                                        </details>
+                                    </div>
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">프로젝트명</label>
+                                    {expandedProjectId === proj.id && (
+                                    <div className="inspector-project-card__body">
+                                    <div className="inspector-field">
+                                        <label className="block text-xs text-neutral-400">프로젝트명</label>
                                         <input
                                             type="text"
                                             value={proj.title || ""}
                                             onChange={(e) => handleUpdateProjectField(proj.id, "title", e.target.value)}
-                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">역할 / 기여도</label>
+                                    <div className="inspector-field">
+                                        <label className="block text-xs text-neutral-400">역할 / 기여도</label>
                                         <input
                                             type="text"
                                             value={proj.role || ""}
                                             onChange={(e) => handleUpdateProjectField(proj.id, "role", e.target.value)}
-                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">링크 URL (선택)</label>
+                                    <div className="inspector-field">
+                                        <label className="block text-xs text-neutral-400">링크 URL <span className="font-normal text-neutral-600">선택</span></label>
                                         <input
                                             type="text"
                                             placeholder="https://github.com/..."
                                             value={proj.link || ""}
                                             onChange={(e) => handleUpdateProjectField(proj.id, "link", e.target.value)}
-                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">시작일</label>
+                                    <div className="inspector-project-card__dates">
+                                        <div className="inspector-field">
+                                            <label className="block text-xs text-neutral-400">시작일</label>
                                             <input
                                                 type="text"
                                                 value={proj.startDate || ""}
                                                 onChange={(e) => handleUpdateProjectField(proj.id, "startDate", e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">종료일</label>
+                                        <div className="inspector-field">
+                                            <label className="block text-xs text-neutral-400">종료일</label>
                                             <input
                                                 type="text"
                                                 value={proj.endDate || ""}
                                                 onChange={(e) => handleUpdateProjectField(proj.id, "endDate", e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                             />
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 pt-1 border-t border-neutral-800">
+                                    <div className="inspector-field inspector-project-card__bullets">
                                         <div>
-                                            <label className="text-[11px] text-neutral-300 font-medium">기여/성과 불릿 목록</label>
+                                            <label className="block text-xs text-neutral-400">기여/성과</label>
+                                            <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
+                                                <span><Kbd>Enter</Kbd> 새 불릿</span>
+                                                <span><Kbd>Tab</Kbd> 들여쓰기</span>
+                                                <span>
+                                                    <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
+                                                    볼드
+                                                </span>
+                                            </div>
                                         </div>
 
-                                        <div className="space-y-1.5">
-                                            {(proj.description || []).map((bullet: string, bIdx: number) => (
-                                                <div key={bIdx} className="flex items-start gap-1.5">
-                                                    <textarea
-                                                        rows={2}
-                                                        value={bullet}
-                                                        onChange={(e) => handleUpdateProjBullet(proj.id, bIdx, e.target.value)}
-                                                        className="flex-1 bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none leading-snug"
-                                                    />
-                                                    <button
-                                                        onClick={() => handleRemoveProjBullet(proj.id, bIdx)}
-                                                        className="text-neutral-500 hover:text-red-400 p-1 transition"
-                                                        data-tooltip="불릿 삭제"
-                                                    >
-                                                        <X size={13} />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAddProjBullet(proj.id)}
-                                            className="inspector-inline-add"
-                                        >
-                                            <Plus size={13} /> 불릿 추가
-                                        </button>
+                                        <ProjectBulletDocumentEditor
+                                            descriptions={proj.description || []}
+                                            levels={proj.descriptionLevels || []}
+                                            html={proj.descriptionHtml || []}
+                                            onChange={(description, descriptionLevels, descriptionHtml) => (
+                                                handleUpdateProjBulletDocument(
+                                                    proj.id,
+                                                    description,
+                                                    descriptionLevels,
+                                                    descriptionHtml,
+                                                )
+                                            )}
+                                        />
                                     </div>
+                                    </div>
+                                    )}
                                 </div>
                             ))}
                         <button type="button" onClick={handleAddProjectItem} className="inspector-list-add">
