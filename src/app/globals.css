@@ -361,21 +361,48 @@ body,
     padding: 0 !important;
     width: 210mm !important;
     height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* 화면 편집기의 고정 높이와 잘림이 인쇄 페이지 수를 제한하지 않도록 해제합니다. */
+  body>div,
+  body>div>div,
+  .h-screen,
+  .overflow-hidden {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
   }
 
   main {
+    display: block !important;
+    width: 210mm !important;
+    height: auto !important;
+    min-height: 0 !important;
     padding: 0 !important;
     background: transparent !important;
     overflow: visible !important;
   }
 
   main>div {
+    display: block !important;
+    width: 210mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    transform: none !important;
     translate: none !important;
     gap: 0 !important;
     padding: 0 !important;
+    overflow: visible !important;
   }
 
   .resume-page {
+    display: block !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    overflow: visible !important;
     break-after: page !important;
     page-break-after: always !important;
   }
