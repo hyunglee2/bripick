@@ -362,6 +362,7 @@ export default function InspectorPanel() {
             startDate: "",
             endDate: "",
             description: [],
+            projects: [],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
     };
@@ -419,6 +420,41 @@ export default function InspectorPanel() {
                 };
             })
         );
+    };
+
+    const handleAddExperienceProject = (expId: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(currentBlock.id, prevData.map((item: any) => item.id === expId ? {
+            ...item,
+            projects: [...(item.projects || []), {
+                id: `exp-project-${Date.now()}`,
+                title: "",
+                role: "",
+                startDate: "",
+                endDate: "",
+                description: [],
+                descriptionLevels: [],
+                descriptionHtml: [],
+            }],
+        } : item));
+    };
+
+    const handleUpdateExperienceProject = (expId: string, projectId: string, patch: Record<string, unknown>) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(currentBlock.id, prevData.map((item: any) => item.id === expId ? {
+            ...item,
+            projects: (item.projects || []).map((project: any) => project.id === projectId
+                ? { ...project, ...patch }
+                : project),
+        } : item));
+    };
+
+    const handleRemoveExperienceProject = (expId: string, projectId: string) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(currentBlock.id, prevData.map((item: any) => item.id === expId ? {
+            ...item,
+            projects: (item.projects || []).filter((project: any) => project.id !== projectId),
+        } : item));
     };
 
     // --- 프로젝트(Project) 핸들러 ---
@@ -1256,6 +1292,83 @@ export default function InspectorPanel() {
                                             className="inspector-inline-add"
                                         >
                                             <Plus size={13} /> 불릿 추가
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-3 border-t border-neutral-800 pt-3">
+                                        <label className="text-[11px] font-medium text-neutral-300">회사 내 프로젝트</label>
+                                        {(exp.projects || []).map((project: any) => (
+                                            <div key={project.id} className="space-y-2 rounded-lg border border-neutral-800 bg-neutral-950/55 p-3">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <strong className="text-[11px] text-neutral-300">
+                                                        {project.title || "제목 없는 프로젝트"}
+                                                    </strong>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveExperienceProject(exp.id, project.id)}
+                                                        className="text-neutral-500 transition hover:text-red-400"
+                                                        aria-label={`${project.title || "프로젝트"} 삭제`}
+                                                    >
+                                                        <Trash2 size={13} />
+                                                    </button>
+                                                </div>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset block text-[11px] text-neutral-400">프로젝트명</label>
+                                                    <input
+                                                        value={project.title || ""}
+                                                        placeholder="프로젝트명"
+                                                        onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { title: event.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset block text-[11px] text-neutral-400">역할 / 프로젝트 소개</label>
+                                                    <input
+                                                        value={project.role || ""}
+                                                        placeholder="담당 역할 또는 프로젝트 소개"
+                                                        onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { role: event.target.value })}
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset block text-[11px] text-neutral-400">시작일</label>
+                                                        <input
+                                                            value={project.startDate || ""}
+                                                            placeholder="예: 2024.01"
+                                                            onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { startDate: event.target.value })}
+                                                        />
+                                                    </div>
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset block text-[11px] text-neutral-400">종료일</label>
+                                                        <input
+                                                            value={project.endDate || ""}
+                                                            placeholder="예: 2024.06"
+                                                            onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { endDate: event.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset block text-[11px] text-neutral-400">기여/성과</label>
+                                                    <ProjectBulletDocumentEditor
+                                                        descriptions={project.description || []}
+                                                        levels={project.descriptionLevels || []}
+                                                        html={project.descriptionHtml || []}
+                                                        onChange={(description, descriptionLevels, descriptionHtml) => (
+                                                            handleUpdateExperienceProject(exp.id, project.id, {
+                                                                description,
+                                                                descriptionLevels,
+                                                                descriptionHtml,
+                                                            })
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleAddExperienceProject(exp.id)}
+                                            className="inspector-inline-add"
+                                        >
+                                            <Plus size={13} /> 프로젝트 추가
                                         </button>
                                     </div>
                                 </div>

@@ -227,9 +227,10 @@ export default function ResumeCanvas() {
                         const keepItemTogether = block.type === "project" && Array.isArray(block.data)
                             ? (block.data[itemStart]?.keepTogether ?? (block.style.keepTogether === true))
                             : block.style.keepTogether === true;
-                        const descriptions = Array.isArray(block.data)
-                            ? block.data[itemStart]?.description
-                            : undefined;
+                        const flowItem = Array.isArray(block.data) ? block.data[itemStart] : undefined;
+                        const descriptions = block.type === "experience" && Array.isArray(flowItem?.projects) && flowItem.projects.length > 0
+                            ? undefined
+                            : flowItem?.description;
                         const itemHeight = measuredItemHeights.get(`${index}:${itemStart}`) || 80;
 
                         // 한 페이지보다 긴 항목은 항상 bullet 단위로 나눠 배치한다.
@@ -644,6 +645,74 @@ export default function ResumeCanvas() {
                                                             );
                                                         })}
                                                 </ul>
+                                                {!isDescriptionContinuation && Array.isArray(exp.projects) && exp.projects.length > 0 && (
+                                                    <div className="resume-experience-projects">
+                                                        {exp.projects.map((project: any, projectIndex: number) => (
+                                                            <div key={project.id} className="resume-experience-project">
+                                                                <div className="resume-experience-project__header">
+                                                                    <div className="flex min-w-0 items-baseline gap-2">
+                                                                        <span style={{ backgroundColor: primaryColor }} className="h-1.5 w-1.5 shrink-0" />
+                                                                        <EditableText
+                                                                            tag="span"
+                                                                            value={project.title}
+                                                                            placeholder="프로젝트명"
+                                                                            onChange={(title) => {
+                                                                                const updated = [...block.data];
+                                                                                const projects = [...exp.projects];
+                                                                                projects[projectIndex] = { ...project, title };
+                                                                                updated[expIndex] = { ...exp, projects };
+                                                                                updateBlockData(block.id, updated);
+                                                                            }}
+                                                                            className="font-bold text-neutral-900"
+                                                                        />
+                                                                    </div>
+                                                                    <div className="flex shrink-0 items-center gap-1 text-xs text-neutral-500">
+                                                                        <span>{project.startDate || "시작일"}</span>
+                                                                        <span>~</span>
+                                                                        <span>{project.endDate || "종료일"}</span>
+                                                                    </div>
+                                                                </div>
+                                                                <EditableText
+                                                                    tag="div"
+                                                                    value={project.role}
+                                                                    placeholder="프로젝트 소개 및 역할"
+                                                                    onChange={(role) => {
+                                                                        const updated = [...block.data];
+                                                                        const projects = [...exp.projects];
+                                                                        projects[projectIndex] = { ...project, role };
+                                                                        updated[expIndex] = { ...exp, projects };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                    className="resume-experience-project__summary"
+                                                                />
+                                                                <ul className="resume-project-bullets">
+                                                                    {(project.description || []).map((description: string, descriptionIndex: number) => (
+                                                                        <li
+                                                                            key={descriptionIndex}
+                                                                            data-bullet-level={project.descriptionLevels?.[descriptionIndex] || 1}
+                                                                        >
+                                                                            <RichTextEditable
+                                                                                html={project.descriptionHtml?.[descriptionIndex] || escapeHtml(description)}
+                                                                                ariaLabel="프로젝트 기여와 성과"
+                                                                                onChange={(descriptionHtml) => {
+                                                                                    const updated = [...block.data];
+                                                                                    const projects = [...exp.projects];
+                                                                                    const descriptions = [...(project.description || [])];
+                                                                                    const html = [...(project.descriptionHtml || [])];
+                                                                                    descriptions[descriptionIndex] = richTextToPlainText(descriptionHtml);
+                                                                                    html[descriptionIndex] = descriptionHtml;
+                                                                                    projects[projectIndex] = { ...project, description: descriptions, descriptionHtml: html };
+                                                                                    updated[expIndex] = { ...exp, projects };
+                                                                                    updateBlockData(block.id, updated);
+                                                                                }}
+                                                                            />
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}

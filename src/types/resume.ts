@@ -52,6 +52,18 @@ export interface ExperienceItem {
     endDate: string;
     description: string[];
     techStack?: string[];
+    projects?: ExperienceProject[];
+}
+
+export interface ExperienceProject {
+    id: string;
+    title: string;
+    role: string;
+    startDate: string;
+    endDate: string;
+    description: string[];
+    descriptionLevels?: number[];
+    descriptionHtml?: string[];
 }
 
 export interface ProjectItem {
