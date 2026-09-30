@@ -1,7 +1,7 @@
 // src/components/editor/ResumeCanvas.tsx
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
 import { FileText, GripVertical, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
@@ -10,6 +10,7 @@ import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
 import RichTextEditable from "@/components/editor/RichTextEditable";
+import ServiceDialog from "@/components/ui/ServiceDialog";
 
 const A4_PAPER_HEIGHT = 1130;
 const PROJECT_ITEM_GAP = 26;
@@ -47,10 +48,12 @@ export default function ResumeCanvas() {
     const updateBlockData = useResumeStore((state) => state.updateBlockData);
     const updateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
     const reorderBlocks = useResumeStore((state) => state.reorderBlocks);
+    const removeBlock = useResumeStore((state) => state.removeBlock);
 
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
     const [zoomLevel, setZoomLevel] = useState<number>(100);
+    const [pendingDeleteBlockId, setPendingDeleteBlockId] = useState<string | null>(null);
     const [pagePlacements, setPagePlacements] = useState<BlockPlacement[][]>(() => getInitialPlacements(blocks));
     const canvasRef = useRef<HTMLDivElement>(null);
     const paginationFrameRef = useRef<number | null>(null);
@@ -73,6 +76,29 @@ export default function ResumeCanvas() {
     const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 10, 150));
     const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 10, 50));
     const handleZoomReset = () => setZoomLevel(100);
+
+    useEffect(() => {
+        const handleSelectedBlockDelete = (event: KeyboardEvent) => {
+            if (event.key !== "Backspace" || !selectedBlockId || pendingDeleteBlockId) return;
+
+            const target = event.target as HTMLElement | null;
+            const isEditingText = target?.closest(
+                'input, textarea, select, [contenteditable="true"], [role="textbox"]',
+            );
+            if (isEditingText) return;
+
+            const selectedBlock = blocks.find((block) => block.id === selectedBlockId);
+            if (!selectedBlock) return;
+
+            event.preventDefault();
+            setPendingDeleteBlockId(selectedBlockId);
+        };
+
+        window.addEventListener("keydown", handleSelectedBlockDelete);
+        return () => window.removeEventListener("keydown", handleSelectedBlockDelete);
+    }, [blocks, pendingDeleteBlockId, selectedBlockId]);
+
+    const pendingDeleteBlock = blocks.find((block) => block.id === pendingDeleteBlockId);
 
     // --- 드래그 앤 드롭 핸들러 ---
     const handleDragStart = (e: React.DragEvent, globalIdx: number) => {
@@ -1139,6 +1165,7 @@ export default function ResumeCanvas() {
     };
 
     return (
+        <>
         <main
             onClick={() => setSelectedBlockId(null)}
             className="editor-canvas flex-1 bg-[#444444] overflow-y-auto p-8 flex justify-center cursor-default relative"
@@ -1279,5 +1306,19 @@ export default function ResumeCanvas() {
                 </button>
             </div>
         </main>
+        <ServiceDialog
+            isOpen={pendingDeleteBlockId !== null}
+            title="블록을 삭제할까요?"
+            message={`'${pendingDeleteBlock?.title?.trim() || "선택한 블록"}' 블록은 삭제 후 실행 취소로 복구할 수 있습니다.`}
+            variant="danger"
+            confirmLabel="삭제"
+            cancelLabel="취소"
+            onConfirm={() => {
+                if (pendingDeleteBlockId) removeBlock(pendingDeleteBlockId);
+                setPendingDeleteBlockId(null);
+            }}
+            onCancel={() => setPendingDeleteBlockId(null)}
+        />
+        </>
     );
 }
