@@ -341,6 +341,47 @@ body,
   transform: translateY(-2px) scale(1);
 }
 
+/* 같은 페이지에 연속 배치된 동일 블록 조각은 하나의 카드처럼 연결합니다. */
+.reference-template .resume-block-fragment--continues-next {
+  border-bottom-color: transparent !important;
+  border-bottom-right-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 0 !important;
+}
+
+.reference-template .resume-block-fragment--continues-previous {
+  border-top: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-top-left-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* 선택 카드도 같은 페이지의 동일 블록 조각 사이에서 끊겨 보이지 않게 연결합니다. */
+.reference-template .resume-block-fragment--continues-next::after {
+  bottom: -8px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
+}
+
+.reference-template .resume-block-fragment--continues-previous::after {
+  top: -8px;
+  border-top-right-radius: 0;
+  border-top-left-radius: 0;
+  box-shadow:
+    0 16px 36px rgba(15, 23, 42, 0.13),
+    0 4px 12px rgba(15, 23, 42, 0.07);
+}
+
+.reference-template .resume-block-fragment--continues-next[data-custom-padding="false"] {
+  padding-bottom: 8px !important;
+}
+
+.reference-template .resume-block-fragment--continues-previous[data-custom-padding="false"] {
+  padding-top: 8px !important;
+}
+
 /* src/app/globals.css 하단에 추가 */
 
 /* src/app/globals.css 맨 아래 */
@@ -826,6 +867,10 @@ body,
   padding-left: 24px !important;
 }
 
+.reference-template [data-pagination-item-index] .resume-project-bullets:not(:has(li)) {
+  display: none;
+}
+
 .reference-template [data-pagination-item-index] .resume-project-bullets>li {
   color: #404040;
   padding-left: 2px;
@@ -917,6 +962,7 @@ body,
 }
 
 .project-bullet-editor__content {
+  position: relative;
   min-width: 0;
   padding: 5px 6px;
   border-radius: 4px;
@@ -928,12 +974,32 @@ body,
   overflow-wrap: anywhere;
 }
 
+.project-bullet-editor__content:empty::before,
+.project-bullet-editor__content:has(>br:only-child)::before {
+  content: attr(data-placeholder);
+  color: var(--inspector-muted);
+  pointer-events: none;
+}
+
+.project-bullet-editor:focus .project-bullet-editor__content::before,
+.project-bullet-editor:focus-within .project-bullet-editor__content::before,
+.project-bullet-editor__content.is-active::before {
+  content: none;
+}
+
 .project-bullet-editor__content:hover {
   background: rgb(255 255 255 / 3%);
 }
 
 .project-bullet-editor__content:focus {
   background: rgb(255 255 255 / 5%);
+}
+
+.project-bullet-editor__content * {
+  color: inherit !important;
+  font: inherit !important;
+  letter-spacing: inherit !important;
+  line-height: inherit !important;
 }
 
 .inspector-panel--block .inspector-heading>div:first-child {
@@ -1188,7 +1254,7 @@ body,
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
-  padding: 10px 12px;
+  padding: 9px 11px;
 }
 
 .inspector-panel .inspector-project-card__toggle {
@@ -1206,7 +1272,7 @@ body,
   background: var(--inspector-hover);
 }
 
-.inspector-panel .inspector-project-card__toggle > svg {
+.inspector-panel .inspector-project-card__toggle>svg {
   flex: 0 0 auto;
   color: var(--inspector-muted);
   transition: transform 160ms ease;
@@ -1230,6 +1296,7 @@ body,
   color: var(--inspector-text);
   font-size: 12px;
   font-weight: 600;
+  line-height: 20px;
 }
 
 .inspector-panel .inspector-project-card__summary-copy span {
@@ -1240,7 +1307,7 @@ body,
 .inspector-panel .inspector-project-card__body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   padding: 14px 16px 16px;
   border-top: 1px solid var(--inspector-border);
 }
@@ -1248,7 +1315,18 @@ body,
 .inspector-panel .inspector-project-card__dates {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
+}
+
+.inspector-panel .inspector-optional-label {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 6px;
+}
+
+.inspector-panel--block .inspector-label-inset {
+  padding-inline: 4px;
 }
 
 .inspector-panel .inspector-project-card__bullets {
@@ -1280,8 +1358,9 @@ body,
 }
 
 .ui-kbd-group {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   gap: 3px;
   color: var(--inspector-muted);
 }
@@ -1334,8 +1413,8 @@ body,
 .inspector-panel .inspector-contact-link,
 .inspector-panel .inspector-contact-menu>summary {
   display: inline-flex;
-  width: 28px;
-  height: 32px;
+  width: 15px;
+  height: 15px;
   align-items: center;
   justify-content: center;
   border-radius: 7px;
@@ -1376,8 +1455,9 @@ body,
 
 .inspector-panel .inspector-contact-menu {
   position: relative;
-  width: 28px;
-  height: 32px;
+  display: flex;
+  align-items: center;
+
 }
 
 .inspector-panel .inspector-contact-menu>summary {
@@ -1408,6 +1488,51 @@ body,
   border-radius: 9px;
   background: var(--inspector-surface);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.32);
+}
+
+.inspector-panel .inspector-project-menu .inspector-contact-menu__popover {
+  width: 164px;
+}
+
+.inspector-panel .inspector-project-menu__switch-item {
+  justify-content: space-between;
+}
+
+.inspector-panel .inspector-project-menu__switch {
+  position: relative;
+  width: 26px;
+  height: 15px;
+  flex: 0 0 26px;
+  border: 1px solid var(--inspector-border-strong);
+  border-radius: 999px;
+  background: #252932;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.inspector-panel .inspector-project-menu__switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #a7adb8;
+  transition: translate 150ms ease, background-color 150ms ease;
+}
+
+.inspector-panel .inspector-project-menu__switch-item[aria-checked="true"] {
+  color: #70b4e6;
+}
+
+.inspector-panel .inspector-project-menu__switch-item[aria-checked="true"] .inspector-project-menu__switch {
+  border-color: var(--brand-primary);
+  background: var(--brand-primary);
+}
+
+.inspector-panel .inspector-project-menu__switch-item[aria-checked="true"] .inspector-project-menu__switch::after {
+  translate: 11px 0;
+  background: #fff;
 }
 
 .inspector-panel .inspector-contact-menu__popover button {
@@ -1456,11 +1581,12 @@ body,
 .inspector-panel--block .inspector-list-section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 6px;
 }
 
 .inspector-panel--block .inspector-list-section>div:first-child span:first-child,
-.inspector-panel--block .inspector-repeat-card label.block {
+.inspector-panel--block .inspector-repeat-card label,
+.inspector-panel--block .inspector-skill-category__body label {
   padding-inline: 4px;
 }
 
@@ -1866,6 +1992,7 @@ body,
 }
 
 .inspector-panel--block .inspector-section-heading {
+  padding-inline: 4px;
   color: var(--inspector-text);
   font-size: 12px;
   font-weight: 600;
@@ -1881,7 +2008,7 @@ body,
 }
 
 .inspector-panel--block .inspector-contact-list {
-  gap: 8px;
+  gap: 6px;
 }
 
 .inspector-panel--block .inspector-field>* {
@@ -1903,12 +2030,17 @@ body,
 }
 
 .inspector-panel--block label.block+ :is(input, textarea, select) {
-  margin-top: 6px !important;
+  /* margin-top: 6px !important; */
 }
 
 .inspector-panel--block .inspector-repeat-card label.block+ :is(input, textarea, select),
 .inspector-panel--block .inspector-skill-category__body label.block+ :is(input, textarea, select) {
-  margin-top: 4px !important;
+  margin-top: 6px !important;
+}
+
+.inspector-panel--block .inspector-repeat-card label+ :is(input, textarea, select),
+.inspector-panel--block .inspector-skill-category__body label+ :is(input, textarea, select) {
+  margin-top: 6px !important;
 }
 
 [data-theme="light"] .inspector-panel .inspector-context-banner {

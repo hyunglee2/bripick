@@ -64,6 +64,7 @@ export interface ProjectItem {
     description: string[];
     descriptionLevels?: number[];
     descriptionHtml?: string[];
+    keepTogether?: boolean;
 }
 
 export interface EducationItem {

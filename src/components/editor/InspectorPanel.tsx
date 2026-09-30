@@ -216,9 +216,9 @@ export default function InspectorPanel() {
                                             data-tooltip={`${color.label} ${color.value}`}
                                             aria-label={`${color.label} ${color.value}`}
                                             aria-pressed={isSelected}
-                                        className={`inspector-color-swatch h-5 w-5 rounded-full border-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#2f80c3]/70 ${isSelected
-                                                    ? "border-white shadow-[0_0_0_2px_rgba(47,128,195,0.55)]"
-                                                    : "border-neutral-700 hover:border-neutral-400"
+                                            className={`inspector-color-swatch h-5 w-5 rounded-full border-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#2f80c3]/70 ${isSelected
+                                                ? "border-white shadow-[0_0_0_2px_rgba(47,128,195,0.55)]"
+                                                : "border-neutral-700 hover:border-neutral-400"
                                                 }`}
                                             style={{ backgroundColor: color.value }}
                                         />
@@ -357,14 +357,13 @@ export default function InspectorPanel() {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const newItem = {
             id: `exp-${Date.now()}`,
-            company: "새로운 회사",
-            role: "직무를 입력하세요",
-            startDate: "2024.01",
-            endDate: "재직 중",
-            description: ["주요 업무 및 달성한 성과를 입력하세요."],
+            company: "",
+            role: "",
+            startDate: "",
+            endDate: "",
+            description: [],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
-        setExpandedProjectId(newItem.id);
     };
 
     const handleUpdateExpField = (expId: string, field: string, value: any) => {
@@ -390,7 +389,7 @@ export default function InspectorPanel() {
             prevData.map((item: any) => {
                 if (item.id !== expId) return item;
                 const currentDesc = Array.isArray(item.description) ? item.description : [];
-                return { ...item, description: [...currentDesc, text || "새로운 성과 불릿 포인트"] };
+                return { ...item, description: [...currentDesc, text] };
             })
         );
     };
@@ -427,14 +426,17 @@ export default function InspectorPanel() {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const newItem = {
             id: `proj-${Date.now()}`,
-            title: "프로젝트 명",
-            role: "담당 역할",
-            startDate: "2025.01",
-            endDate: "2025.06",
+            title: "",
+            role: "",
+            startDate: "",
+            endDate: "",
             link: "",
-            description: ["프로젝트 핵심 기여도 및 결과물을 작성하세요."],
+            description: [],
+            descriptionLevels: [],
+            descriptionHtml: [],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
+        setExpandedProjectId(newItem.id);
     };
 
     const handleUpdateProjectField = (projId: string, field: string, value: any) => {
@@ -626,11 +628,11 @@ export default function InspectorPanel() {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const newItem = {
             id: `edu-${Date.now()}`,
-            school: "대학교",
-            major: "전공명",
-            startDate: "2019.03",
-            endDate: "2023.02",
-            status: "졸업",
+            school: "",
+            major: "",
+            startDate: "",
+            endDate: "",
+            status: "",
             score: "",
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
@@ -657,9 +659,9 @@ export default function InspectorPanel() {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const newItem = {
             id: `cert-${Date.now()}`,
-            title: "자격증 / 수상명",
-            issuer: "발행 기관",
-            date: "2024.01",
+            title: "",
+            issuer: "",
+            date: "",
             description: "",
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
@@ -734,8 +736,8 @@ export default function InspectorPanel() {
                         <button
                             onClick={() => toggleBlockVisibility(currentBlock.id)}
                             className={`p-1 rounded transition ${currentBlock.isVisible === false
-                                    ? "text-red-400 hover:text-red-300 hover:bg-red-950/40"
-                                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                                ? "text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                                : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                                 }`}
                             data-tooltip={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
                         >
@@ -769,7 +771,7 @@ export default function InspectorPanel() {
                 </div>
 
                 <div className="inspector-field space-y-1.5">
-                    <label className="text-xs font-medium text-neutral-300 block">블록 제목</label>
+                    <label className="inspector-label-inset block text-xs font-medium text-neutral-300">블록 제목</label>
                     <input
                         type="text"
                         value={currentBlock.title || ""}
@@ -827,18 +829,27 @@ export default function InspectorPanel() {
                         <div className="flex items-center justify-between gap-3">
                             <div className="min-w-0 flex-1">
                                 <span className="block text-xs text-neutral-300">
-                                    {currentBlock.type === "project" ? "프로젝트 자동 페이지 맞춤" : "항목 자동 페이지 맞춤"}
+                                    {currentBlock.type === "project" ? "블록 자동 페이지 맞춤" : "블록 자동 페이지 맞춤"}
                                 </span>
                                 <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
                                     {currentBlock.type === "project"
-                                        ? "프로젝트가 페이지 경계에서 잘리지 않도록 다음 페이지 상단부터 깔끔하게 시작합니다."
-                                        : "항목이 페이지 경계에서 잘리지 않도록 다음 페이지 상단부터 깔끔하게 시작합니다."}
+                                        ? "블록 내 모든 프로젝트가 페이지 경계에서 잘리지 않도록 한 번에 설정합니다."
+                                        : "블록이 페이지 경계에서 잘리지 않도록 다음 페이지 상단부터 깔끔하게 시작합니다."}
                                 </span>
                             </div>
                             <input
                                 type="checkbox"
                                 checked={currentBlock.style.keepTogether === true}
-                                onChange={(e) => updateBlockStyle(currentBlock.id, { keepTogether: e.target.checked })}
+                                onChange={(e) => {
+                                    const keepTogether = e.target.checked;
+                                    updateBlockStyle(currentBlock.id, { keepTogether });
+                                    if (currentBlock.type === "project" && Array.isArray(currentBlock.data)) {
+                                        updateBlockData(
+                                            currentBlock.id,
+                                            currentBlock.data.map((project: any) => ({ ...project, keepTogether })),
+                                        );
+                                    }
+                                }}
                                 className="h-4 w-4 cursor-pointer accent-blue-500"
                             />
                         </div>
@@ -972,36 +983,36 @@ export default function InspectorPanel() {
                                             <GripVertical size={15} />
                                         </span>
                                         <input
-                                        type="text"
-                                        value={contact.label}
-                                        placeholder="항목명"
-                                        aria-label="연락처 항목명"
-                                        onChange={(event) => {
-                                            const nextContacts = profileContacts.map((item) => (
-                                                item.id === contact.id ? { ...item, label: event.target.value } : item
-                                            ));
-                                            updateBlockData(
-                                                currentBlock.id,
-                                                withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                            );
-                                        }}
-                                        className="inspector-contact-label w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                            type="text"
+                                            value={contact.label}
+                                            placeholder="항목명"
+                                            aria-label="연락처 항목명"
+                                            onChange={(event) => {
+                                                const nextContacts = profileContacts.map((item) => (
+                                                    item.id === contact.id ? { ...item, label: event.target.value } : item
+                                                ));
+                                                updateBlockData(
+                                                    currentBlock.id,
+                                                    withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                                );
+                                            }}
+                                            className="inspector-contact-label w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                         />
                                         <input
-                                        type="text"
-                                        value={contact.value}
-                                        placeholder="내용 또는 URL"
-                                        aria-label={`${contact.label || "연락처"} 내용`}
-                                        onChange={(event) => {
-                                            const nextContacts = profileContacts.map((item) => (
-                                                item.id === contact.id ? { ...item, value: event.target.value } : item
-                                            ));
-                                            updateBlockData(
-                                                currentBlock.id,
-                                                withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                            );
-                                        }}
-                                        className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                            type="text"
+                                            value={contact.value}
+                                            placeholder="내용 또는 URL"
+                                            aria-label={`${contact.label || "연락처"} 내용`}
+                                            onChange={(event) => {
+                                                const nextContacts = profileContacts.map((item) => (
+                                                    item.id === contact.id ? { ...item, value: event.target.value } : item
+                                                ));
+                                                updateBlockData(
+                                                    currentBlock.id,
+                                                    withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                                );
+                                            }}
+                                            className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                         />
                                         {contactIndex > 0 ? (
                                             <button
@@ -1153,6 +1164,7 @@ export default function InspectorPanel() {
                                         <label className="text-[11px] text-neutral-400 block">회사명</label>
                                         <input
                                             type="text"
+                                            placeholder="회사명"
                                             value={exp.company || ""}
                                             onChange={(e) => handleUpdateExpField(exp.id, "company", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1163,6 +1175,7 @@ export default function InspectorPanel() {
                                         <label className="text-[11px] text-neutral-400 block">직무 / 역할</label>
                                         <input
                                             type="text"
+                                            placeholder="직무 또는 역할"
                                             value={exp.role || ""}
                                             onChange={(e) => handleUpdateExpField(exp.id, "role", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1174,6 +1187,7 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">시작일</label>
                                             <input
                                                 type="text"
+                                                placeholder="예: 2024.01"
                                                 value={exp.startDate || ""}
                                                 onChange={(e) => handleUpdateExpField(exp.id, "startDate", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1183,6 +1197,7 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">종료일</label>
                                             <input
                                                 type="text"
+                                                placeholder="예: 재직 중"
                                                 value={exp.endDate || ""}
                                                 onChange={(e) => handleUpdateExpField(exp.id, "endDate", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1220,6 +1235,7 @@ export default function InspectorPanel() {
                                                 <div key={bIdx} className="flex items-start gap-1.5">
                                                     <textarea
                                                         rows={2}
+                                                        placeholder="주요 업무와 성과를 입력하세요"
                                                         value={bullet}
                                                         onChange={(e) => handleUpdateExpBullet(exp.id, bIdx, e.target.value)}
                                                         className="flex-1 bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none leading-snug"
@@ -1277,7 +1293,6 @@ export default function InspectorPanel() {
                                         >
                                             <span className="inspector-project-card__summary-copy">
                                                 <strong>{proj.title || "제목 없는 프로젝트"}</strong>
-                                                <span>{[proj.startDate, proj.endDate].filter(Boolean).join(" ~ ") || "기간 미입력"}</span>
                                             </span>
                                             <ChevronDown className={expandedProjectId === proj.id ? "rotate-180" : ""} size={15} />
                                         </button>
@@ -1305,6 +1320,20 @@ export default function InspectorPanel() {
                                                 </button>
                                                 <button
                                                     type="button"
+                                                    className="inspector-project-menu__switch-item"
+                                                    role="switch"
+                                                    aria-checked={proj.keepTogether ?? (currentBlock.style.keepTogether === true)}
+                                                    onClick={() => handleUpdateProjectField(
+                                                        proj.id,
+                                                        "keepTogether",
+                                                        !(proj.keepTogether ?? (currentBlock.style.keepTogether === true)),
+                                                    )}
+                                                >
+                                                    <span>자동 페이지 맞춤</span>
+                                                    <span className="inspector-project-menu__switch" aria-hidden="true" />
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     className="is-danger"
                                                     onClick={() => handleRemoveProjectItem(proj.id)}
                                                 >
@@ -1315,87 +1344,91 @@ export default function InspectorPanel() {
                                     </div>
 
                                     {expandedProjectId === proj.id && (
-                                    <div className="inspector-project-card__body">
-                                    <div className="inspector-field">
-                                        <label className="block text-xs text-neutral-400">프로젝트명</label>
-                                        <input
-                                            type="text"
-                                            value={proj.title || ""}
-                                            onChange={(e) => handleUpdateProjectField(proj.id, "title", e.target.value)}
-                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                        />
-                                    </div>
+                                        <div className="inspector-project-card__body">
+                                            <div className="inspector-field">
+                                                <label className="inspector-label-inset block text-xs text-neutral-400">프로젝트명</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="프로젝트명"
+                                                    value={proj.title || ""}
+                                                    onChange={(e) => handleUpdateProjectField(proj.id, "title", e.target.value)}
+                                                    className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                />
+                                            </div>
 
-                                    <div className="inspector-field">
-                                        <label className="block text-xs text-neutral-400">역할 / 기여도</label>
-                                        <input
-                                            type="text"
-                                            value={proj.role || ""}
-                                            onChange={(e) => handleUpdateProjectField(proj.id, "role", e.target.value)}
-                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                        />
-                                    </div>
+                                            <div className="inspector-field">
+                                                <label className="inspector-label-inset block text-xs text-neutral-400">역할 / 기여도</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="담당 역할 또는 기여도"
+                                                    value={proj.role || ""}
+                                                    onChange={(e) => handleUpdateProjectField(proj.id, "role", e.target.value)}
+                                                    className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                />
+                                            </div>
 
-                                    <div className="inspector-field">
-                                        <label className="block text-xs text-neutral-400">링크 URL <span className="font-normal text-neutral-600">선택</span></label>
-                                        <input
-                                            type="text"
-                                            placeholder="https://github.com/..."
-                                            value={proj.link || ""}
-                                            onChange={(e) => handleUpdateProjectField(proj.id, "link", e.target.value)}
-                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                        />
-                                    </div>
+                                            <div className="inspector-field">
+                                                <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">링크 URL <span className="font-normal text-neutral-600">선택</span></label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="https://github.com/..."
+                                                    value={proj.link || ""}
+                                                    onChange={(e) => handleUpdateProjectField(proj.id, "link", e.target.value)}
+                                                    className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                />
+                                            </div>
 
-                                    <div className="inspector-project-card__dates">
-                                        <div className="inspector-field">
-                                            <label className="block text-xs text-neutral-400">시작일</label>
-                                            <input
-                                                type="text"
-                                                value={proj.startDate || ""}
-                                                onChange={(e) => handleUpdateProjectField(proj.id, "startDate", e.target.value)}
-                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                        <div className="inspector-field">
-                                            <label className="block text-xs text-neutral-400">종료일</label>
-                                            <input
-                                                type="text"
-                                                value={proj.endDate || ""}
-                                                onChange={(e) => handleUpdateProjectField(proj.id, "endDate", e.target.value)}
-                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                    </div>
+                                            <div className="inspector-project-card__dates">
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">시작일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="예: 2025.01"
+                                                        value={proj.startDate || ""}
+                                                        onChange={(e) => handleUpdateProjectField(proj.id, "startDate", e.target.value)}
+                                                        className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">종료일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="예: 진행 중"
+                                                        value={proj.endDate || ""}
+                                                        onChange={(e) => handleUpdateProjectField(proj.id, "endDate", e.target.value)}
+                                                        className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                            </div>
 
-                                    <div className="inspector-field inspector-project-card__bullets">
-                                        <div>
-                                            <label className="block text-xs text-neutral-400">기여/성과</label>
-                                            <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
-                                                <span><Kbd>Enter</Kbd> 새 불릿</span>
-                                                <span><Kbd>Tab</Kbd> 들여쓰기</span>
-                                                <span>
-                                                    <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
-                                                    볼드
-                                                </span>
+                                            <div className="inspector-field inspector-project-card__bullets">
+                                                <div>
+                                                    <label className="inspector-label-inset block text-xs text-neutral-400">기여/성과</label>
+                                                    <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
+                                                        <span><Kbd>Enter</Kbd> 새 불릿</span>
+                                                        <span><Kbd>Tab</Kbd> 들여쓰기</span>
+                                                        <span>
+                                                            <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
+                                                            볼드
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <ProjectBulletDocumentEditor
+                                                    descriptions={proj.description || []}
+                                                    levels={proj.descriptionLevels || []}
+                                                    html={proj.descriptionHtml || []}
+                                                    onChange={(description, descriptionLevels, descriptionHtml) => (
+                                                        handleUpdateProjBulletDocument(
+                                                            proj.id,
+                                                            description,
+                                                            descriptionLevels,
+                                                            descriptionHtml,
+                                                        )
+                                                    )}
+                                                />
                                             </div>
                                         </div>
-
-                                        <ProjectBulletDocumentEditor
-                                            descriptions={proj.description || []}
-                                            levels={proj.descriptionLevels || []}
-                                            html={proj.descriptionHtml || []}
-                                            onChange={(description, descriptionLevels, descriptionHtml) => (
-                                                handleUpdateProjBulletDocument(
-                                                    proj.id,
-                                                    description,
-                                                    descriptionLevels,
-                                                    descriptionHtml,
-                                                )
-                                            )}
-                                        />
-                                    </div>
-                                    </div>
                                     )}
                                 </div>
                             ))}
@@ -1425,71 +1458,71 @@ export default function InspectorPanel() {
                             {skillCategories.map((category) => {
                                 const isExpanded = expandedSkillCategoryId === category.id;
                                 return (
-                                <div key={category.id} className="inspector-skill-category">
-                                    <div className="inspector-skill-category__header">
-                                        <button
-                                            type="button"
-                                            onClick={() => setExpandedSkillCategoryId(isExpanded ? null : category.id)}
-                                            className="inspector-skill-category__trigger"
-                                            aria-expanded={isExpanded}
-                                        >
-                                            <ChevronDown size={14} aria-hidden="true" />
-                                            <span>{category.name || "이름 없는 카테고리"}</span>
-                                            <span className="inspector-skill-category__count">{category.skills.length}개</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                updateSkillCategories(skillCategories.filter((item) => item.id !== category.id));
-                                                if (isExpanded) setExpandedSkillCategoryId(null);
-                                            }}
-                                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-red-500/10 hover:text-red-400"
-                                            data-tooltip={`${category.name || "스킬"} 카테고리 삭제`}
-                                            aria-label={`${category.name || "스킬"} 카테고리 삭제`}
-                                        >
-                                            <Trash2 size={13} />
-                                        </button>
-                                    </div>
-                                    {isExpanded && (
-                                        <div className="inspector-skill-category__body">
-                                            <label className="block text-[10px] font-medium text-neutral-500">카테고리명</label>
-                                            <input
-                                                type="text"
-                                                value={category.name}
-                                                placeholder="카테고리명"
-                                                aria-label="스킬 카테고리명"
-                                                onChange={(event) => updateSkillCategories(skillCategories.map((item) => (
-                                                    item.id === category.id ? { ...item, name: event.target.value } : item
-                                                )))}
-                                                className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs font-semibold text-neutral-200 outline-none focus:border-blue-500"
-                                            />
-                                            <label className="mt-3 block text-[10px] font-medium text-neutral-500">기술</label>
-                                            <input
-                                                type="text"
-                                                placeholder="기술 입력 후 Enter"
-                                                value={newSkillInputs[category.id] || ""}
-                                                onChange={(event) => setNewSkillInputs((current) => ({ ...current, [category.id]: event.target.value }))}
-                                                onKeyDown={(event) => handleAddSkill(event, category.id)}
-                                                className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                            />
-                                            <div className="mt-2 flex flex-wrap gap-1.5">
-                                                {category.skills.map((skill) => (
-                                                    <span key={skill} className="inspector-badge inline-flex items-center gap-1 text-xs">
-                                                        {skill}
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRemoveSkill(category.id, skill)}
-                                                            className="text-neutral-400 transition hover:text-red-400"
-                                                            aria-label={`${skill} 삭제`}
-                                                        >
-                                                            <X size={12} />
-                                                        </button>
-                                                    </span>
-                                                ))}
-                                            </div>
+                                    <div key={category.id} className="inspector-skill-category">
+                                        <div className="inspector-skill-category__header">
+                                            <button
+                                                type="button"
+                                                onClick={() => setExpandedSkillCategoryId(isExpanded ? null : category.id)}
+                                                className="inspector-skill-category__trigger"
+                                                aria-expanded={isExpanded}
+                                            >
+                                                <ChevronDown size={14} aria-hidden="true" />
+                                                <span>{category.name || "이름 없는 카테고리"}</span>
+                                                <span className="inspector-skill-category__count">{category.skills.length}개</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    updateSkillCategories(skillCategories.filter((item) => item.id !== category.id));
+                                                    if (isExpanded) setExpandedSkillCategoryId(null);
+                                                }}
+                                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-red-500/10 hover:text-red-400"
+                                                data-tooltip={`${category.name || "스킬"} 카테고리 삭제`}
+                                                aria-label={`${category.name || "스킬"} 카테고리 삭제`}
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
                                         </div>
-                                    )}
-                                </div>
+                                        {isExpanded && (
+                                            <div className="inspector-skill-category__body">
+                                                <label className="block text-[10px] font-medium text-neutral-500">카테고리명</label>
+                                                <input
+                                                    type="text"
+                                                    value={category.name}
+                                                    placeholder="카테고리명"
+                                                    aria-label="스킬 카테고리명"
+                                                    onChange={(event) => updateSkillCategories(skillCategories.map((item) => (
+                                                        item.id === category.id ? { ...item, name: event.target.value } : item
+                                                    )))}
+                                                    className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs font-semibold text-neutral-200 outline-none focus:border-blue-500"
+                                                />
+                                                <label className="mt-3 block text-[10px] font-medium text-neutral-500">기술</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="기술 입력 후 Enter"
+                                                    value={newSkillInputs[category.id] || ""}
+                                                    onChange={(event) => setNewSkillInputs((current) => ({ ...current, [category.id]: event.target.value }))}
+                                                    onKeyDown={(event) => handleAddSkill(event, category.id)}
+                                                    className="mt-1 w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                />
+                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                    {category.skills.map((skill) => (
+                                                        <span key={skill} className="inspector-badge inline-flex items-center gap-1 text-xs">
+                                                            {skill}
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveSkill(category.id, skill)}
+                                                                className="text-neutral-400 transition hover:text-red-400"
+                                                                aria-label={`${skill} 삭제`}
+                                                            >
+                                                                <X size={12} />
+                                                            </button>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </div>
@@ -1537,6 +1570,7 @@ export default function InspectorPanel() {
                                         <label className="text-[11px] text-neutral-400 block">학교명</label>
                                         <input
                                             type="text"
+                                            placeholder="학교명"
                                             value={edu.school || ""}
                                             onChange={(e) => handleUpdateEduField(edu.id, "school", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1547,6 +1581,7 @@ export default function InspectorPanel() {
                                         <label className="text-[11px] text-neutral-400 block">전공</label>
                                         <input
                                             type="text"
+                                            placeholder="전공명"
                                             value={edu.major || ""}
                                             onChange={(e) => handleUpdateEduField(edu.id, "major", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1558,6 +1593,7 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">입학일</label>
                                             <input
                                                 type="text"
+                                                placeholder="예: 2019.03"
                                                 value={edu.startDate || ""}
                                                 onChange={(e) => handleUpdateEduField(edu.id, "startDate", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1567,6 +1603,7 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">졸업일</label>
                                             <input
                                                 type="text"
+                                                placeholder="예: 2023.02"
                                                 value={edu.endDate || ""}
                                                 onChange={(e) => handleUpdateEduField(edu.id, "endDate", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1579,6 +1616,7 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">상태 (졸업/재학)</label>
                                             <input
                                                 type="text"
+                                                placeholder="예: 졸업"
                                                 value={edu.status || ""}
                                                 onChange={(e) => handleUpdateEduField(edu.id, "status", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1633,6 +1671,7 @@ export default function InspectorPanel() {
                                         <label className="text-[11px] text-neutral-400 block">자격/수상/시험명</label>
                                         <input
                                             type="text"
+                                            placeholder="자격증·수상·시험명"
                                             value={cert.title || ""}
                                             onChange={(e) => handleUpdateCertField(cert.id, "title", e.target.value)}
                                             className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1644,6 +1683,7 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">발행/주관 기관</label>
                                             <input
                                                 type="text"
+                                                placeholder="발행 또는 주관 기관"
                                                 value={cert.issuer || ""}
                                                 onChange={(e) => handleUpdateCertField(cert.id, "issuer", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -1653,6 +1693,7 @@ export default function InspectorPanel() {
                                             <label className="text-[11px] text-neutral-400 block">취득/수상 일자</label>
                                             <input
                                                 type="text"
+                                                placeholder="예: 2024.01"
                                                 value={cert.date || ""}
                                                 onChange={(e) => handleUpdateCertField(cert.id, "date", e.target.value)}
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"

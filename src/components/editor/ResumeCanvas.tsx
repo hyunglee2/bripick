@@ -12,6 +12,7 @@ import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/r
 import RichTextEditable from "@/components/editor/RichTextEditable";
 
 const A4_PAPER_HEIGHT = 1130;
+const PROJECT_ITEM_GAP = 26;
 const FLOW_BLOCK_TYPES = new Set<ResumeBlock["type"]>([
     "experience",
     "project",
@@ -142,14 +143,19 @@ export default function ResumeCanvas() {
                 element.querySelectorAll<HTMLElement>("[data-pagination-item-index]").forEach((item) => {
                     const itemIndex = Number(item.dataset.paginationItemIndex);
                     const itemStyle = window.getComputedStyle(item);
-                    const itemHeight = item.offsetHeight
-                        + Number.parseFloat(itemStyle.marginTop || "0")
-                        + Number.parseFloat(itemStyle.marginBottom || "0");
+                    const itemMarginTop = Number.parseFloat(itemStyle.marginTop || "0");
+                    const itemMarginBottom = Number.parseFloat(itemStyle.marginBottom || "0");
+                    const itemContentHeight = item.offsetHeight + itemMarginBottom;
+                    const itemHeight = blocks[index]?.type === "project"
+                        ? itemContentHeight
+                        : itemContentHeight + itemMarginTop;
                     measuredItemHeights.set(
                         `${index}:${itemIndex}`,
                         Math.max(measuredItemHeights.get(`${index}:${itemIndex}`) || 0, itemHeight),
                     );
-                    itemsHeight += itemHeight;
+                    // 프로젝트 사이 여백은 항목 자체 높이와 분리해 페이지 배치 시에만 더한다.
+                    // 단, 블록 chrome 높이 계산에서는 실제 레이아웃 높이를 빼야 한다.
+                    itemsHeight += itemContentHeight + itemMarginTop;
 
                     let descriptionsHeight = 0;
                     item.querySelectorAll<HTMLElement>("[data-pagination-description-index]").forEach((description) => {
@@ -215,10 +221,12 @@ export default function ResumeCanvas() {
                 const itemCount = getFlowItemCount(block);
                 if (FLOW_BLOCK_TYPES.has(block.type) && itemCount > 0) {
                     const baseHeight = measuredBaseHeights.get(index) || 80;
-                    const keepItemTogether = block.style.keepTogether === true;
                     let itemStart = 0;
 
                     while (itemStart < itemCount) {
+                        const keepItemTogether = block.type === "project" && Array.isArray(block.data)
+                            ? (block.data[itemStart]?.keepTogether ?? (block.style.keepTogether === true))
+                            : block.style.keepTogether === true;
                         const descriptions = Array.isArray(block.data)
                             ? block.data[itemStart]?.description
                             : undefined;
@@ -263,6 +271,27 @@ export default function ResumeCanvas() {
                                     descriptionEnd += 1;
                                 }
 
+                                const fragmentDescriptionCount = descriptionEnd - descriptionStart;
+                                const remainingDescriptionCount = descriptions.length - descriptionEnd;
+
+                                // 페이지 하단에 불릿 하나만 고립되면 프로젝트 조각 전체를
+                                // 다음 페이지로 보내 한 줄짜리 조각 카드가 생기지 않게 한다.
+                                if (fragmentDescriptionCount === 1
+                                    && remainingDescriptionCount > 0
+                                    && nextPages.at(-1)!.length > 0) {
+                                    startNewPage();
+                                    continue;
+                                }
+
+                                // 마지막 불릿 하나만 다음 페이지에 남는 경우에는 현재 조각의
+                                // 마지막 불릿도 함께 넘겨 continuation에 최소 두 줄을 유지한다.
+                                if (remainingDescriptionCount === 1 && fragmentDescriptionCount > 1) {
+                                    descriptionEnd -= 1;
+                                    fragmentHeight -= measuredDescriptionHeights.get(
+                                        `${index}:${itemStart}:${descriptionEnd}`
+                                    ) || 24;
+                                }
+
                                 nextPages.at(-1)!.push({
                                     blockIndex: index,
                                     itemStart,
@@ -285,12 +314,15 @@ export default function ResumeCanvas() {
                         let itemEnd = itemStart;
                         while (itemEnd < itemCount) {
                             const itemHeight = measuredItemHeights.get(`${index}:${itemEnd}`) || 80;
-                            if (itemEnd > itemStart && usedHeight + sliceHeight + itemHeight > availableHeight) break;
+                            const interItemGap = block.type === "project" && itemEnd > itemStart
+                                ? PROJECT_ITEM_GAP
+                                : 0;
+                            if (itemEnd > itemStart && usedHeight + sliceHeight + interItemGap + itemHeight > availableHeight) break;
                             if (itemEnd === itemStart && nextPages.at(-1)!.length > 0
                                 && usedHeight + sliceHeight + itemHeight > availableHeight) {
                                 startNewPage();
                             }
-                            sliceHeight += itemHeight;
+                            sliceHeight += interItemGap + itemHeight;
                             itemEnd += 1;
                         }
 
@@ -669,7 +701,8 @@ export default function ResumeCanvas() {
                                                             </a>
                                                         )}
                                                     </div>
-                                                    <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
+                                                    {(proj.startDate || proj.endDate) && <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
+                                                        {proj.startDate && (
                                                         <EditableText
                                                             value={proj.startDate}
                                                             width="short"
@@ -680,7 +713,9 @@ export default function ResumeCanvas() {
                                                                 updateBlockData(block.id, updated);
                                                             }}
                                                         />
-                                                        <span>~</span>
+                                                        )}
+                                                        {proj.startDate && proj.endDate && <span>~</span>}
+                                                        {proj.endDate && (
                                                         <EditableText
                                                             value={proj.endDate}
                                                             width="short"
@@ -691,7 +726,8 @@ export default function ResumeCanvas() {
                                                                 updateBlockData(block.id, updated);
                                                             }}
                                                         />
-                                                    </div>
+                                                        )}
+                                                    </div>}
                                                 </div>}
                                                 {!isDescriptionContinuation && <EditableText
                                                     tag="div"
@@ -719,6 +755,7 @@ export default function ResumeCanvas() {
                                                             const bulletHtml = sanitizeInlineRichText(
                                                                 proj.descriptionHtml?.[i] || escapeHtml(desc),
                                                             );
+                                                            if (!richTextToPlainText(bulletHtml).trim()) return null;
                                                             return (
                                                                 <li
                                                                     key={i}
@@ -1077,6 +1114,8 @@ export default function ResumeCanvas() {
                                 const isBeingDragged = draggedIndex === globalIdx;
                                 const isTargeted = dragOverIndex === globalIdx && draggedIndex !== globalIdx;
                                 const isHidden = block.isVisible === false;
+                                const continuesPreviousFragment = page.blocks[fragmentIndex - 1]?.globalIdx === globalIdx;
+                                const continuesNextFragment = page.blocks[fragmentIndex + 1]?.globalIdx === globalIdx;
 
                                 return (
                                     <div
@@ -1084,6 +1123,7 @@ export default function ResumeCanvas() {
                                         data-resume-block-index={globalIdx}
                                         data-block-type={block.type}
                                         data-description-start={placement.descriptionStart ?? 0}
+                                        data-custom-padding={block.style.useCustomPadding === true}
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, globalIdx)}
                                         onDragOver={(e) => handleDragOver(e, globalIdx)}
@@ -1097,7 +1137,7 @@ export default function ResumeCanvas() {
                                                     paddingBottom: `${block.style.paddingY}px`,
                                                 }
                                                 : {}),
-                                            marginBottom: "var(--resume-block-gap)",
+                                            marginBottom: continuesNextFragment ? 0 : "var(--resume-block-gap)",
                                         }}
                                         className={`resume-block-item relative cursor-pointer transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${templateType === "modern"
                                             ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
@@ -1106,6 +1146,8 @@ export default function ResumeCanvas() {
                                             } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
                                             } ${isTargeted ? "border-t-4 border-t-blue-500 -mt-1" : ""
                                             } ${isHidden ? "opacity-40 grayscale border-dashed border-neutral-300 block-hidden" : ""
+                                            } ${continuesPreviousFragment ? "resume-block-fragment--continues-previous" : ""
+                                            } ${continuesNextFragment ? "resume-block-fragment--continues-next" : ""
                                             } group`}
                                     >
                                         {isHidden && (

@@ -109,7 +109,7 @@ export default function EditableText({
                 : "hover:bg-neutral-100/80 rounded px-1 -mx-1 group-hover:border-dashed group-hover:border-b group-hover:border-neutral-300"
                 } ${className}`}
         >
-            {value ? value : <span className="text-neutral-400 italic font-normal">{placeholder}</span>}
+            {value ? value : <span className="editable-placeholder no-print text-neutral-400 italic font-normal">{placeholder}</span>}
         </Tag>
     );
 }
