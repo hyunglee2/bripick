@@ -59,6 +59,7 @@ export default function InspectorPanel() {
     const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
     const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
     const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
+    const [expandedExperienceId, setExpandedExperienceId] = useState<string | null>(null);
     const blockPanelRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -365,6 +366,7 @@ export default function InspectorPanel() {
             projects: [],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
+        setExpandedExperienceId(newItem.id);
     };
 
     const handleUpdateExpField = (expId: string, field: string, value: any) => {
@@ -377,10 +379,19 @@ export default function InspectorPanel() {
 
     const handleRemoveExpItem = (expId: string) => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
-        updateBlockData(
-            currentBlock.id,
-            prevData.filter((item: any) => item.id !== expId)
-        );
+        const nextData = prevData.filter((item: any) => item.id !== expId);
+        updateBlockData(currentBlock.id, nextData);
+        if (expandedExperienceId === expId) setExpandedExperienceId(nextData[0]?.id ?? null);
+    };
+
+    const handleReorderExperience = (fromIndex: number, toIndex: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        if (toIndex < 0 || toIndex >= prevData.length || fromIndex === toIndex) return;
+        const nextData = [...prevData];
+        const [movedExperience] = nextData.splice(fromIndex, 1);
+        if (!movedExperience) return;
+        nextData.splice(toIndex, 0, movedExperience);
+        updateBlockData(currentBlock.id, nextData);
     };
 
     const handleAddExpBullet = (expId: string, text = "") => {
@@ -1183,21 +1194,58 @@ export default function InspectorPanel() {
                         )}
 
                         {Array.isArray(currentBlock.data) &&
-                            currentBlock.data.map((exp: any) => (
+                            currentBlock.data.map((exp: any, experienceIndex: number) => (
                                 <div
                                     key={exp.id}
-                                    className="inspector-repeat-card bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-3 relative"
+                                    className="inspector-repeat-card inspector-project-card"
                                 >
-                                    <button
-                                        onClick={() => handleRemoveExpItem(exp.id)}
-                                        className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        data-tooltip="경력 삭제"
-                                    >
-                                        <Trash2 size={13} />
-                                    </button>
+                                    <div className="inspector-project-card__summary">
+                                        <button
+                                            type="button"
+                                            className="inspector-project-card__toggle"
+                                            onClick={() => setExpandedExperienceId((current) => current === exp.id ? null : exp.id)}
+                                            aria-expanded={expandedExperienceId === exp.id}
+                                        >
+                                            <span className="inspector-project-card__summary-copy">
+                                                <strong>{exp.company || "회사명 없음"}</strong>
+                                                <span>{exp.role || "직무 및 역할 미입력"}</span>
+                                            </span>
+                                            <ChevronDown className={expandedExperienceId === exp.id ? "rotate-180" : ""} size={15} />
+                                        </button>
+                                        <details className="inspector-contact-menu inspector-project-menu">
+                                            <summary
+                                                data-tooltip={`${exp.company || "경력"} 항목 메뉴`}
+                                                aria-label={`${exp.company || "경력"} 항목 메뉴`}
+                                            >
+                                                <MoreHorizontal size={16} />
+                                            </summary>
+                                            <div className="inspector-contact-menu__popover">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleReorderExperience(experienceIndex, experienceIndex - 1)}
+                                                    disabled={experienceIndex === 0}
+                                                >
+                                                    <ChevronUp size={13} /> 위로 이동
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleReorderExperience(experienceIndex, experienceIndex + 1)}
+                                                    disabled={experienceIndex === currentBlock.data.length - 1}
+                                                >
+                                                    <ChevronDown size={13} /> 아래로 이동
+                                                </button>
+                                                <button type="button" className="is-danger" onClick={() => handleRemoveExpItem(exp.id)}>
+                                                    <Trash2 size={13} /> 삭제
+                                                </button>
+                                            </div>
+                                        </details>
+                                    </div>
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">회사명</label>
+                                    {expandedExperienceId === exp.id && (
+                                    <div className="inspector-project-card__body">
+
+                                    <div className="inspector-field">
+                                        <label className="inspector-label-inset text-[11px] text-neutral-400 block">회사명</label>
                                         <input
                                             type="text"
                                             placeholder="회사명"
@@ -1207,8 +1255,8 @@ export default function InspectorPanel() {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">직무 / 역할</label>
+                                    <div className="inspector-field">
+                                        <label className="inspector-label-inset text-[11px] text-neutral-400 block">직무 / 역할</label>
                                         <input
                                             type="text"
                                             placeholder="직무 또는 역할"
@@ -1218,9 +1266,9 @@ export default function InspectorPanel() {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">시작일</label>
+                                    <div className="inspector-project-card__dates">
+                                        <div className="inspector-field">
+                                            <label className="inspector-label-inset text-[11px] text-neutral-400 block">시작일</label>
                                             <input
                                                 type="text"
                                                 placeholder="예: 2024.01"
@@ -1229,8 +1277,8 @@ export default function InspectorPanel() {
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">종료일</label>
+                                        <div className="inspector-field">
+                                            <label className="inspector-label-inset text-[11px] text-neutral-400 block">종료일</label>
                                             <input
                                                 type="text"
                                                 placeholder="예: 재직 중"
@@ -1245,25 +1293,6 @@ export default function InspectorPanel() {
                                     <div className="space-y-2 pt-1 border-t border-neutral-800">
                                         <div>
                                             <label className="text-[11px] text-neutral-300 font-medium">성과 불릿 목록</label>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-1">
-                                            <button
-                                                onClick={() =>
-                                                    handleAddExpBullet(exp.id, "Next.js 마이그레이션을 통해 초기 로딩 속도 40% 단축")
-                                                }
-                                                className="inspector-suggestion-chip text-[10px] bg-blue-950/60 border border-blue-800/60 text-blue-300 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-blue-900/60 transition"
-                                            >
-                                                <Sparkles size={10} /> 성능 개선형
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    handleAddExpBullet(exp.id, "디자인 시스템 공통 컴포넌트 구축으로 개발 리드타임 30% 개선")
-                                                }
-                                                className="inspector-suggestion-chip text-[10px] bg-neutral-800 border border-neutral-700 text-neutral-300 px-1.5 py-0.5 rounded flex items-center gap-1 hover:bg-neutral-700 transition"
-                                            >
-                                                <Sparkles size={10} /> 생산성 향상형
-                                            </button>
                                         </div>
 
                                         <div className="space-y-1.5">
@@ -1371,6 +1400,8 @@ export default function InspectorPanel() {
                                             <Plus size={13} /> 프로젝트 추가
                                         </button>
                                     </div>
+                                    </div>
+                                    )}
                                 </div>
                             ))}
                         <button type="button" onClick={handleAddExperienceItem} className="inspector-list-add">
