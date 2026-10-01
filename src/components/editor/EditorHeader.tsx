@@ -242,7 +242,7 @@ export default function EditorHeader() {
     const handleLoadPreset = () => {
         const samplePreset: ResumeDocument = {
             id: `preset-${Date.now()}`,
-            versionName: "시니어 프론트엔드 엔지니어 이력서",
+            versionName: "샘플 이력서",
             updatedAt: new Date().toISOString(),
             globalStyle: {
                 fontFamily: "'Pretendard', sans-serif",
@@ -267,25 +267,24 @@ export default function EditorHeader() {
                     style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
                     data: {
                         name: "김브릭",
-                        role: "Frontend Architect",
-                        email: "bripick.dev@gmail.com",
-                        phone: "010-1234-5678",
-                        bio: "사용자 경험과 비즈니스 성과를 연결하는",
+                        role: "Frontend Engineer",
+                        email: "seohyun.lee@example.com",
+                        phone: "010-0000-0000",
+                        bio: "복잡한 문제를 이해하기 쉬운 화면으로 풀어내는",
                         photo: "/profile_default.png",
                         showPhoto: true,
-                        blog: "https://blog.coreluma.kr",
-                        github: "https://github.coreluma.kr",
+                        blog: "https://coreluma.kr/blog",
+                        github: "https://coreluma.kr/example",
                         contacts: [
-                            { id: "contact-email", label: "Email", value: "bripick.dev@gmail.com" },
-                            { id: "contact-phone", label: "Phone", value: "010-1234-5678" },
-                            { id: "contact-blog", label: "Blog", value: "https://blog.coreluma.kr" },
-                            { id: "contact-github", label: "GitHub", value: "https://github.coreluma.kr", inlineWithPrevious: true },
+                            { id: "contact-email", label: "Email", value: "birpick@coreluma.kr" },
+                            { id: "contact-phone", label: "Phone", value: "010-0000-0000" },
+                            { id: "contact-blog", label: "Blog", value: "https://coreluma.kr/blog" },
+                            { id: "contact-github", label: "GitHub", value: "https://coreluma.kr/example", inlineWithPrevious: true },
                         ],
                         highlights: [
-                            "기획부터 디자인·개발·QA까지 제품의 전 과정을 경험한 프론트엔드 개발자입니다.",
-                            "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 구현합니다.",
-                            "실시간 통신과 결제 기능을 포함한 글로벌 웹 서비스 개발 및 운영 경험이 있습니다.",
-                            "로그와 데이터를 기반으로 문제를 분석하고 사용자 경험과 서비스 품질을 개선합니다.",
+                            "React와 TypeScript를 기반으로 사용자 중심의 웹 제품을 개발합니다.",
+                            "디자인 시스템과 테스트 자동화를 통해 팀의 개발 속도와 화면 품질을 함께 높였습니다.",
+                            "사용자 행동 데이터와 고객 피드백을 바탕으로 제품의 문제를 정의하고 개선합니다.",
                         ],
                         introductionStyle: "bullets",
                     },
@@ -299,9 +298,9 @@ export default function EditorHeader() {
                     style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
                     data: {
                         categories: [
-                            { id: "skills-frontend", name: "Frontend", skills: ["React", "Next.js", "Tailwind CSS", "TypeScript"] },
-                            { id: "skills-collaboration", name: "Collaboration", skills: ["GitHub", "Figma", "Notion", "Slack"] },
-                            { id: "skills-language", name: "Language", skills: ["JavaScript (ES6+)", "HTML5", "Python"] },
+                            { id: "skills-frontend", name: "Frontend", skills: ["React", "Next.js", "TypeScript", "TanStack Query"] },
+                            { id: "skills-ui", name: "UI", skills: ["Tailwind CSS", "Storybook", "Figma", "Accessibility"] },
+                            { id: "skills-quality", name: "Quality", skills: ["Vitest", "Playwright", "GitHub Actions"] },
                         ],
                     } as any,
                 },
@@ -315,14 +314,65 @@ export default function EditorHeader() {
                     data: [
                         {
                             id: "exp-sample-1",
-                            company: "Bripick Labs",
-                            role: "Lead Frontend Engineer",
-                            startDate: "2024.03",
+                            company: "루미노스 커머스",
+                            role: "Frontend Engineer",
+                            startDate: "2023.04",
                             endDate: "재직 중",
                             description: [
-                                "모듈식 이력서 빌더 웹 서비스 코어 에디터 엔진 아키텍처 설계",
-                                "Zustand 양방향 바인딩을 통해 블록 조작 시 불필요한 리렌더링 60% 절감",
-                                "A4 프린트 전용 미디어 쿼리 최적화로 다이렉트 PDF 내보내기 파이프라인 완성",
+                                "커머스 운영 도구와 고객용 웹 서비스의 프론트엔드 개발 및 운영",
+                                "디자이너·백엔드 개발자와 협업해 공통 UI 정책과 배포 프로세스 정립",
+                            ],
+                            projects: [
+                                {
+                                    id: "exp-project-sample-1",
+                                    title: "파트너 정산 대시보드",
+                                    role: "프론트엔드 설계 및 핵심 화면 개발",
+                                    startDate: "2024.02",
+                                    endDate: "2024.08",
+                                    description: [
+                                        "대용량 정산 내역을 빠르게 탐색할 수 있도록 서버 상태와 필터 상태를 분리해 설계",
+                                        "공통 테이블과 폼 컴포넌트를 구축해 신규 운영 화면 개발 시간을 약 35% 단축",
+                                        "Playwright 기반 주요 정산 시나리오 테스트를 도입해 배포 전 회귀 오류를 감소",
+                                    ],
+                                    descriptionLevels: [1, 1, 1],
+                                },
+                                {
+                                    id: "exp-project-sample-2",
+                                    title: "모바일 주문 경험 개선",
+                                    role: "상품 상세·장바구니 사용자 흐름 개선",
+                                    startDate: "2023.07",
+                                    endDate: "2023.12",
+                                    description: [
+                                        "이미지 로딩과 렌더링 병목을 개선해 모바일 LCP를 3.1초에서 1.8초로 단축",
+                                        "접근성 점검과 키보드 탐색 개선으로 핵심 구매 흐름의 사용성을 강화",
+                                    ],
+                                    descriptionLevels: [1, 1],
+                                },
+                            ],
+                        },
+                        {
+                            id: "exp-sample-2",
+                            company: "모노랩스",
+                            role: "Frontend Developer",
+                            startDate: "2021.07",
+                            endDate: "2023.03",
+                            description: [
+                                "B2B 협업 서비스의 프론트엔드 기능 개발과 디자인 시스템 운영",
+                                "제품 지표와 고객 문의를 기반으로 반복되는 사용성 문제를 발굴하고 개선",
+                            ],
+                            projects: [
+                                {
+                                    id: "exp-project-sample-3",
+                                    title: "팀 협업 워크스페이스 개편",
+                                    role: "워크스페이스·권한 관리 화면 개발",
+                                    startDate: "2022.05",
+                                    endDate: "2023.01",
+                                    description: [
+                                        "복잡한 멤버 권한 정책을 역할 기반 UI로 재구성해 설정 과정의 고객 문의를 28% 감소",
+                                        "Storybook 기반 공통 컴포넌트를 정비해 화면 간 UI 일관성과 개발 생산성을 향상",
+                                    ],
+                                    descriptionLevels: [1, 1],
+                                },
                             ],
                         },
                     ],
@@ -337,17 +387,106 @@ export default function EditorHeader() {
                     data: [
                         {
                             id: "proj-sample-1",
-                            title: "Bripick Core Resume Builder",
-                            role: "개인 프로젝트 (1인 개발)",
-                            startDate: "2026.01",
-                            endDate: "진행 중",
-                            link: "https://github.com/bripick",
+                            title: "RouteMate 여행 일정 플래너",
+                            role: "사이드 프로젝트 · 프론트엔드 개발",
+                            startDate: "2024.09",
+                            endDate: "2025.01",
+                            link: "https://github.com/example/routemate",
                             description: [
-                                "Tailwind CSS v4 & Turbopack 기반 초고속 개발 환경 구성",
-                                "로컬 스토리지 자동 영속화(persist)로 새로고침 없는 안정적인 데이터 경험 제공",
+                                "지도 검색 결과와 일정 편집 상태를 동기화하는 드래그 앤 드롭 인터페이스 구현",
+                                "공유 링크의 초기 데이터 로딩을 최적화해 첫 화면 표시 시간을 40% 단축",
+                                "반응형 레이아웃과 오프라인 임시 저장으로 모바일 작성 경험 개선",
                             ],
+                            descriptionLevels: [1, 1, 1],
+                        },
+                        {
+                            id: "proj-sample-2",
+                            title: "DevNote 기술 아카이브",
+                            role: "개인 프로젝트 · 기획 및 프론트엔드 개발",
+                            startDate: "2024.03",
+                            endDate: "2024.06",
+                            link: "https://github.com/example/devnote",
+                            description: [
+                                "Markdown 문서 작성과 태그 기반 검색을 지원하는 개인 기술 기록 서비스 개발",
+                                "정적 생성과 이미지 최적화를 적용해 Lighthouse 성능 점수 95점 이상을 유지",
+                            ],
+                            descriptionLevels: [1, 1],
+                        },
+                        {
+                            id: "proj-sample-3",
+                            title: "Open UI Kit",
+                            role: "오픈소스 · 컴포넌트 설계 및 문서화",
+                            startDate: "2023.10",
+                            endDate: "2024.02",
+                            link: "https://github.com/example/open-ui-kit",
+                            description: [
+                                "접근성을 고려한 폼·모달·메뉴 컴포넌트 12종을 설계하고 사용 예제를 문서화",
+                                "시각 회귀 테스트와 자동 배포 파이프라인을 구성해 기여 검증 과정을 자동화",
+                            ],
+                            descriptionLevels: [1, 1],
                         },
                     ],
+                },
+                {
+                    id: "block-edu-1",
+                    type: "education",
+                    title: "EDUCATION",
+                    isVisible: true,
+                    order: 4,
+                    style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
+                    data: [
+                        {
+                            id: "edu-sample-1",
+                            school: "브릭대학교",
+                            major: "컴퓨터공학과",
+                            startDate: "2019.03",
+                            endDate: "2023.02",
+                            status: "졸업",
+                            score: "3.9 / 4.5",
+                        },
+                    ],
+                },
+                {
+                    id: "block-cert-1",
+                    type: "certification",
+                    title: "CERTIFICATIONS & AWARDS",
+                    isVisible: true,
+                    order: 5,
+                    style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
+                    data: [
+                        {
+                            id: "cert-sample-1",
+                            title: "정보처리기사",
+                            issuer: "한국산업인력공단",
+                            date: "2023.06",
+                            description: "소프트웨어 설계·개발 및 데이터베이스 활용 역량 검증",
+                        },
+                        {
+                            id: "cert-sample-2",
+                            title: "SQL 개발자(SQLD)",
+                            issuer: "한국데이터산업진흥원",
+                            date: "2022.09",
+                            description: "데이터 모델링과 SQL 활용 능력 검증",
+                        },
+                        {
+                            id: "cert-sample-3",
+                            title: "사내 제품 개선 해커톤 최우수상",
+                            issuer: "루미노스 커머스",
+                            date: "2024.11",
+                            description: "고객 문의 자동 분류 대시보드를 제안하고 프로토타입을 구현",
+                        },
+                    ],
+                },
+                {
+                    id: "block-custom-1",
+                    type: "custom_text",
+                    title: "ADDITIONAL INFORMATION",
+                    isVisible: true,
+                    order: 6,
+                    style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
+                    data: {
+                        content: "기술을 쉽게 설명하고 팀의 지식을 문서로 남기는 일을 좋아합니다. 사내 프론트엔드 스터디를 운영하며 학습 내용을 꾸준히 공유하고 있습니다.",
+                    },
                 },
             ],
         };
@@ -358,7 +497,10 @@ export default function EditorHeader() {
             variant: "warning",
             confirmLabel: "샘플 불러오기",
             cancelLabel: "취소",
-            action: () => loadResume(samplePreset),
+            action: () => {
+                loadResume(samplePreset);
+                setToastMessage("샘플 이력서를 불러왔어요.");
+            },
         });
     };
 

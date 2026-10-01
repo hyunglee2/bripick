@@ -7,6 +7,7 @@ import {
     BlockStyle,
     BlockType,
 } from "@/types/resume";
+import { createSampleResume } from "@/lib/sampleResume";
 
 interface ResumeState {
     resume: ResumeDocument;
@@ -132,6 +133,8 @@ const syncList = (list: ResumeDocument[], updated: ResumeDocument) => {
     return nextList;
 };
 
+const initialSampleResume = createSampleResume();
+
 const migrateTypographyDefaults = (document: ResumeDocument): ResumeDocument => ({
     ...document,
     globalStyle: {
@@ -148,9 +151,9 @@ const migrateTypographyDefaults = (document: ResumeDocument): ResumeDocument => 
 export const useResumeStore = create<ResumeState>()(
     persist(
         (set, get) => ({
-            resume: defaultResume,
-            resumeList: [defaultResume],
-            selectedBlockId: "block-profile",
+            resume: initialSampleResume,
+            resumeList: [initialSampleResume],
+            selectedBlockId: "block-p-1",
             past: [],
             future: [],
 
@@ -535,8 +538,10 @@ export const useResumeStore = create<ResumeState>()(
                 const state = persistedState as Partial<ResumeState>;
                 return {
                     ...state,
-                    resume: state.resume ? migrateTypographyDefaults(state.resume) : defaultResume,
-                    resumeList: state.resumeList?.map(migrateTypographyDefaults) ?? [defaultResume],
+                    resume: state.resume ? migrateTypographyDefaults(state.resume) : initialSampleResume,
+                    resumeList: state.resumeList?.length
+                        ? state.resumeList.map(migrateTypographyDefaults)
+                        : [initialSampleResume],
                 } as ResumeState;
             },
             partialize: (state) =>
