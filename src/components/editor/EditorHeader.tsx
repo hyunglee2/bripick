@@ -22,6 +22,7 @@ import {
     ChevronDown,
     MoreHorizontal,
     Check,
+    CheckCircle2,
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 
@@ -75,6 +76,7 @@ export default function EditorHeader() {
     const [theme, setTheme] = useState<"dark" | "light">("dark");
     const [dialog, setDialog] = useState<DialogState | null>(null);
     const [openMenu, setOpenMenu] = useState<"document" | "blocks" | "more" | null>(null);
+    const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     const addBlock = useResumeStore((state) => state.addBlock);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
@@ -104,6 +106,10 @@ export default function EditorHeader() {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
+            if (e.key === "Escape") {
+                setOpenMenu(null);
+                return;
+            }
             if (
                 target.tagName === "INPUT" ||
                 target.tagName === "TEXTAREA" ||
@@ -129,6 +135,12 @@ export default function EditorHeader() {
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [undo, redo]);
+
+    useEffect(() => {
+        if (!toastMessage) return;
+        const timeoutId = window.setTimeout(() => setToastMessage(null), 2400);
+        return () => window.clearTimeout(timeoutId);
+    }, [toastMessage]);
 
     useEffect(() => {
         const handlePointerDown = (event: PointerEvent) => {
@@ -171,6 +183,10 @@ export default function EditorHeader() {
         .flatMap((block) => collectContentStrings(block.data))
         .filter((value) => !STARTER_CONTENT.has(value)).length;
     const shouldShowSample = contentBlocks.length <= 2 && customContentCount < 3;
+    const orderedResumeList = [
+        ...(resumeList || []).filter((item) => item.id === resume.id),
+        ...(resumeList || []).filter((item) => item.id !== resume.id),
+    ];
 
     const handleExportPDF = () => {
         setSelectedBlockId(null);
@@ -380,7 +396,9 @@ export default function EditorHeader() {
                         />
                         <button
                             type="button"
-                            onClick={() => setOpenMenu(openMenu === "document" ? null : "document")}
+                            onClick={() => {
+                                setOpenMenu(openMenu === "document" ? null : "document");
+                            }}
                             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-400 transition hover:bg-neutral-800 hover:text-white"
                             aria-label="이력서 관리 메뉴"
                             aria-expanded={openMenu === "document"}
@@ -389,28 +407,73 @@ export default function EditorHeader() {
                         </button>
 
                         {openMenu === "document" && (
-                            <div className="header-menu absolute left-3 top-11 w-64 overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                            <div className="header-menu absolute left-0 top-11 w-full overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
                                 <p className="px-2.5 pb-1.5 pt-1 text-[11px] font-medium text-neutral-500">내 이력서</p>
-                                {(resumeList || []).map((item) => (
-                                    <button
-                                        key={item.id}
-                                        type="button"
-                                        onClick={() => {
-                                            switchResume(item.id);
-                                            setOpenMenu(null);
-                                        }}
-                                        className="flex w-full items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-left text-xs text-neutral-200 transition hover:bg-neutral-800"
-                                    >
-                                        <span className="truncate">{item.versionName}</span>
-                                        {item.id === resume.id && <Check size={14} className="shrink-0 text-blue-400" />}
-                                    </button>
-                                ))}
+                                <div
+                                    className="space-y-1"
+                                    onKeyDown={(event) => {
+                                        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+                                        const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("[data-resume-switch]"));
+                                        const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+                                        if (currentIndex < 0) return;
+                                        event.preventDefault();
+                                        const direction = event.key === "ArrowDown" ? 1 : -1;
+                                        buttons[(currentIndex + direction + buttons.length) % buttons.length]?.focus();
+                                    }}
+                                >
+                                    {orderedResumeList.map((item) => (
+                                        <div key={item.id}>
+                                            <div className={`group flex items-center rounded-lg border transition ${item.id === resume.id
+                                                ? "border-blue-500/80 bg-blue-500/[0.06] hover:bg-blue-500/10"
+                                                : "border-transparent hover:bg-neutral-800"
+                                                }`}>
+                                                <button
+                                                    type="button"
+                                                    data-resume-switch
+                                                    aria-current={item.id === resume.id ? "page" : undefined}
+                                                    onClick={() => {
+                                                        switchResume(item.id);
+                                                        setOpenMenu(null);
+                                                    }}
+                                                    className={`flex min-w-0 flex-1 items-center justify-between gap-2 px-2.5 py-2 text-left text-xs ${item.id === resume.id
+                                                        ? "font-semibold text-neutral-100"
+                                                        : "font-normal text-neutral-200"
+                                                        }`}
+                                                >
+                                                    <span className="tooltip-anchor truncate" data-tooltip={item.versionName} title={item.versionName}>{item.versionName}</span>
+                                                    {item.id === resume.id && <Check size={15} strokeWidth={2.5} className="shrink-0 text-blue-400" />}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={(resumeList || []).length <= 1}
+                                                    onClick={() => {
+                                                        setOpenMenu(null);
+                                                        setDialog({
+                                                            title: "이력서를 삭제할까요?",
+                                                            message: `'${item.versionName}' 이력서는 삭제 후 복구할 수 없습니다.`,
+                                                            variant: "danger",
+                                                            confirmLabel: "삭제",
+                                                            cancelLabel: "취소",
+                                                            action: () => deleteResume(item.id),
+                                                        });
+                                                    }}
+                                                    className="mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded text-neutral-500 transition hover:bg-red-500/10 hover:text-red-400 disabled:pointer-events-none disabled:opacity-30"
+                                                    data-tooltip={`${item.versionName} 삭제`}
+                                                    aria-label={`${item.versionName} 삭제`}
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                                 <div className="my-1 border-t border-neutral-800" />
                                 <button
                                     type="button"
                                     onClick={() => {
                                         createNewResume("새 이력서");
                                         setOpenMenu(null);
+                                        setToastMessage("'새 이력서'를 만들고 편집 화면으로 이동했어요.");
                                     }}
                                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
                                 >
@@ -419,30 +482,14 @@ export default function EditorHeader() {
                                 <button
                                     type="button"
                                     onClick={() => {
+                                        const sourceName = resume.versionName;
                                         duplicateCurrentResume();
                                         setOpenMenu(null);
+                                        setToastMessage(`'${sourceName}' 이력서를 복제했어요.`);
                                     }}
                                     className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
                                 >
                                     <Copy size={14} /> 현재 이력서 복제
-                                </button>
-                                <button
-                                    type="button"
-                                    disabled={(resumeList || []).length <= 1}
-                                    onClick={() => {
-                                        setOpenMenu(null);
-                                        setDialog({
-                                            title: "이력서를 삭제할까요?",
-                                            message: `'${resume.versionName}' 이력서는 삭제 후 복구할 수 없습니다.`,
-                                            variant: "danger",
-                                            confirmLabel: "삭제",
-                                            cancelLabel: "취소",
-                                            action: () => deleteResume(resume.id),
-                                        });
-                                    }}
-                                    className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-neutral-400 transition hover:bg-red-500/10 hover:text-red-400 disabled:pointer-events-none disabled:opacity-30"
-                                >
-                                    <Trash2 size={14} /> 현재 이력서 삭제
                                 </button>
                             </div>
                         )}
@@ -595,6 +642,18 @@ export default function EditorHeader() {
                 isOpen={isAtsModalOpen}
                 onClose={() => setIsAtsModalOpen(false)}
             />
+            {toastMessage && (
+                <div className="pointer-events-none fixed inset-x-0 top-16 z-[80] flex justify-center px-4">
+                    <div
+                        role="status"
+                        aria-live="polite"
+                        className="service-toast flex min-w-72 items-center gap-2.5 rounded-xl border border-blue-500/35 bg-[#171c26] px-4 py-3 text-xs font-medium text-neutral-100 shadow-2xl"
+                    >
+                        <CheckCircle2 size={17} className="shrink-0 text-blue-400" aria-hidden="true" />
+                        {toastMessage}
+                    </div>
+                </div>
+            )}
             <ServiceDialog
                 isOpen={dialog !== null}
                 title={dialog?.title || ""}

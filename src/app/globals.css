@@ -2245,6 +2245,22 @@ body,
   background: #20242d !important;
 }
 
+@keyframes service-toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.service-toast {
+  animation: service-toast-enter 180ms ease-out;
+}
+
 .editor-header--shadcn button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--brand-primary) 60%, transparent);
   outline-offset: 2px;

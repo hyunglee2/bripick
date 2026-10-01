@@ -32,6 +32,7 @@ interface ResumeState {
     switchResume: (id: string) => void;
     createNewResume: (title?: string) => void;
     duplicateCurrentResume: () => void;
+    duplicateResume: (id: string) => void;
     deleteResume: (id: string) => void;
     updateVersionName: (name: string) => void;
 
@@ -461,21 +462,33 @@ export const useResumeStore = create<ResumeState>()(
                 }));
             },
 
+            duplicateResume: (id) => {
+                const source = get().resumeList.find((item) => item.id === id);
+                if (!source) return;
+                const duplicated: ResumeDocument = {
+                    ...JSON.parse(JSON.stringify(source)),
+                    id: `resume-${Date.now()}`,
+                    versionName: `${source.versionName} (사본)`,
+                    updatedAt: new Date().toISOString(),
+                };
+
+                set((state) => ({
+                    resumeList: [...state.resumeList, duplicated],
+                }));
+            },
+
             deleteResume: (id) => {
-                const list = get().resumeList;
-                if (list.length <= 1) {
-                    return;
-                }
-
-                const filtered = list.filter((r) => r.id !== id);
-                const fallback = filtered[0];
-
-                set({
-                    resume: fallback,
-                    resumeList: filtered,
-                    past: [],
-                    future: [],
-                    selectedBlockId: null,
+                set((state) => {
+                    if (state.resumeList.length <= 1) return state;
+                    const filtered = state.resumeList.filter((item) => item.id !== id);
+                    const deletingCurrentResume = state.resume.id === id;
+                    return {
+                        resume: deletingCurrentResume ? filtered[0] : state.resume,
+                        resumeList: filtered,
+                        past: deletingCurrentResume ? [] : state.past,
+                        future: deletingCurrentResume ? [] : state.future,
+                        selectedBlockId: deletingCurrentResume ? null : state.selectedBlockId,
+                    };
                 });
             },
 
