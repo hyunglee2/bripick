@@ -37,9 +37,9 @@ const DEFAULT_GLOBAL_STYLE = {
     blockGap: 18,
     displayTitleFontSize: 24,
     sectionTitleFontSize: 24,
-    itemTitleFontSize: 15,
+    itemTitleFontSize: 19,
     bodyFontSize: 14,
-    captionFontSize: 12,
+    captionFontSize: 14,
     template: "modern" as const,
 };
 
@@ -95,9 +95,9 @@ export default function InspectorPanel() {
     const typographyControls = [
         { key: "displayTitleFontSize", label: "프로필 대표 제목", min: 20, max: 38, fallback: 24 },
         { key: "sectionTitleFontSize", label: "섹션 제목", min: 16, max: 32, fallback: 24 },
-        { key: "itemTitleFontSize", label: "항목 제목", min: 12, max: 20, fallback: 15 },
-        { key: "bodyFontSize", label: "본문", min: 10, max: 20, fallback: 14 },
-        { key: "captionFontSize", label: "설명 · 보조 정보", min: 9, max: 15, fallback: 12 },
+        { key: "itemTitleFontSize", label: "항목 제목", min: 14, max: 22, fallback: 19 },
+        { key: "bodyFontSize", label: "본문", min: 14, max: 20, fallback: 14 },
+        { key: "captionFontSize", label: "설명 · 보조 정보", min: 14, max: 18, fallback: 14 },
     ] as const;
 
     const accentColorPresets = [
@@ -1375,8 +1375,18 @@ export default function InspectorPanel() {
                                                         />
                                                     </div>
                                                 </div>
-                                                <div className="inspector-field">
-                                                    <label className="inspector-label-inset block text-[11px] text-neutral-400">기여/성과</label>
+                                                <div className="inspector-field inspector-project-card__bullets">
+                                                    <div>
+                                                        <label className="inspector-label-inset block text-xs text-neutral-400">기여/성과</label>
+                                                        <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
+                                                            <span><Kbd>Enter</Kbd> 새 불릿</span>
+                                                            <span><Kbd>Tab</Kbd> 들여쓰기</span>
+                                                            <span>
+                                                                <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
+                                                                볼드
+                                                            </span>
+                                                        </div>
+                                                    </div>
                                                     <ProjectBulletDocumentEditor
                                                         descriptions={project.description || []}
                                                         levels={project.descriptionLevels || []}

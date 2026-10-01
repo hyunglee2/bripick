@@ -503,9 +503,9 @@ body,
   --resume-display-title-size: 24px;
   --resume-tagline-size: 16px;
   --resume-section-title-size: 24px;
-  --resume-item-title-size: 15px;
+  --resume-item-title-size: 19px;
   --resume-body-size: 14px;
-  --resume-caption-size: 12px;
+  --resume-caption-size: 14px;
   --resume-section-content-gap: 12px;
   --resume-block-gap: 18px;
   --resume-bullet-font-size: var(--resume-body-size);
@@ -528,10 +528,20 @@ body,
   line-height: 1.3;
 }
 
+.resume-paper .resume-item-title {
+  font-size: var(--resume-item-title-size) !important;
+  line-height: 1.3 !important;
+  font-weight: 800 !important;
+}
+
 .resume-paper .resume-block-item .text-xs.text-neutral-700,
 .resume-paper .resume-block-item .text-sm.text-neutral-700 {
-  font-size: var(--resume-body-size);
+  font-size: max(var(--resume-body-size), 14px);
   line-height: 1.5;
+}
+
+.resume-paper .resume-block-item .text-xs {
+  font-size: max(var(--resume-caption-size), 14px) !important;
 }
 
 .resume-paper .resume-block-item .text-xs.text-neutral-400,
@@ -709,7 +719,7 @@ body,
 
 .resume-contact-row>b {
   color: #111827;
-  font-size: 11px;
+  font-size: 14px;
   line-height: 1;
 }
 
@@ -790,6 +800,11 @@ body,
 
 /* 다음 페이지로 이어진 불릿 조각에는 항목 시작 마커를 다시 표시하지 않습니다. */
 .reference-template [data-description-start]:not([data-description-start="0"]) [data-pagination-item-index]::before {
+  content: none;
+}
+
+/* 회사 정보 없이 하위 프로젝트만 이어지는 조각에는 회사 시작 마커를 반복하지 않습니다. */
+.reference-template [data-experience-project-start]:not([data-experience-project-start="0"]) [data-pagination-item-index]::before {
   content: none;
 }
 
@@ -2405,13 +2420,25 @@ summary[data-tooltip],
 .reference-template .resume-experience-projects {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  margin-top: 18px;
+  gap: 0;
+  margin-top: 14px;
   margin-left: 18px;
 }
 
 .reference-template .resume-experience-project {
   min-width: 0;
+  padding-top: 14px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.reference-template .resume-experience-project+.resume-experience-project {
+  margin-top: 16px;
+}
+
+/* 이전 프로젝트가 앞 페이지에서 끝났다면 새 페이지 첫 항목에는 구분선을 표시하지 않습니다. */
+.reference-template [data-experience-project-start]:not([data-experience-project-start="0"]) .resume-experience-project:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 
 .reference-template .resume-experience-project__header {
@@ -2429,7 +2456,86 @@ summary[data-tooltip],
 }
 
 .reference-template .resume-experience-project .resume-project-bullets {
-  margin-top: 10px !important;
-  padding-left: 16px !important;
+  margin-top: 14px !important;
+  margin-left: 0 !important;
+  padding-left: 24px !important;
   border-left: 3px solid var(--resume-blue);
+}
+
+.reference-template .resume-experience-company-identity {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.reference-template .resume-experience-company-role {
+  color: #737373;
+  font-size: var(--resume-caption-size);
+  font-weight: 400;
+}
+
+.reference-template [data-pagination-item-index]>.resume-experience-period {
+  margin: 7px 0 0 !important;
+  padding: 0 0 0 12px !important;
+  border-left: 0 !important;
+  color: #737373;
+  font-size: var(--resume-caption-size) !important;
+  line-height: 1.5 !important;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+}
+
+.reference-template [data-pagination-item-index]>.resume-experience-period>li[data-bullet-level="2"] {
+  display: list-item !important;
+  padding-left: 0;
+  line-height: 1.5 !important;
+  list-style-type: disc !important;
+}
+
+.resume-paper .resume-inline-editor {
+  box-sizing: border-box;
+  min-height: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
+}
+
+.header-menu .tooltip-anchor[data-tooltip]::after {
+  right: 0;
+  left: auto;
+  transform: translateY(-2px) scale(0.98);
+  transform-origin: top right;
+}
+
+.header-menu .tooltip-anchor[data-tooltip]:hover::after,
+.header-menu .tooltip-anchor[data-tooltip]:focus-visible::after {
+  transform: translateY(0) scale(1);
+}
+
+.reference-template .resume-experience-period li::marker {
+  color: currentColor;
+}
+
+.reference-template .resume-experience-period li>span+span {
+  margin-left: 5px;
+}
+
+.reference-template .resume-experience-company-description {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 7px;
+  color: #171717;
+  font-size: var(--resume-caption-size);
+  line-height: 1.6;
+}
+
+.reference-template .resume-experience-company-description p {
+  margin: 0;
+}
+
+.reference-template .resume-experience-item+.resume-experience-item {
+  margin-top: 24px;
 }

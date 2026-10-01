@@ -59,9 +59,9 @@ const defaultResume: ResumeDocument = {
         blockGap: 18,
         displayTitleFontSize: 24,
         sectionTitleFontSize: 24,
-        itemTitleFontSize: 15,
+        itemTitleFontSize: 19,
         bodyFontSize: 14,
-        captionFontSize: 12,
+        captionFontSize: 14,
         template: "modern",
     },
     blocks: [
@@ -142,9 +142,11 @@ const migrateTypographyDefaults = (document: ResumeDocument): ResumeDocument => 
         sectionTitleFontSize: document.globalStyle.sectionTitleFontSize === 25
             ? 24
             : document.globalStyle.sectionTitleFontSize,
-        bodyFontSize: document.globalStyle.bodyFontSize === 12 || document.globalStyle.bodyFontSize === 16
-            ? 14
-            : document.globalStyle.bodyFontSize,
+        bodyFontSize: Math.max(14, document.globalStyle.bodyFontSize ?? 14),
+        captionFontSize: Math.max(14, document.globalStyle.captionFontSize ?? 14),
+        itemTitleFontSize: document.globalStyle.itemTitleFontSize === 15
+            ? 19
+            : document.globalStyle.itemTitleFontSize,
     },
 });
 
@@ -533,7 +535,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
         {
             name: "bripick-resume-storage",
-            version: 2,
+            version: 4,
             migrate: (persistedState) => {
                 const state = persistedState as Partial<ResumeState>;
                 return {

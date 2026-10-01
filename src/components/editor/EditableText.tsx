@@ -60,11 +60,13 @@ export default function EditableText({
     const contentVisualLength = Array.from(currentText || placeholder).reduce((length, character) => (
         length + (/[^\u0000-\u00ff]/.test(character) ? 2 : 1)
     ), 0);
-    const contentWidth = `${Math.min(Math.max(contentVisualLength + 3, 10), 42)}ch`;
+    const maxVisualLength = width === "full" ? 120 : 42;
+    const contentWidth = `${Math.min(Math.max(contentVisualLength + 1, 6), maxVisualLength)}ch`;
     const editorStyle: React.CSSProperties = {
         ...style,
         ...(width === "content" ? { width: contentWidth, maxWidth: "100%" } : {}),
         ...(width === "short" ? { width: "11ch", maxWidth: "100%" } : {}),
+        ...(width === "full" ? { width: contentWidth, maxWidth: "100%" } : {}),
     };
 
     if (isEditing) {
@@ -76,9 +78,9 @@ export default function EditableText({
                     onChange={(e) => setCurrentText(e.target.value)}
                     onBlur={handleBlur}
                     onKeyDown={handleKeyDown}
-                    style={style}
-                    className={`w-full bg-white/90 border border-blue-500 rounded p-1 outline-none text-neutral-900 shadow-inner resize-none ${className}`}
-                    rows={3}
+                    style={editorStyle}
+                    className={`resume-inline-editor min-w-0 max-w-full rounded-sm border-0 bg-blue-50 p-0 text-neutral-900 shadow-none outline-none resize-none ${className}`}
+                    rows={Math.max(1, currentText.split("\n").length)}
                 />
             );
         }
@@ -92,7 +94,7 @@ export default function EditableText({
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
                 style={editorStyle}
-                className={`${width === "full" ? "w-full" : "w-auto"} min-w-0 max-w-full bg-white/90 border border-blue-500 rounded px-1.5 py-0.5 outline-none text-neutral-900 shadow-inner ${className}`}
+                className={`resume-inline-editor min-w-0 max-w-full rounded-sm border-0 bg-blue-50 p-0 text-neutral-900 shadow-none outline-none ${className}`}
             />
         );
     }
