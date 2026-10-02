@@ -27,6 +27,7 @@ import {
     Check,
     RotateCcw,
     GripVertical,
+    ImagePlus,
     Link2,
     MoreHorizontal,
 } from "lucide-react";
@@ -916,27 +917,49 @@ export default function InspectorPanel() {
                                     사진 표시
                                 </label>
                             </div>
-                            <div className={`inspector-photo-row flex items-center gap-3${currentBlock.data.showPhoto === false ? " opacity-45" : ""}`}>
-                                {currentBlock.data.photo && (
-                                    <img src={currentBlock.data.photo} alt="프로필 미리보기" className="w-12 h-12 rounded-lg object-cover" />
-                                )}
-                                <label className="inspector-upload-button cursor-pointer rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-xs text-neutral-300 hover:border-blue-500">
-                                    사진 선택
+                            <div className={`inspector-photo-row${currentBlock.data.showPhoto === false ? " opacity-45" : ""}`}>
+                                <label className="inspector-photo-thumbnail" aria-label="프로필 사진 선택">
+                                    {currentBlock.data.photo ? (
+                                        <img src={currentBlock.data.photo} alt="프로필 미리보기" />
+                                    ) : (
+                                        <ImagePlus size={18} aria-hidden="true" />
+                                    )}
                                     <input
                                         type="file"
                                         accept="image/png,image/jpeg,image/webp"
                                         className="hidden"
-                                        onChange={(e) => handleProfilePhotoUpload(e.target.files?.[0])}
+                                        onChange={(event) => {
+                                            void handleProfilePhotoUpload(event.target.files?.[0]);
+                                            event.currentTarget.value = "";
+                                        }}
                                     />
                                 </label>
-                                {currentBlock.data.photo && (
-                                    <button
-                                        onClick={() => updateBlockData(currentBlock.id, { ...currentBlock.data, photo: "" })}
-                                        className="text-[11px] text-neutral-500 hover:text-red-400"
-                                    >
-                                        제거
-                                    </button>
-                                )}
+                                <div className="inspector-photo-actions">
+                                    <label className="inspector-photo-action inspector-photo-action--select">
+                                        <ImagePlus size={14} aria-hidden="true" />
+                                        {currentBlock.data.photo ? "사진 변경" : "사진 선택"}
+                                        <input
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/webp"
+                                            className="hidden"
+                                            onChange={(event) => {
+                                                void handleProfilePhotoUpload(event.target.files?.[0]);
+                                                event.currentTarget.value = "";
+                                            }}
+                                        />
+                                    </label>
+                                    {currentBlock.data.photo && (
+                                        <button
+                                            type="button"
+                                            className="inspector-photo-action inspector-photo-action--remove"
+                                            onClick={() => updateBlockData(currentBlock.id, { ...currentBlock.data, photo: "" })}
+                                            data-tooltip="사진 제거"
+                                            aria-label="프로필 사진 제거"
+                                        >
+                                            <Trash2 size={14} aria-hidden="true" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="inspector-field">
