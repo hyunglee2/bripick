@@ -4,11 +4,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
-import { FileText, GripVertical, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { FileText, GripVertical, ImagePlus, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { ProfileData, ResumeBlock, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
+import { createProfilePhotoDataUrl } from "@/lib/profilePhoto";
 import RichTextEditable from "@/components/editor/RichTextEditable";
 import ServiceDialog from "@/components/ui/ServiceDialog";
 
@@ -58,16 +59,41 @@ export default function ResumeCanvas() {
     const [dragOverPosition, setDragOverPosition] = useState<"before" | "after" | null>(null);
     const [zoomLevel, setZoomLevel] = useState<number>(100);
     const [pendingDeleteBlockId, setPendingDeleteBlockId] = useState<string | null>(null);
+    const [profilePhotoMenu, setProfilePhotoMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
     const [pagePlacements, setPagePlacements] = useState<BlockPlacement[][]>(() => getInitialPlacements(blocks));
     const scrollContainerRef = useRef<HTMLElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const paginationFrameRef = useRef<number | null>(null);
     const dragScrollFrameRef = useRef<number | null>(null);
     const dragClientYRef = useRef<number | null>(null);
+    const profilePhotoMenuRef = useRef<HTMLDivElement>(null);
+    const profilePhotoMenuInputRef = useRef<HTMLInputElement>(null);
+    const profilePhotoMenuBlockIdRef = useRef<string | null>(null);
 
     useEffect(() => () => {
         if (dragScrollFrameRef.current !== null) cancelAnimationFrame(dragScrollFrameRef.current);
     }, []);
+
+    useEffect(() => {
+        if (!profilePhotoMenu) return;
+
+        const closeMenu = (event: PointerEvent) => {
+            if (!profilePhotoMenuRef.current?.contains(event.target as Node)) setProfilePhotoMenu(null);
+        };
+        const closeMenuWithKeyboard = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setProfilePhotoMenu(null);
+        };
+        const closeMenuOnScroll = () => setProfilePhotoMenu(null);
+
+        window.addEventListener("pointerdown", closeMenu);
+        window.addEventListener("keydown", closeMenuWithKeyboard);
+        window.addEventListener("scroll", closeMenuOnScroll, true);
+        return () => {
+            window.removeEventListener("pointerdown", closeMenu);
+            window.removeEventListener("keydown", closeMenuWithKeyboard);
+            window.removeEventListener("scroll", closeMenuOnScroll, true);
+        };
+    }, [profilePhotoMenu]);
 
     const templateType = globalStyle?.template || "modern";
     const primaryColor = globalStyle?.primaryColor || "#2f80c3";
@@ -87,6 +113,12 @@ export default function ResumeCanvas() {
     const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 10, 150));
     const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 10, 50));
     const handleZoomReset = () => setZoomLevel(100);
+
+    const handleProfilePhotoUpload = async (block: ResumeBlock | undefined, file?: File) => {
+        if (!file || !block || block.type !== "profile") return;
+        const photo = await createProfilePhotoDataUrl(file);
+        updateBlockData(block.id, { ...block.data, photo, showPhoto: true });
+    };
 
     useEffect(() => {
         const handleSelectedBlockDelete = (event: KeyboardEvent) => {
@@ -585,13 +617,41 @@ export default function ResumeCanvas() {
                         <div className="resume-profile-hero">
                             <div className={`resume-profile-main${showProfilePhoto ? "" : " resume-profile-main--no-photo"}`}>
                                 {showProfilePhoto && (
-                                    <div className="resume-profile-photo">
+                                    <label
+                                        className="resume-profile-photo resume-profile-photo-picker"
+                                        onClick={(event) => event.stopPropagation()}
+                                        onContextMenu={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            setSelectedBlockId(block.id);
+                                            profilePhotoMenuBlockIdRef.current = block.id;
+                                            setProfilePhotoMenu({
+                                                blockId: block.id,
+                                                x: Math.max(8, Math.min(event.clientX, window.innerWidth - 176)),
+                                                y: Math.max(8, Math.min(event.clientY, window.innerHeight - 92)),
+                                            });
+                                        }}
+                                        onDragStart={(event) => event.preventDefault()}
+                                    >
                                         {block.data.photo ? (
                                             <img src={block.data.photo} alt="프로필" />
                                         ) : (
                                             <span>{String(block.data.name || "?").slice(0, 1)}</span>
                                         )}
-                                    </div>
+                                        <span className="resume-profile-photo-picker__overlay no-print" aria-hidden="true">
+                                            사진 변경
+                                        </span>
+                                        <input
+                                            type="file"
+                                            accept="image/png,image/jpeg,image/webp"
+                                            className="sr-only"
+                                            aria-label="프로필 사진 선택"
+                                            onChange={(event) => {
+                                                void handleProfilePhotoUpload(block, event.target.files?.[0]);
+                                                event.currentTarget.value = "";
+                                            }}
+                                        />
+                                    </label>
                                 )}
                                 <div className="resume-profile-copy">
                                     <EditableText
@@ -1507,6 +1567,58 @@ export default function ResumeCanvas() {
                     </div>
                 ))}
             </div>
+
+            {profilePhotoMenu && (
+                <div
+                    ref={profilePhotoMenuRef}
+                    className="resume-profile-photo-menu no-print"
+                    style={{ left: profilePhotoMenu.x, top: profilePhotoMenu.y }}
+                    role="menu"
+                    aria-label="프로필 사진 메뉴"
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                            profilePhotoMenuInputRef.current?.click();
+                            setProfilePhotoMenu(null);
+                        }}
+                    >
+                        <ImagePlus size={14} /> 사진 변경
+                    </button>
+                    <button
+                        type="button"
+                        role="menuitem"
+                        className="is-danger"
+                        disabled={!blocks.find((block) => block.id === profilePhotoMenu.blockId && block.type === "profile")?.data.photo}
+                        onClick={() => {
+                            const block = blocks.find((item) => item.id === profilePhotoMenu.blockId);
+                            if (block?.type === "profile") {
+                                updateBlockData(block.id, { ...block.data, photo: "" });
+                            }
+                            setProfilePhotoMenu(null);
+                        }}
+                    >
+                        <Trash2 size={14} /> 사진 제거
+                    </button>
+                </div>
+            )}
+
+            <input
+                ref={profilePhotoMenuInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                className="sr-only"
+                tabIndex={-1}
+                aria-hidden="true"
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => {
+                    const block = blocks.find((item) => item.id === profilePhotoMenuBlockIdRef.current);
+                    void handleProfilePhotoUpload(block, event.target.files?.[0]);
+                    event.currentTarget.value = "";
+                }}
+            />
 
             {/* 캔버스 우측 하단 줌 컨트롤 바 */}
             <div

@@ -677,6 +677,76 @@ body,
   object-position: center top;
 }
 
+.resume-profile-photo-picker {
+  position: relative;
+  cursor: pointer;
+}
+
+.resume-profile-photo-picker__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(15 23 42 / 58%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.resume-profile-photo-picker:hover .resume-profile-photo-picker__overlay,
+.resume-profile-photo-picker:focus-within .resume-profile-photo-picker__overlay {
+  opacity: 1;
+}
+
+.resume-profile-photo-picker:focus-within {
+  outline: 3px solid color-mix(in srgb, var(--resume-blue) 48%, transparent);
+  outline-offset: 3px;
+}
+
+.resume-profile-photo-menu {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  width: 168px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid #343946;
+  border-radius: 9px;
+  background: #151820;
+  box-shadow: 0 14px 36px rgb(0 0 0 / 34%);
+}
+
+.resume-profile-photo-menu button {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 12px;
+  text-align: left;
+}
+
+.resume-profile-photo-menu button:hover:not(:disabled),
+.resume-profile-photo-menu button:focus-visible {
+  background: #20242d;
+  outline: none;
+}
+
+.resume-profile-photo-menu button.is-danger {
+  color: #f87171;
+}
+
+.resume-profile-photo-menu button:disabled {
+  opacity: 0.4;
+}
+
 .resume-profile-copy {
   min-width: 0;
   padding-top: 19px;

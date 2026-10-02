@@ -7,6 +7,7 @@ import { ProfileData, SkillCategory, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
+import { createProfilePhotoDataUrl } from "@/lib/profilePhoto";
 import ProjectBulletDocumentEditor from "@/components/editor/ProjectBulletDocumentEditor";
 import { Kbd, KbdGroup } from "@/components/ui/Kbd";
 import {
@@ -322,32 +323,14 @@ export default function InspectorPanel() {
     }
 
     // --- 공통 블록 조작 ---
-    const handleProfilePhotoUpload = (file?: File) => {
+    const handleProfilePhotoUpload = async (file?: File) => {
         if (!file || currentBlock.type !== "profile") return;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const image = new Image();
-            image.onload = () => {
-                const canvas = document.createElement("canvas");
-                const size = 640;
-                const scale = Math.max(size / image.width, size / image.height);
-                const width = image.width * scale;
-                const height = image.height * scale;
-                canvas.width = size;
-                canvas.height = size;
-                const context = canvas.getContext("2d");
-                if (!context) return;
-                context.drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
-                updateBlockData(currentBlock.id, {
-                    ...currentBlock.data,
-                    photo: canvas.toDataURL("image/jpeg", 0.86),
-                    showPhoto: true,
-                });
-            };
-            image.src = String(reader.result);
-        };
-        reader.readAsDataURL(file);
+        const photo = await createProfilePhotoDataUrl(file);
+        updateBlockData(currentBlock.id, {
+            ...currentBlock.data,
+            photo,
+            showPhoto: true,
+        });
     };
 
     const handleMoveUp = () => {
