@@ -726,32 +726,63 @@ export default function ResumeCanvas() {
                                                         </li>
                                                     </ul>
                                                 )}
-                                                {!isExperienceProjectContinuation && <div className="resume-experience-company-description">
-                                                    {exp.description
-                                                        ?.slice(
-                                                            placement.descriptionStart ?? 0,
-                                                            placement.descriptionEnd ?? exp.description.length
-                                                        )
-                                                        .map((desc: string, localDescriptionIndex: number) => {
-                                                            const i = (placement.descriptionStart ?? 0) + localDescriptionIndex;
-                                                            return (
-                                                                <p key={i} data-pagination-description-index={i}>
-                                                                    <EditableText
-                                                                        value={desc}
-                                                                        width="full"
-                                                                        placeholder="성과 및 업무 내용"
-                                                                        onChange={(newDesc) => {
-                                                                            const updated = [...block.data];
-                                                                            const newDescriptions = [...exp.description];
-                                                                            newDescriptions[i] = newDesc;
-                                                                            updated[expIndex] = { ...exp, description: newDescriptions };
-                                                                            updateBlockData(block.id, updated);
-                                                                        }}
-                                                                    />
-                                                                </p>
-                                                            );
-                                                        })}
-                                                </div>}
+                                                {!isExperienceProjectContinuation && (() => {
+                                                    const descriptionStart = placement.descriptionStart ?? 0;
+                                                    const visibleDescriptions = (exp.description || []).slice(
+                                                        descriptionStart,
+                                                        placement.descriptionEnd ?? exp.description.length,
+                                                    );
+                                                    if (visibleDescriptions.length === 0) return null;
+
+                                                    if ((exp.descriptionStyle || "bullets") === "paragraph") {
+                                                        return (
+                                                            <EditableText
+                                                                tag="p"
+                                                                multiline
+                                                                value={visibleDescriptions.join("\n")}
+                                                                width="full"
+                                                                placeholder="회사 소개 및 주요 성과"
+                                                                className="resume-experience-company-description resume-experience-company-description--paragraph"
+                                                                data-pagination-description-index={descriptionStart}
+                                                                onChange={(value) => {
+                                                                    const updated = [...block.data];
+                                                                    const newDescriptions = [...(exp.description || [])];
+                                                                    newDescriptions.splice(
+                                                                        descriptionStart,
+                                                                        visibleDescriptions.length,
+                                                                        ...value.split(/\r?\n/).filter((line) => line.trim()),
+                                                                    );
+                                                                    updated[expIndex] = { ...exp, description: newDescriptions };
+                                                                    updateBlockData(block.id, updated);
+                                                                }}
+                                                            />
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <ul className="resume-experience-company-description resume-experience-company-description--bullets">
+                                                            {visibleDescriptions.map((desc: string, localDescriptionIndex: number) => {
+                                                                const i = descriptionStart + localDescriptionIndex;
+                                                                return (
+                                                                    <li key={i} data-pagination-description-index={i}>
+                                                                        <EditableText
+                                                                            value={desc}
+                                                                            width="full"
+                                                                            placeholder="성과 및 업무 내용"
+                                                                            onChange={(newDesc) => {
+                                                                                const updated = [...block.data];
+                                                                                const newDescriptions = [...exp.description];
+                                                                                newDescriptions[i] = newDesc;
+                                                                                updated[expIndex] = { ...exp, description: newDescriptions };
+                                                                                updateBlockData(block.id, updated);
+                                                                            }}
+                                                                        />
+                                                                    </li>
+                                                                );
+                                                            })}
+                                                        </ul>
+                                                    );
+                                                })()}
                                                 {!isDescriptionContinuation && Array.isArray(exp.projects) && exp.projects.length > 0 && (
                                                     <div className="resume-experience-projects">
                                                         {exp.projects
