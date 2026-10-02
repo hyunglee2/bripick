@@ -931,6 +931,13 @@ body,
 
 /* 넓어진 인스펙터 패널에 맞춰 편집 UI의 가독성을 높입니다. */
 .inspector-panel {
+  --inspector-section-gap: 18px;
+  --inspector-field-gap: 6px;
+  --inspector-label-font-size: 12px;
+  --inspector-label-font-weight: 600;
+  --inspector-label-line-height: 1.4;
+  --inspector-label-letter-spacing: -0.01em;
+  --inspector-label-padding-inline: 4px;
   --inspector-surface: #111319;
   --inspector-card: #151820;
   --inspector-input: #0d0f14;
@@ -941,9 +948,67 @@ body,
   background: var(--inspector-surface) !important;
 }
 
+.inspector-panel .inspector-panel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--inspector-section-gap);
+}
+
 .inspector-panel--block .inspector-heading {
+  position: sticky;
+  z-index: 20;
+  top: -24px;
   min-height: 44px;
-  padding-bottom: 14px;
+  margin-top: -24px;
+  margin-right: -24px;
+  margin-left: -24px;
+  padding: 24px 24px 14px;
+  background: color-mix(in srgb, var(--inspector-surface) 96%, transparent);
+  box-shadow: 0 8px 18px rgb(0 0 0 / 10%);
+  backdrop-filter: blur(12px);
+}
+
+.inspector-panel--block .inspector-heading--experience-detail {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inspector-panel--block .inspector-heading__detail-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: calc(var(--spacing) * 1.5);
+  color: #d5d8df;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.inspector-panel--block .inspector-heading__back {
+  display: inline-flex;
+  width: 14px;
+  height: 30px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-start;
+  margin-left: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--inspector-muted);
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.inspector-panel--block .inspector-heading__back:hover {
+  color: var(--brand-primary);
+}
+
+.inspector-panel--block .inspector-heading__detail-title>span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-bullet-editor {
@@ -1062,7 +1127,7 @@ body,
 .inspector-panel--block .inspector-form-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--inspector-section-gap);
 }
 
 .inspector-panel input:not([type="range"]):not([type="checkbox"]):not([type="color"]):not([type="file"]),
@@ -1280,11 +1345,33 @@ body,
   gap: 10px;
   padding: 4px 6px;
   border-radius: 7px;
+  cursor: pointer;
   text-align: left;
 }
 
 .inspector-panel .inspector-project-card__toggle:hover {
   background: var(--inspector-hover);
+}
+
+.inspector-panel .inspector-project-card__toggle:focus-visible {
+  background: var(--inspector-hover);
+  outline: 2px solid color-mix(in srgb, var(--brand-primary) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.inspector-panel .inspector-project-card__edit-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: var(--inspector-muted);
+  font-size: 10px;
+  font-weight: 500;
+  transition: color 140ms ease;
+}
+
+.inspector-panel .inspector-project-card__toggle:hover .inspector-project-card__edit-action,
+.inspector-panel .inspector-project-card__toggle:focus-visible .inspector-project-card__edit-action {
+  color: color-mix(in srgb, var(--brand-primary) 72%, var(--inspector-text));
 }
 
 .inspector-panel .inspector-project-card__toggle>svg {
@@ -1322,9 +1409,29 @@ body,
 .inspector-panel .inspector-project-card__body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--inspector-section-gap);
   padding: 14px 16px 16px;
   border-top: 1px solid var(--inspector-border);
+}
+
+.inspector-panel .inspector-experience-editor__card {
+  overflow: visible;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.inspector-panel .inspector-experience-editor__card:focus-within {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.inspector-panel .inspector-experience-editor__card>.inspector-project-card__body {
+  gap: var(--inspector-section-gap);
+  padding: 0 !important;
+  border-top: 0;
 }
 
 .inspector-panel .inspector-project-card__dates {
@@ -1341,14 +1448,15 @@ body,
 }
 
 .inspector-panel--block .inspector-label-inset {
-  padding-inline: 4px;
+  padding-inline: var(--inspector-label-padding-inline);
 }
 
 .inspector-panel .inspector-field-label {
   color: var(--inspector-text);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--inspector-label-font-size);
+  font-weight: var(--inspector-label-font-weight);
+  line-height: var(--inspector-label-line-height);
+  letter-spacing: var(--inspector-label-letter-spacing);
 }
 
 .inspector-panel .inspector-project-card__bullets {
@@ -1609,7 +1717,7 @@ body,
 .inspector-panel--block .inspector-list-section>div:first-child span:first-child,
 .inspector-panel--block .inspector-repeat-card label,
 .inspector-panel--block .inspector-skill-category__body label {
-  padding-inline: 4px;
+  padding-inline: var(--inspector-label-padding-inline);
 }
 
 .inspector-panel .inspector-list-add,
@@ -1997,10 +2105,10 @@ body,
 .inspector-panel--block label.text-xs.font-medium.text-neutral-300,
 .inspector-panel--block span.text-xs.font-semibold.text-neutral-300 {
   color: var(--inspector-text) !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
+  font-size: var(--inspector-label-font-size) !important;
+  font-weight: var(--inspector-label-font-weight) !important;
+  line-height: var(--inspector-label-line-height);
+  letter-spacing: var(--inspector-label-letter-spacing);
 }
 
 .inspector-panel--block label.text-\[11px\].text-neutral-400,
@@ -2014,19 +2122,19 @@ body,
 }
 
 .inspector-panel--block .inspector-section-heading {
-  padding-inline: 4px;
+  padding-inline: var(--inspector-label-padding-inline);
   color: var(--inspector-text);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
+  font-size: var(--inspector-label-font-size);
+  font-weight: var(--inspector-label-font-weight);
+  line-height: var(--inspector-label-line-height);
+  letter-spacing: var(--inspector-label-letter-spacing);
 }
 
 /* 명시적인 필드 레이아웃으로 라벨·입력·설명 간격을 안정적으로 유지합니다. */
 .inspector-panel--block .inspector-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--inspector-field-gap);
 }
 
 .inspector-panel--block .inspector-contact-list {
@@ -2044,25 +2152,11 @@ body,
 
 .inspector-panel--block .inspector-field>label:first-child,
 .inspector-panel--block .inspector-field>div:first-child>label:first-child {
-  padding-inline: 4px;
+  padding-inline: var(--inspector-label-padding-inline);
 }
 
 .inspector-panel--block label.block {
   margin-bottom: 0 !important;
-}
-
-.inspector-panel--block label.block+ :is(input, textarea, select) {
-  /* margin-top: 6px !important; */
-}
-
-.inspector-panel--block .inspector-repeat-card label.block+ :is(input, textarea, select),
-.inspector-panel--block .inspector-skill-category__body label.block+ :is(input, textarea, select) {
-  margin-top: 6px !important;
-}
-
-.inspector-panel--block .inspector-repeat-card label+ :is(input, textarea, select),
-.inspector-panel--block .inspector-skill-category__body label+ :is(input, textarea, select) {
-  margin-top: 6px !important;
 }
 
 [data-theme="light"] .inspector-panel .inspector-context-banner {

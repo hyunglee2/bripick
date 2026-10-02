@@ -13,6 +13,7 @@ import {
     Trash2,
     ChevronUp,
     ChevronDown,
+    ChevronLeft,
     Plus,
     X,
     Sliders,
@@ -59,7 +60,7 @@ export default function InspectorPanel() {
     const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
     const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
     const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
-    const [expandedExperienceId, setExpandedExperienceId] = useState<string | null>(null);
+    const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
     const [expandedExperienceProjectId, setExpandedExperienceProjectId] = useState<string | null>(null);
     const blockPanelRef = useRef<HTMLElement>(null);
 
@@ -72,6 +73,9 @@ export default function InspectorPanel() {
     const profileContacts = currentBlock?.type === "profile"
         ? getProfileContacts(currentBlock.data as ProfileData)
         : [];
+    const editingExperience = currentBlock?.type === "experience" && Array.isArray(currentBlock.data)
+        ? currentBlock.data.find((experience: any) => experience.id === editingExperienceId)
+        : undefined;
 
     useEffect(() => {
         if (currentBlock?.type !== "project" || !Array.isArray(currentBlock.data)) {
@@ -116,7 +120,7 @@ export default function InspectorPanel() {
     if (!currentBlock) {
         return (
             <aside className="inspector-panel inspector-panel--global w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
-                <div className="space-y-6">
+                <div className="inspector-panel-stack">
                     <div className="flex items-center justify-between gap-3 border-b border-neutral-800 pb-3">
                         <div className="flex items-center gap-2">
                             <Sliders size={15} className="text-blue-500" />
@@ -367,7 +371,7 @@ export default function InspectorPanel() {
             projects: [],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
-        setExpandedExperienceId(newItem.id);
+        setEditingExperienceId(newItem.id);
     };
 
     const handleUpdateExpField = (expId: string, field: string, value: any) => {
@@ -382,7 +386,10 @@ export default function InspectorPanel() {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const nextData = prevData.filter((item: any) => item.id !== expId);
         updateBlockData(currentBlock.id, nextData);
-        if (expandedExperienceId === expId) setExpandedExperienceId(nextData[0]?.id ?? null);
+        if (editingExperienceId === expId) {
+            setEditingExperienceId(null);
+            setExpandedExperienceProjectId(null);
+        }
     };
 
     const handleReorderExperience = (fromIndex: number, toIndex: number) => {
@@ -744,141 +751,166 @@ export default function InspectorPanel() {
 
     return (
         <aside ref={blockPanelRef} className="inspector-panel inspector-panel--block w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
-            <div className="space-y-6">
+            <div className="inspector-panel-stack">
                 {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
-                <div className="inspector-heading flex items-center justify-between border-b border-neutral-800 pb-3">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                        <Layers size={14} className="text-blue-500" />
-                        <span>{currentBlock.type} 설정</span>
-                        {currentBlock.isVisible === false && (
-                            <span className="text-[10px] bg-red-950/60 text-red-400 px-1.5 py-0.5 rounded border border-red-900/60 lowercase font-normal">
-                                숨김
-                            </span>
-                        )}
-                    </div>
-                    <div className="inspector-actions flex items-center gap-1">
-                        {/* 눈 모양 숨기기/보이기 토글 버튼 */}
-                        <button
-                            onClick={() => toggleBlockVisibility(currentBlock.id)}
-                            className={`p-1 rounded transition ${currentBlock.isVisible === false
-                                ? "text-red-400 hover:text-red-300 hover:bg-red-950/40"
-                                : "text-neutral-400 hover:text-white hover:bg-neutral-800"
-                                }`}
-                            data-tooltip={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
-                        >
-                            {currentBlock.isVisible === false ? <EyeOff size={16} /> : <Eye size={16} />}
-                        </button>
-
-                        <button
-                            onClick={handleMoveUp}
-                            disabled={currentIndex === 0}
-                            className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                            data-tooltip="위로 이동"
-                        >
-                            <ChevronUp size={16} />
-                        </button>
-                        <button
-                            onClick={handleMoveDown}
-                            disabled={currentIndex === blocks.length - 1}
-                            className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                            data-tooltip="아래로 이동"
-                        >
-                            <ChevronDown size={16} />
-                        </button>
-                        <button
-                            onClick={() => removeBlock(currentBlock.id)}
-                            className="p-1 text-neutral-500 hover:text-red-400 transition ml-1"
-                            data-tooltip="블록 삭제"
-                        >
-                            <Trash2 size={15} />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="inspector-field space-y-1.5">
-                    <label className="inspector-label-inset block text-xs font-medium text-neutral-300">블록 제목</label>
-                    <input
-                        type="text"
-                        value={currentBlock.title || ""}
-                        placeholder="블록 제목을 입력하세요"
-                        onChange={(e) => updateBlockTitle(currentBlock.id, e.target.value)}
-                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                    />
-                </div>
-
-                <section className="inspector-options-section space-y-2">
-                    <h3 className="inspector-section-heading">블록 옵션</h3>
-                    <div className="inspector-options-card space-y-4">
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                                <span className="block text-xs text-neutral-300">개별 간격 사용</span>
-                                <span className="mt-0.5 block text-[10px] text-neutral-500">전역 블록 간격에 내부 여백을 추가합니다.</span>
-                            </div>
-                            <input
-                                type="checkbox"
-                                checked={currentBlock.style.useCustomPadding === true}
-                                onChange={(e) => updateBlockStyle(currentBlock.id, { useCustomPadding: e.target.checked })}
-                                className="h-4 w-4 cursor-pointer accent-blue-500"
-                            />
-                        </div>
-
-                        {currentBlock.style.useCustomPadding === true && (
-                            <div className="space-y-2 rounded-lg bg-neutral-950/40 p-3">
-                                <div className="flex items-center justify-between text-xs">
-                                    <span className="text-neutral-300">내부 상하 여백</span>
-                                    <span className="font-mono text-neutral-400">{currentBlock.style.paddingY}px</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="4"
-                                    max="48"
-                                    step="4"
-                                    value={currentBlock.style.paddingY}
-                                    onChange={(e) => updateBlockStyle(currentBlock.id, { paddingY: Number(e.target.value) })}
-                                    className="w-full cursor-pointer accent-blue-500"
-                                />
-                            </div>
-                        )}
-
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-neutral-300">하단 구분선 표시</span>
-                            <input
-                                type="checkbox"
-                                checked={currentBlock.style.showDivider}
-                                onChange={(e) => updateBlockStyle(currentBlock.id, { showDivider: e.target.checked })}
-                                className="h-4 w-4 cursor-pointer accent-blue-500"
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                                <span className="block text-xs text-neutral-300">
-                                    {currentBlock.type === "project" ? "블록 자동 페이지 맞춤" : "블록 자동 페이지 맞춤"}
-                                </span>
-                                <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
-                                    {currentBlock.type === "project"
-                                        ? "블록 내 모든 프로젝트가 페이지 경계에서 잘리지 않도록 한 번에 설정합니다."
-                                        : "블록이 페이지 경계에서 잘리지 않도록 다음 페이지 상단부터 깔끔하게 시작합니다."}
-                                </span>
-                            </div>
-                            <input
-                                type="checkbox"
-                                checked={currentBlock.style.keepTogether === true}
-                                onChange={(e) => {
-                                    const keepTogether = e.target.checked;
-                                    updateBlockStyle(currentBlock.id, { keepTogether });
-                                    if (currentBlock.type === "project" && Array.isArray(currentBlock.data)) {
-                                        updateBlockData(
-                                            currentBlock.id,
-                                            currentBlock.data.map((project: any) => ({ ...project, keepTogether })),
-                                        );
-                                    }
+                {editingExperience ? (
+                    <div className="inspector-heading inspector-heading--experience-detail border-b border-neutral-800">
+                        <div className="inspector-heading__detail-title">
+                            <button
+                                type="button"
+                                className="inspector-heading__back"
+                                onClick={() => {
+                                    setEditingExperienceId(null);
+                                    setExpandedExperienceProjectId(null);
+                                    blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                                 }}
-                                className="h-4 w-4 cursor-pointer accent-blue-500"
-                            />
+                                data-tooltip="경력(회사) 목록으로 돌아가기"
+                                aria-label="경력(회사) 목록으로 돌아가기"
+                            >
+                                <ChevronLeft size={14} />
+                            </button>
+                            <span>{editingExperience.company || "회사명 없음"} 편집</span>
                         </div>
                     </div>
-                </section>
+                ) : (
+                    <div className="inspector-heading flex items-center justify-between border-b border-neutral-800 pb-3">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                            <Layers size={14} className="text-blue-500" />
+                            <span>{currentBlock.type} 설정</span>
+                            {currentBlock.isVisible === false && (
+                                <span className="text-[10px] bg-red-950/60 text-red-400 px-1.5 py-0.5 rounded border border-red-900/60 lowercase font-normal">
+                                    숨김
+                                </span>
+                            )}
+                        </div>
+                        <div className="inspector-actions flex items-center gap-1">
+                            {/* 눈 모양 숨기기/보이기 토글 버튼 */}
+                            <button
+                                onClick={() => toggleBlockVisibility(currentBlock.id)}
+                                className={`p-1 rounded transition ${currentBlock.isVisible === false
+                                    ? "text-red-400 hover:text-red-300 hover:bg-red-950/40"
+                                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                                    }`}
+                                data-tooltip={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
+                            >
+                                {currentBlock.isVisible === false ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+
+                            <button
+                                onClick={handleMoveUp}
+                                disabled={currentIndex === 0}
+                                className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
+                                data-tooltip="위로 이동"
+                            >
+                                <ChevronUp size={16} />
+                            </button>
+                            <button
+                                onClick={handleMoveDown}
+                                disabled={currentIndex === blocks.length - 1}
+                                className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
+                                data-tooltip="아래로 이동"
+                            >
+                                <ChevronDown size={16} />
+                            </button>
+                            <button
+                                onClick={() => removeBlock(currentBlock.id)}
+                                className="p-1 text-neutral-500 hover:text-red-400 transition ml-1"
+                                data-tooltip="블록 삭제"
+                            >
+                                <Trash2 size={15} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {!editingExperience && (
+                    <>
+                        <div className="inspector-field space-y-1.5">
+                            <label className="inspector-label-inset block text-xs font-medium text-neutral-300">블록 제목</label>
+                            <input
+                                type="text"
+                                value={currentBlock.title || ""}
+                                placeholder="블록 제목을 입력하세요"
+                                onChange={(e) => updateBlockTitle(currentBlock.id, e.target.value)}
+                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                            />
+                        </div>
+
+                        <section className="inspector-options-section space-y-2">
+                            <h3 className="inspector-section-heading">블록 옵션</h3>
+                            <div className="inspector-options-card space-y-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <span className="block text-xs text-neutral-300">개별 간격 사용</span>
+                                        <span className="mt-0.5 block text-[10px] text-neutral-500">전역 블록 간격에 내부 여백을 추가합니다.</span>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={currentBlock.style.useCustomPadding === true}
+                                        onChange={(e) => updateBlockStyle(currentBlock.id, { useCustomPadding: e.target.checked })}
+                                        className="h-4 w-4 cursor-pointer accent-blue-500"
+                                    />
+                                </div>
+
+                                {currentBlock.style.useCustomPadding === true && (
+                                    <div className="space-y-2 rounded-lg bg-neutral-950/40 p-3">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-neutral-300">내부 상하 여백</span>
+                                            <span className="font-mono text-neutral-400">{currentBlock.style.paddingY}px</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="4"
+                                            max="48"
+                                            step="4"
+                                            value={currentBlock.style.paddingY}
+                                            onChange={(e) => updateBlockStyle(currentBlock.id, { paddingY: Number(e.target.value) })}
+                                            className="w-full cursor-pointer accent-blue-500"
+                                        />
+                                    </div>
+                                )}
+
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs text-neutral-300">하단 구분선 표시</span>
+                                    <input
+                                        type="checkbox"
+                                        checked={currentBlock.style.showDivider}
+                                        onChange={(e) => updateBlockStyle(currentBlock.id, { showDivider: e.target.checked })}
+                                        className="h-4 w-4 cursor-pointer accent-blue-500"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <span className="block text-xs text-neutral-300">
+                                            {currentBlock.type === "project" ? "블록 자동 페이지 맞춤" : "블록 자동 페이지 맞춤"}
+                                        </span>
+                                        <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
+                                            {currentBlock.type === "project"
+                                                ? "블록 내 모든 프로젝트가 페이지 경계에서 잘리지 않도록 한 번에 설정합니다."
+                                                : "블록이 페이지 경계에서 잘리지 않도록 다음 페이지 상단부터 깔끔하게 시작합니다."}
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={currentBlock.style.keepTogether === true}
+                                        onChange={(e) => {
+                                            const keepTogether = e.target.checked;
+                                            updateBlockStyle(currentBlock.id, { keepTogether });
+                                            if (currentBlock.type === "project" && Array.isArray(currentBlock.data)) {
+                                                updateBlockData(
+                                                    currentBlock.id,
+                                                    currentBlock.data.map((project: any) => ({ ...project, keepTogether })),
+                                                );
+                                            }
+                                        }}
+                                        className="h-4 w-4 cursor-pointer accent-blue-500"
+                                    />
+                                </div>
+                            </div>
+                        </section>
+                    </>
+                )}
 
                 {/* 블록별 데이터 입력 폼 */}
 
@@ -1160,10 +1192,12 @@ export default function InspectorPanel() {
 
                 {/* [경력 폼] */}
                 {currentBlock.type === "experience" && (
-                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
-                        <div>
-                            <span className="text-xs font-semibold text-neutral-300">경력(회사) 목록</span>
-                        </div>
+                    <div className={`inspector-list-section${editingExperience ? " inspector-list-section--experience-detail" : " border-t border-neutral-800 pt-4"}`}>
+                        {!editingExperience && (
+                            <div>
+                                <span className="text-xs font-semibold text-neutral-300">경력(회사) 목록</span>
+                            </div>
+                        )}
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
                                 경력 항목을 추가해 주세요.
@@ -1171,289 +1205,301 @@ export default function InspectorPanel() {
                         )}
 
                         {Array.isArray(currentBlock.data) &&
-                            currentBlock.data.map((exp: any, experienceIndex: number) => (
+                            currentBlock.data
+                                .filter((exp: any) => !editingExperience || exp.id === editingExperience.id)
+                                .map((exp: any, experienceIndex: number) => (
                                 <div
                                     key={exp.id}
-                                    className="inspector-repeat-card inspector-project-card"
+                                    className={editingExperience?.id === exp.id
+                                        ? "inspector-experience-editor__card"
+                                        : "inspector-repeat-card inspector-project-card"}
                                 >
-                                    <div className="inspector-project-card__summary">
-                                        <button
-                                            type="button"
-                                            className="inspector-project-card__toggle"
-                                            onClick={() => setExpandedExperienceId((current) => current === exp.id ? null : exp.id)}
-                                            aria-expanded={expandedExperienceId === exp.id}
-                                        >
-                                            <span className="inspector-project-card__summary-copy">
-                                                <strong>{exp.company || "회사명 없음"}</strong>
-                                            </span>
-                                            <ChevronDown className={expandedExperienceId === exp.id ? "rotate-180" : ""} size={15} />
-                                        </button>
-                                        <details className="inspector-contact-menu inspector-project-menu">
-                                            <summary
-                                                data-tooltip={`${exp.company || "경력"} 항목 메뉴`}
-                                                aria-label={`${exp.company || "경력"} 항목 메뉴`}
-                                            >
-                                                <MoreHorizontal size={16} />
-                                            </summary>
-                                            <div className="inspector-contact-menu__popover">
+                                        {!editingExperience && (
+                                            <div className="inspector-project-card__summary">
                                                 <button
                                                     type="button"
-                                                    onClick={() => handleReorderExperience(experienceIndex, experienceIndex - 1)}
-                                                    disabled={experienceIndex === 0}
+                                                    className="inspector-project-card__toggle"
+                                                    onClick={() => {
+                                                        setEditingExperienceId(exp.id);
+                                                        setExpandedExperienceProjectId(null);
+                                                        blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                    }}
+                                                    aria-label={`${exp.company || "회사명 없음"} 편집`}
                                                 >
-                                                    <ChevronUp size={13} /> 위로 이동
+                                                    <span className="inspector-project-card__summary-copy">
+                                                        <strong>{exp.company || "회사명 없음"}</strong>
+                                                    </span>
+                                                    <span className="inspector-project-card__edit-action" aria-hidden="true">편집</span>
                                                 </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleReorderExperience(experienceIndex, experienceIndex + 1)}
-                                                    disabled={experienceIndex === currentBlock.data.length - 1}
-                                                >
-                                                    <ChevronDown size={13} /> 아래로 이동
-                                                </button>
-                                                <button type="button" className="is-danger" onClick={() => handleRemoveExpItem(exp.id)}>
-                                                    <Trash2 size={13} /> 삭제
-                                                </button>
+                                                <details className="inspector-contact-menu inspector-project-menu">
+                                                    <summary
+                                                        data-tooltip={`${exp.company || "경력"} 항목 메뉴`}
+                                                        aria-label={`${exp.company || "경력"} 항목 메뉴`}
+                                                    >
+                                                        <MoreHorizontal size={16} />
+                                                    </summary>
+                                                    <div className="inspector-contact-menu__popover">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleReorderExperience(experienceIndex, experienceIndex - 1)}
+                                                            disabled={experienceIndex === 0}
+                                                        >
+                                                            <ChevronUp size={13} /> 위로 이동
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleReorderExperience(experienceIndex, experienceIndex + 1)}
+                                                            disabled={experienceIndex === currentBlock.data.length - 1}
+                                                        >
+                                                            <ChevronDown size={13} /> 아래로 이동
+                                                        </button>
+                                                        <button type="button" className="is-danger" onClick={() => handleRemoveExpItem(exp.id)}>
+                                                            <Trash2 size={13} /> 삭제
+                                                        </button>
+                                                    </div>
+                                                </details>
                                             </div>
-                                        </details>
-                                    </div>
+                                        )}
 
-                                    {expandedExperienceId === exp.id && (
-                                        <div className="inspector-project-card__body">
+                                        {editingExperience?.id === exp.id && (
+                                            <div className="inspector-project-card__body">
 
-                                            <div className="inspector-field">
-                                                <label className="inspector-label-inset inspector-field-label block">회사명</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="회사명"
-                                                    value={exp.company || ""}
-                                                    onChange={(e) => handleUpdateExpField(exp.id, "company", e.target.value)}
-                                                    className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                                />
-                                            </div>
-
-                                            <div className="inspector-field">
-                                                <label className="inspector-label-inset inspector-field-label block">직무 / 역할</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="직무 또는 역할"
-                                                    value={exp.role || ""}
-                                                    onChange={(e) => handleUpdateExpField(exp.id, "role", e.target.value)}
-                                                    className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                                />
-                                            </div>
-
-                                            <div className="inspector-project-card__dates">
                                                 <div className="inspector-field">
-                                                    <label className="inspector-label-inset inspector-field-label block">시작일</label>
+                                                    <label className="inspector-label-inset inspector-field-label block">회사명</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="예: 2024.01"
-                                                        value={exp.startDate || ""}
-                                                        onChange={(e) => handleUpdateExpField(exp.id, "startDate", e.target.value)}
+                                                        placeholder="회사명"
+                                                        value={exp.company || ""}
+                                                        onChange={(e) => handleUpdateExpField(exp.id, "company", e.target.value)}
                                                         className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                                     />
                                                 </div>
+
                                                 <div className="inspector-field">
-                                                    <label className="inspector-label-inset inspector-field-label block">종료일</label>
+                                                    <label className="inspector-label-inset inspector-field-label block">직무 / 역할</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="예: 재직 중"
-                                                        value={exp.endDate || ""}
-                                                        onChange={(e) => handleUpdateExpField(exp.id, "endDate", e.target.value)}
+                                                        placeholder="직무 또는 역할"
+                                                        value={exp.role || ""}
+                                                        onChange={(e) => handleUpdateExpField(exp.id, "role", e.target.value)}
                                                         className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                                     />
                                                 </div>
-                                            </div>
 
-                                            <div className="inspector-field border-t border-neutral-800 pt-3">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <label className="text-xs text-neutral-400">회사 소개 및 주요 성과</label>
-                                                    <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
+                                                <div className="inspector-project-card__dates">
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-field-label block">시작일</label>
                                                         <input
-                                                            type="checkbox"
-                                                            checked={(exp.descriptionStyle || "bullets") === "bullets"}
-                                                            onChange={(event) => handleUpdateExpField(
-                                                                exp.id,
-                                                                "descriptionStyle",
-                                                                event.target.checked ? "bullets" : "paragraph",
-                                                            )}
-                                                            aria-label="회사 소개와 주요 성과를 불렛형으로 표시"
+                                                            type="text"
+                                                            placeholder="예: 2024.01"
+                                                            value={exp.startDate || ""}
+                                                            onChange={(e) => handleUpdateExpField(exp.id, "startDate", e.target.value)}
+                                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                                         />
-                                                        {(exp.descriptionStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
-                                                    </label>
+                                                    </div>
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-field-label block">종료일</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 재직 중"
+                                                            value={exp.endDate || ""}
+                                                            onChange={(e) => handleUpdateExpField(exp.id, "endDate", e.target.value)}
+                                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <textarea
-                                                    rows={5}
-                                                    placeholder="주요 업무와 성과를 문장별로 입력하세요"
-                                                    value={(exp.description || []).join("\n")}
-                                                    onChange={(event) => handleUpdateExpField(
-                                                        exp.id,
-                                                        "description",
-                                                        event.target.value.split("\n"),
-                                                    )}
-                                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
-                                                />
-                                                <p className="text-[10px] text-neutral-500">
-                                                    문장별로 줄을 나눠 입력하세요. 줄글형에서는 자연스럽게 이어서 표시됩니다.
-                                                </p>
-                                            </div>
 
-                                            <div className="space-y-3 border-t border-neutral-800 pt-3">
-                                                <div>
-                                                    <span className="text-xs font-semibold text-neutral-300">회사 내 프로젝트</span>
-                                                </div>
-                                                {(!Array.isArray(exp.projects) || exp.projects.length === 0) && (
-                                                    <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
-                                                        프로젝트 항목을 추가해 주세요.
+                                                <div className="inspector-field border-t border-neutral-800 pt-3">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <label className="text-xs text-neutral-400">회사 소개 및 주요 성과</label>
+                                                        <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={(exp.descriptionStyle || "bullets") === "bullets"}
+                                                                onChange={(event) => handleUpdateExpField(
+                                                                    exp.id,
+                                                                    "descriptionStyle",
+                                                                    event.target.checked ? "bullets" : "paragraph",
+                                                                )}
+                                                                aria-label="회사 소개와 주요 성과를 불렛형으로 표시"
+                                                            />
+                                                            {(exp.descriptionStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
+                                                        </label>
+                                                    </div>
+                                                    <textarea
+                                                        rows={5}
+                                                        placeholder="주요 업무와 성과를 문장별로 입력하세요"
+                                                        value={(exp.description || []).join("\n")}
+                                                        onChange={(event) => handleUpdateExpField(
+                                                            exp.id,
+                                                            "description",
+                                                            event.target.value.split("\n"),
+                                                        )}
+                                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
+                                                    />
+                                                    <p className="text-[10px] text-neutral-500">
+                                                        문장별로 줄을 나눠 입력하세요. 줄글형에서는 자연스럽게 이어서 표시됩니다.
                                                     </p>
-                                                )}
-                                                {(exp.projects || []).map((project: any, experienceProjectIndex: number) => (
-                                                    <div key={project.id} className="inspector-repeat-card inspector-project-card">
-                                                        <div className="inspector-project-card__summary">
-                                                            <button
-                                                                type="button"
-                                                                className="inspector-project-card__toggle"
-                                                                onClick={() => setExpandedExperienceProjectId((current) => current === project.id ? null : project.id)}
-                                                                aria-expanded={expandedExperienceProjectId === project.id}
-                                                            >
-                                                                <span className="inspector-project-card__summary-copy">
-                                                                    <strong>{project.title || "제목 없는 프로젝트"}</strong>
-                                                                </span>
-                                                                <ChevronDown className={expandedExperienceProjectId === project.id ? "rotate-180" : ""} size={15} />
-                                                            </button>
-                                                            <details className="inspector-contact-menu inspector-project-menu">
-                                                                <summary
-                                                                    data-tooltip={`${project.title || "프로젝트"} 항목 메뉴`}
-                                                                    aria-label={`${project.title || "프로젝트"} 항목 메뉴`}
+                                                </div>
+
+                                                <div className="space-y-3 border-t border-neutral-800 pt-3">
+                                                    <h3 className="inspector-section-heading">회사 내 프로젝트</h3>
+                                                    {(!Array.isArray(exp.projects) || exp.projects.length === 0) && (
+                                                        <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
+                                                            프로젝트 항목을 추가해 주세요.
+                                                        </p>
+                                                    )}
+                                                    {(exp.projects || []).map((project: any, experienceProjectIndex: number) => (
+                                                        <div key={project.id} className="inspector-repeat-card inspector-project-card">
+                                                            <div className="inspector-project-card__summary">
+                                                                <button
+                                                                    type="button"
+                                                                    className="inspector-project-card__toggle"
+                                                                    onClick={() => setExpandedExperienceProjectId((current) => (
+                                                                        current === project.id ? null : project.id
+                                                                    ))}
+                                                                    aria-expanded={expandedExperienceProjectId === project.id}
                                                                 >
-                                                                    <MoreHorizontal size={16} />
-                                                                </summary>
-                                                                <div className="inspector-contact-menu__popover">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleReorderExperienceProject(
-                                                                            exp.id,
-                                                                            experienceProjectIndex,
-                                                                            experienceProjectIndex - 1,
-                                                                        )}
-                                                                        disabled={experienceProjectIndex === 0}
+                                                                    <span className="inspector-project-card__summary-copy">
+                                                                        <strong>{project.title || "제목 없는 프로젝트"}</strong>
+                                                                    </span>
+                                                                    <span className="inspector-project-card__edit-action" aria-hidden="true">
+                                                                        {expandedExperienceProjectId === project.id ? "접기" : "편집"}
+                                                                    </span>
+                                                                </button>
+                                                                <details className="inspector-contact-menu inspector-project-menu">
+                                                                    <summary
+                                                                        data-tooltip={`${project.title || "프로젝트"} 항목 메뉴`}
+                                                                        aria-label={`${project.title || "프로젝트"} 항목 메뉴`}
                                                                     >
-                                                                        <ChevronUp size={13} /> 위로 이동
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleReorderExperienceProject(
-                                                                            exp.id,
-                                                                            experienceProjectIndex,
-                                                                            experienceProjectIndex + 1,
-                                                                        )}
-                                                                        disabled={experienceProjectIndex === (exp.projects || []).length - 1}
-                                                                    >
-                                                                        <ChevronDown size={13} /> 아래로 이동
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        className="is-danger"
-                                                                        onClick={() => handleRemoveExperienceProject(exp.id, project.id)}
-                                                                    >
-                                                                        <Trash2 size={13} /> 삭제
-                                                                    </button>
-                                                                </div>
-                                                            </details>
-                                                        </div>
-                                                        {expandedExperienceProjectId === project.id && (
-                                                            <div className="inspector-project-card__body">
-                                                                <div className="inspector-field">
-                                                                    <label className="inspector-label-inset block text-xs text-neutral-400">프로젝트명</label>
-                                                                    <input
-                                                                        value={project.title || ""}
-                                                                        placeholder="프로젝트명"
-                                                                        onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { title: event.target.value })}
-                                                                        className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                                                    />
-                                                                </div>
-                                                                <div className="inspector-field">
-                                                                    <label className="inspector-label-inset block text-xs text-neutral-400">역할 / 프로젝트 소개</label>
-                                                                    <input
-                                                                        value={project.role || ""}
-                                                                        placeholder="담당 역할 또는 프로젝트 소개"
-                                                                        onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { role: event.target.value })}
-                                                                        className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                                                    />
-                                                                </div>
-                                                                <div className="inspector-project-card__dates">
+                                                                        <MoreHorizontal size={16} />
+                                                                    </summary>
+                                                                    <div className="inspector-contact-menu__popover">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleReorderExperienceProject(
+                                                                                exp.id,
+                                                                                experienceProjectIndex,
+                                                                                experienceProjectIndex - 1,
+                                                                            )}
+                                                                            disabled={experienceProjectIndex === 0}
+                                                                        >
+                                                                            <ChevronUp size={13} /> 위로 이동
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleReorderExperienceProject(
+                                                                                exp.id,
+                                                                                experienceProjectIndex,
+                                                                                experienceProjectIndex + 1,
+                                                                            )}
+                                                                            disabled={experienceProjectIndex === (exp.projects || []).length - 1}
+                                                                        >
+                                                                            <ChevronDown size={13} /> 아래로 이동
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            className="is-danger"
+                                                                            onClick={() => handleRemoveExperienceProject(exp.id, project.id)}
+                                                                        >
+                                                                            <Trash2 size={13} /> 삭제
+                                                                        </button>
+                                                                    </div>
+                                                                </details>
+                                                            </div>
+                                                            {expandedExperienceProjectId === project.id && (
+                                                                <div className="inspector-project-card__body">
                                                                     <div className="inspector-field">
-                                                                        <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">시작일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                                        <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
                                                                         <input
-                                                                            value={project.startDate || ""}
-                                                                            placeholder="예: 2024.01"
-                                                                            onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { startDate: event.target.value })}
+                                                                            value={project.title || ""}
+                                                                            placeholder="프로젝트명"
+                                                                            onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { title: event.target.value })}
                                                                             className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                                                         />
                                                                     </div>
                                                                     <div className="inspector-field">
-                                                                        <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">종료일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                                        <label className="inspector-label-inset inspector-field-label block">역할 / 프로젝트 소개</label>
                                                                         <input
-                                                                            value={project.endDate || ""}
-                                                                            placeholder="예: 진행 중"
-                                                                            onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { endDate: event.target.value })}
+                                                                            value={project.role || ""}
+                                                                            placeholder="담당 역할 또는 프로젝트 소개"
+                                                                            onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { role: event.target.value })}
                                                                             className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                                                         />
                                                                     </div>
-                                                                </div>
-                                                                <div className="inspector-field inspector-project-card__bullets">
-                                                                    <div>
-                                                                        <label className="inspector-label-inset block text-xs text-neutral-400">기여/성과</label>
-                                                                        <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
-                                                                            <span><Kbd>Enter</Kbd> 새 불릿</span>
-                                                                            <span><Kbd>Tab</Kbd> 들여쓰기</span>
-                                                                            <span>
-                                                                                <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
-                                                                                볼드
-                                                                            </span>
+                                                                    <div className="inspector-project-card__dates">
+                                                                        <div className="inspector-field">
+                                                                            <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">시작일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                                            <input
+                                                                                value={project.startDate || ""}
+                                                                                placeholder="예: 2024.01"
+                                                                                onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { startDate: event.target.value })}
+                                                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="inspector-field">
+                                                                            <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">종료일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                                            <input
+                                                                                value={project.endDate || ""}
+                                                                                placeholder="예: 진행 중"
+                                                                                onChange={(event) => handleUpdateExperienceProject(exp.id, project.id, { endDate: event.target.value })}
+                                                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                                            />
                                                                         </div>
                                                                     </div>
-                                                                    <ProjectBulletDocumentEditor
-                                                                        descriptions={project.description || []}
-                                                                        levels={project.descriptionLevels || []}
-                                                                        html={project.descriptionHtml || []}
-                                                                        onChange={(description, descriptionLevels, descriptionHtml) => (
-                                                                            handleUpdateExperienceProject(exp.id, project.id, {
-                                                                                description,
-                                                                                descriptionLevels,
-                                                                                descriptionHtml,
-                                                                            })
-                                                                        )}
-                                                                    />
+                                                                    <div className="inspector-field inspector-project-card__bullets">
+                                                                        <div>
+                                                                            <label className="inspector-label-inset inspector-field-label block">기여/성과</label>
+                                                                            <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
+                                                                                <span><Kbd>Enter</Kbd> 새 불릿</span>
+                                                                                <span><Kbd>Tab</Kbd> 들여쓰기</span>
+                                                                                <span>
+                                                                                    <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
+                                                                                    볼드
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <ProjectBulletDocumentEditor
+                                                                            descriptions={project.description || []}
+                                                                            levels={project.descriptionLevels || []}
+                                                                            html={project.descriptionHtml || []}
+                                                                            onChange={(description, descriptionLevels, descriptionHtml) => (
+                                                                                handleUpdateExperienceProject(exp.id, project.id, {
+                                                                                    description,
+                                                                                    descriptionLevels,
+                                                                                    descriptionHtml,
+                                                                                })
+                                                                            )}
+                                                                        />
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleAddExperienceProject(exp.id)}
-                                                    className="inspector-list-add"
-                                                >
-                                                    <Plus size={14} /> 프로젝트 추가
-                                                </button>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleAddExperienceProject(exp.id)}
+                                                        className="inspector-list-add"
+                                                    >
+                                                        <Plus size={14} /> 프로젝트 추가
+                                                    </button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        <button type="button" onClick={handleAddExperienceItem} className="inspector-list-add">
-                            <Plus size={14} /> 경력(회사) 추가
-                        </button>
+                                        )}
+                                    </div>
+                                ))}
+                        {!editingExperience && (
+                            <button type="button" onClick={handleAddExperienceItem} className="inspector-list-add">
+                                <Plus size={14} /> 경력(회사) 추가
+                            </button>
+                        )}
                     </div>
                 )}
 
                 {/* [프로젝트 폼] */}
                 {currentBlock.type === "project" && (
                     <div className="inspector-list-section border-t border-neutral-800 pt-4">
-                        <div>
-                            <span className="text-xs font-semibold text-neutral-300">프로젝트 목록</span>
-                        </div>
+                        <h3 className="inspector-section-heading">프로젝트 목록</h3>
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
                                 프로젝트 항목을 추가해 주세요.
