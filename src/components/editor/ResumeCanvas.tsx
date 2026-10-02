@@ -1343,59 +1343,81 @@ export default function ResumeCanvas() {
 
             case "certification":
                 return (
-                    <div className="resume-section">
+                    <div className="resume-section resume-other-experience">
                         <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
-                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                            <h2 className="text-sm font-bold text-neutral-900 tracking-wider">
                                 <EditableText
-                                    value={block.title || "CERTIFICATIONS"}
+                                    value={block.title === "CERTIFICATIONS & AWARDS" ? "Other Experience" : (block.title || "Other Experience")}
                                     appearance="plain"
-                                    placeholder="자격 및 수상"
+                                    placeholder="Other Experience"
                                     onChange={(title) => updateBlockTitle(block.id, title)}
                                 />
                             </h2>
                         </div>
                         {Array.isArray(block.data) && block.data.length > 0 ? (
-                            <div className="space-y-2 pt-1">
+                            <div className="resume-other-experience__list">
                                 {block.data
                                     .slice(placement.itemStart ?? 0, placement.itemEnd ?? block.data.length)
                                     .map((cert: any, localIndex: number) => {
                                         const certIdx = (placement.itemStart ?? 0) + localIndex;
+                                        const descriptions = Array.isArray(cert.description)
+                                            ? cert.description
+                                            : cert.description
+                                                ? [cert.description]
+                                                : [""];
                                         return (
-                                            <div key={cert.id} data-pagination-item-index={certIdx} className="flex justify-between items-baseline gap-2">
-                                                <div className="flex items-center gap-2">
+                                            <div key={cert.id} data-pagination-item-index={certIdx} className="resume-other-experience__item">
+                                                <div className="resume-other-experience__summary">
                                                     <EditableText
                                                         tag="span"
                                                         value={cert.title}
-                                                        placeholder="자격증/수상명"
+                                                        placeholder="활동명"
                                                         onChange={(newTitle) => {
                                                             const updated = [...block.data];
                                                             updated[certIdx] = { ...cert, title: newTitle };
                                                             updateBlockData(block.id, updated);
                                                         }}
-                                                        className="resume-item-title font-bold text-neutral-900 text-sm"
+                                                        className="resume-item-title resume-other-experience__title font-bold text-neutral-900 text-sm"
                                                     />
-                                                    {cert.issuer && <span className="text-xs text-neutral-500">({cert.issuer})</span>}
+                                                    <EditableText
+                                                        value={cert.date}
+                                                        width="short"
+                                                        placeholder="기간"
+                                                        onChange={(newDate) => {
+                                                            const updated = [...block.data];
+                                                            updated[certIdx] = { ...cert, date: newDate };
+                                                            updateBlockData(block.id, updated);
+                                                        }}
+                                                        className="resume-other-experience__date text-xs text-neutral-500 font-medium"
+                                                    />
                                                 </div>
-                                                <EditableText
-                                                    value={cert.date}
-                                                    width="short"
-                                                    placeholder="취득일"
-                                                    onChange={(newDate) => {
-                                                        const updated = [...block.data];
-                                                        updated[certIdx] = { ...cert, date: newDate };
-                                                        updateBlockData(block.id, updated);
-                                                    }}
-                                                    className="text-xs text-neutral-500 font-medium"
-                                                />
+                                                <ul className="resume-other-experience__details">
+                                                    {descriptions.map((description: string, descriptionIndex: number) => (
+                                                        <li key={descriptionIndex}>
+                                                            <EditableText
+                                                                value={description}
+                                                                width="full"
+                                                                placeholder="활동 내용 및 성과"
+                                                                onChange={(nextDescription) => {
+                                                                    const updated = [...block.data];
+                                                                    const nextDescriptions = [...descriptions];
+                                                                    nextDescriptions[descriptionIndex] = nextDescription;
+                                                                    updated[certIdx] = { ...cert, description: nextDescriptions };
+                                                                    updateBlockData(block.id, updated);
+                                                                }}
+                                                            />
+                                                        </li>
+                                                    ))}
+                                                </ul>
                                             </div>
                                         );
                                     })}
                             </div>
                         ) : (
-                            <p className="text-xs text-neutral-400 italic">자격 및 수상 내역을 추가해 주세요.</p>
+                            <p className="text-xs text-neutral-400 italic">기타 경험을 추가해 주세요.</p>
                         )}
                     </div>
                 );

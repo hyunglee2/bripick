@@ -218,10 +218,9 @@ export const useResumeStore = create<ResumeState>()(
                         defaultData = [
                             {
                                 id: `cert-${Date.now()}`,
-                                title: "정보처리기사",
-                                issuer: "한국산업인력공단",
-                                date: "2023.06",
-                                description: "",
+                                title: "기타 경험",
+                                date: "2024.01",
+                                description: ["활동 내용과 성과를 입력해 주세요."],
                             },
                         ];
                     } else if (type === "page_break") {
@@ -241,7 +240,7 @@ export const useResumeStore = create<ResumeState>()(
                                 : type === "education"
                                     ? "EDUCATION"
                                     : type === "certification"
-                                        ? "CERTIFICATIONS & AWARDS"
+                                        ? "Other Experience"
                                         : type.toUpperCase(),
                         isVisible: true,
                         order: state.resume.blocks.length,

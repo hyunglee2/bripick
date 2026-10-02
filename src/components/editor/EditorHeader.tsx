@@ -174,7 +174,7 @@ export default function EditorHeader() {
         { label: "프로젝트", type: "project" },
         { label: "기술 스택", type: "skills" },
         { label: "학력", type: "education" },
-        { label: "자격/수상", type: "certification" },
+        { label: "기타 경험", type: "certification" },
         { label: "자유 텍스트", type: "custom_text" },
     ];
 
@@ -511,31 +511,40 @@ export default function EditorHeader() {
                 {
                     id: "block-cert-1",
                     type: "certification",
-                    title: "CERTIFICATIONS & AWARDS",
+                    title: "Other Experience",
                     isVisible: true,
                     order: 5,
                     style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
                     data: [
                         {
                             id: "cert-sample-1",
-                            title: "정보처리기사",
-                            issuer: "한국산업인력공단",
-                            date: "2023.06",
-                            description: "소프트웨어 설계·개발 및 데이터베이스 활용 역량 검증",
+                            title: "수상 내역",
+                            date: "2023.02",
+                            description: [
+                                "수석 1회, 차석 4회 및 성적우수 6회",
+                                "우수 논문상 및 논문 게재",
+                                "학과 경진대회 수상",
+                            ],
                         },
                         {
                             id: "cert-sample-2",
-                            title: "SQL 개발자(SQLD)",
-                            issuer: "한국데이터산업진흥원",
-                            date: "2022.09",
-                            description: "데이터 모델링과 SQL 활용 능력 검증",
+                            title: "SKKU-HKUST IPLP",
+                            date: "2021.01.04 ~ 2021.01.07",
+                            description: [
+                                "글로벌 다학제 캡스톤 디자인 프로그램 참여",
+                                "Design Thinking 기반 문제 해결법 도출 및 모델링",
+                                "글로벌 세미나 발표 진행",
+                            ],
                         },
                         {
                             id: "cert-sample-3",
-                            title: "사내 제품 개선 해커톤 최우수상",
-                            issuer: "루미노스 커머스",
-                            date: "2024.11",
-                            description: "고객 문의 자동 분류 대시보드를 제안하고 프로토타입을 구현",
+                            title: "IPACT JCCT",
+                            date: "2022.06, 2022.08",
+                            description: [
+                                "학생 문제 학술 검증 및 논문 게재",
+                                "모델 타당성 검증을 통한 우수 논문상 수상",
+                                "데이터 및 방법론 고도화로 후속 연구 게재",
+                            ],
                         },
                     ],
                 },

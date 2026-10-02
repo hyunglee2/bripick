@@ -8,6 +8,10 @@ type ProjectBulletDocumentEditorProps = {
     levels?: number[];
     html?: string[];
     onChange: (descriptions: string[], levels: number[], html: string[]) => void;
+    maxLevel?: 1 | 2 | 3;
+    allowBold?: boolean;
+    placeholder?: string;
+    ariaLabel?: string;
 };
 
 const clampLevel = (level: number) => Math.max(1, Math.min(3, level || 1));
@@ -35,8 +39,13 @@ export default function ProjectBulletDocumentEditor({
     levels = [],
     html = [],
     onChange,
+    maxLevel = 3,
+    allowBold = true,
+    placeholder = "프로젝트의 핵심 기여와 성과를 입력하세요",
+    ariaLabel = "프로젝트 기여 및 성과",
 }: ProjectBulletDocumentEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
+    const clampDocumentLevel = (level: number) => Math.max(1, Math.min(maxLevel, clampLevel(level)));
 
     const readDocument = () => {
         const editor = editorRef.current;
@@ -45,7 +54,7 @@ export default function ProjectBulletDocumentEditor({
         const nextHtml = rows.map((row) => sanitizeInlineRichText(
             row.querySelector<HTMLElement>("[data-project-bullet-content]")?.innerHTML || "",
         ));
-        const nextLevels = rows.map((row) => clampLevel(Number(row.dataset.level)));
+        const nextLevels = rows.map((row) => clampDocumentLevel(Number(row.dataset.level)));
         const nextDescriptions = nextHtml.map(richTextToPlainText);
         const meaningfulIndexes = nextDescriptions
             .map((description, index) => description.trim() ? index : -1)
@@ -54,7 +63,7 @@ export default function ProjectBulletDocumentEditor({
         const normalizedLevels = meaningfulIndexes.map((index) => nextLevels[index]);
         const normalizedHtml = meaningfulIndexes.map((index) => nextHtml[index]);
         const currentDescriptions = descriptions;
-        const currentLevels = currentDescriptions.map((_, index) => clampLevel(Number(levels[index]) || 1));
+        const currentLevels = currentDescriptions.map((_, index) => clampDocumentLevel(Number(levels[index]) || 1));
         const currentHtml = currentDescriptions.map((description, index) => (
             sanitizeInlineRichText(html[index] || escapeHtml(description))
         ));
@@ -82,7 +91,7 @@ export default function ProjectBulletDocumentEditor({
         const content = document.createElement("span");
         content.className = "project-bullet-editor__content";
         content.dataset.projectBulletContent = "";
-        content.dataset.placeholder = "프로젝트의 핵심 기여와 성과를 입력하세요";
+        content.dataset.placeholder = placeholder;
         content.innerHTML = sanitizeInlineRichText(contentHtml) || "<br>";
 
         row.append(marker, content);
@@ -97,9 +106,9 @@ export default function ProjectBulletDocumentEditor({
 
     const setRowLevel = (row: HTMLElement, requestedLevel: number) => {
         const previousRow = row.previousElementSibling as HTMLElement | null;
-        const previousLevel = previousRow ? clampLevel(Number(previousRow.dataset.level)) : 1;
-        const maxLevel = previousRow ? Math.min(3, previousLevel + 1) : 1;
-        const level = Math.max(1, Math.min(maxLevel, requestedLevel));
+        const previousLevel = previousRow ? clampDocumentLevel(Number(previousRow.dataset.level)) : 1;
+        const allowedLevel = previousRow ? Math.min(maxLevel, previousLevel + 1) : 1;
+        const level = Math.max(1, Math.min(allowedLevel, requestedLevel));
         row.dataset.level = String(level);
         row.style.paddingLeft = `${(level - 1) * 18}px`;
         const marker = row.querySelector<HTMLElement>(".project-bullet-editor__marker");
@@ -142,7 +151,7 @@ export default function ProjectBulletDocumentEditor({
         const currentContent = currentRow?.querySelector<HTMLElement>("[data-project-bullet-content]");
         if (!currentRow || !currentContent) return;
 
-        const fallbackLevel = clampLevel(Number(currentRow.dataset.level));
+        const fallbackLevel = clampDocumentLevel(Number(currentRow.dataset.level));
         const lines = plainText
             .split("\n")
             .map((line) => parsePastedLine(line, fallbackLevel))
@@ -173,7 +182,7 @@ export default function ProjectBulletDocumentEditor({
         let previousRow = currentRow;
         let lastContent = currentContent;
         lines.slice(1).forEach((line) => {
-            const nextRow = createRow(line.level, escapeHtml(line.text));
+            const nextRow = createRow(clampDocumentLevel(line.level), escapeHtml(line.text));
             previousRow.after(nextRow);
             previousRow = nextRow;
             lastContent = nextRow.querySelector<HTMLElement>("[data-project-bullet-content]")!;
@@ -188,7 +197,7 @@ export default function ProjectBulletDocumentEditor({
         if (!editor || document.activeElement === editor || editor.contains(document.activeElement)) return;
         editor.replaceChildren(...(descriptions.length > 0 ? descriptions : [""]).map((description, index) => (
             createRow(
-                clampLevel(Number(levels[index]) || 1),
+                clampDocumentLevel(Number(levels[index]) || 1),
                 html[index] || escapeHtml(description),
             )
         )));
@@ -202,7 +211,7 @@ export default function ProjectBulletDocumentEditor({
 
         onChange(
             meaningfulIndexes.map((index) => descriptions[index]),
-            meaningfulIndexes.map((index) => clampLevel(Number(levels[index]) || 1)),
+            meaningfulIndexes.map((index) => clampDocumentLevel(Number(levels[index]) || 1)),
             meaningfulIndexes.map((index) => sanitizeInlineRichText(
                 html[index] || escapeHtml(descriptions[index]),
             )),
@@ -216,7 +225,7 @@ export default function ProjectBulletDocumentEditor({
             suppressContentEditableWarning
             className="project-bullet-editor"
             role="textbox"
-            aria-label="프로젝트 기여 및 성과"
+            aria-label={ariaLabel}
             aria-multiline="true"
             onMouseDown={(event) => {
                 if (event.detail !== 3) return;
@@ -251,21 +260,22 @@ export default function ProjectBulletDocumentEditor({
                 if (!row || !content) return;
                 setActiveContent(content);
 
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
+                if (allowBold && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
                     event.preventDefault();
                     document.execCommand("bold");
                     return;
                 }
                 if (event.key === "Tab" || event.code === "Tab") {
+                    if (maxLevel === 1) return;
                     event.preventDefault();
-                    setRowLevel(row, clampLevel(Number(row.dataset.level)) + (event.shiftKey ? -1 : 1));
+                    setRowLevel(row, clampDocumentLevel(Number(row.dataset.level)) + (event.shiftKey ? -1 : 1));
                     placeCaret(content, true);
                     readDocument();
                     return;
                 }
                 if (event.key === "Enter") {
                     event.preventDefault();
-                    const nextRow = createRow(clampLevel(Number(row.dataset.level)));
+                    const nextRow = createRow(clampDocumentLevel(Number(row.dataset.level)));
                     row.after(nextRow);
                     placeCaret(nextRow.querySelector<HTMLElement>("[data-project-bullet-content]")!);
                     readDocument();
@@ -273,7 +283,7 @@ export default function ProjectBulletDocumentEditor({
                 }
                 if (event.key === "Backspace" && !content.textContent) {
                     event.preventDefault();
-                    const level = clampLevel(Number(row.dataset.level));
+                    const level = clampDocumentLevel(Number(row.dataset.level));
                     if (level > 1) {
                         setRowLevel(row, level - 1);
                         placeCaret(content);

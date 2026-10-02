@@ -91,10 +91,10 @@ export interface EducationItem {
 
 export interface CertificationItem {
     id: string;
-    title: string;       // 예: "정보처리기사", "TOEIC 900점"
-    issuer: string;      // 예: "한국산업인력공단", "ETS"
-    date: string;        // 예: "2024.08"
-    description?: string;
+    title: string;
+    date: string;
+    description?: string[] | string;
+    issuer?: string;
 }
 
 export interface ResumeBlock {

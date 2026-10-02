@@ -63,11 +63,15 @@ export default function InspectorPanel() {
     const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
     const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
     const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
+    const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
     const [expandedExperienceProjectId, setExpandedExperienceProjectId] = useState<string | null>(null);
     const blockPanelRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         blockPanelRef.current?.scrollTo({ top: 0 });
+        setEditingExperienceId(null);
+        setEditingEducationId(null);
+        setExpandedExperienceProjectId(null);
     }, [selectedBlockId]);
 
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
@@ -77,6 +81,9 @@ export default function InspectorPanel() {
         : [];
     const editingExperience = currentBlock?.type === "experience" && Array.isArray(currentBlock.data)
         ? currentBlock.data.find((experience: any) => experience.id === editingExperienceId)
+        : undefined;
+    const editingEducation = currentBlock?.type === "education" && Array.isArray(currentBlock.data)
+        ? currentBlock.data.find((education: any) => education.id === editingEducationId)
         : undefined;
 
     useEffect(() => {
@@ -123,10 +130,10 @@ export default function InspectorPanel() {
         return (
             <aside className="inspector-panel inspector-panel--global w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
                 <div className="inspector-panel-stack">
-                    <div className="flex items-center justify-between gap-3 border-b border-neutral-800 pb-3">
-                        <div className="flex items-center gap-2">
-                            <Sliders size={15} className="text-blue-500" />
-                            <span className="text-xs font-semibold text-neutral-200 uppercase tracking-wider">
+                    <div className="inspector-heading flex items-center justify-between gap-3 border-b border-neutral-800">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
+                            <Sliders size={14} className="text-blue-500" />
+                            <span>
                                 문서 전역 설정
                             </span>
                         </div>
@@ -652,6 +659,7 @@ export default function InspectorPanel() {
             score: "",
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
+        setEditingEducationId(newItem.id);
     };
 
     const handleUpdateEduField = (eduId: string, field: string, value: any) => {
@@ -668,6 +676,17 @@ export default function InspectorPanel() {
             currentBlock.id,
             prevData.filter((item: any) => item.id !== eduId)
         );
+        if (editingEducationId === eduId) setEditingEducationId(null);
+    };
+
+    const handleReorderEducation = (fromIndex: number, toIndex: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        if (toIndex < 0 || toIndex >= prevData.length || fromIndex === toIndex) return;
+        const nextData = [...prevData];
+        const [movedEducation] = nextData.splice(fromIndex, 1);
+        if (!movedEducation) return;
+        nextData.splice(toIndex, 0, movedEducation);
+        updateBlockData(currentBlock.id, nextData);
     };
 
     // --- 자격/수상(Certification) 핸들러 ---
@@ -737,7 +756,7 @@ export default function InspectorPanel() {
         <aside ref={blockPanelRef} className="inspector-panel inspector-panel--block w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
             <div className="inspector-panel-stack">
                 {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
-                {editingExperience ? (
+                {editingExperience || editingEducation ? (
                     <div className="inspector-heading inspector-heading--experience-detail border-b border-neutral-800">
                         <div className="inspector-heading__detail-title">
                             <button
@@ -745,15 +764,20 @@ export default function InspectorPanel() {
                                 className="inspector-heading__back"
                                 onClick={() => {
                                     setEditingExperienceId(null);
+                                    setEditingEducationId(null);
                                     setExpandedExperienceProjectId(null);
                                     blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                                 }}
-                                data-tooltip="경력(회사) 목록으로 돌아가기"
-                                aria-label="경력(회사) 목록으로 돌아가기"
+                                data-tooltip={editingExperience ? "경력(회사) 목록으로 돌아가기" : "학력 목록으로 돌아가기"}
+                                aria-label={editingExperience ? "경력(회사) 목록으로 돌아가기" : "학력 목록으로 돌아가기"}
                             >
                                 <ChevronLeft size={14} />
                             </button>
-                            <span>{editingExperience.company || "회사명 없음"} 편집</span>
+                            <span>
+                                {editingExperience
+                                    ? `${editingExperience.company || "회사명 없음"} 편집`
+                                    : `${editingEducation?.school || "학교명 없음"} 편집`}
+                            </span>
                         </div>
                     </div>
                 ) : (
@@ -807,7 +831,7 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {!editingExperience && (
+                {!editingExperience && !editingEducation && (
                     <>
                         <div className="inspector-field space-y-1.5">
                             <label className="inspector-label-inset block text-xs font-medium text-neutral-300">블록 제목</label>
@@ -1180,18 +1204,37 @@ export default function InspectorPanel() {
                                     {(currentBlock.data.introductionStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
                                 </label>
                             </div>
-                            <textarea
-                                rows={5}
-                                value={(currentBlock.data.highlights || []).join("\n")}
-                                onChange={(e) => updateBlockData(currentBlock.id, {
-                                    ...currentBlock.data,
-                                    highlights: e.target.value.split("\n"),
-                                })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
-                            />
-                            <p className="text-[10px] text-neutral-500">
-                                문장별로 줄을 나눠 입력하세요. 줄글형에서는 자연스럽게 이어서 표시됩니다.
-                            </p>
+                            {(currentBlock.data.introductionStyle || "bullets") === "bullets" ? (
+                                <>
+                                    <ProjectBulletDocumentEditor
+                                        descriptions={currentBlock.data.highlights || []}
+                                        levels={(currentBlock.data.highlights || []).map(() => 1)}
+                                        onChange={(highlights) => updateBlockData(currentBlock.id, {
+                                            ...currentBlock.data,
+                                            highlights,
+                                        })}
+                                        maxLevel={1}
+                                        allowBold={false}
+                                        placeholder="핵심 경험이나 강점을 입력하세요"
+                                        ariaLabel="자기소개 불렛 목록"
+                                    />
+                                </>
+                            ) : (
+                                <>
+                                    <textarea
+                                        rows={5}
+                                        value={(currentBlock.data.highlights || []).join("\n")}
+                                        onChange={(e) => updateBlockData(currentBlock.id, {
+                                            ...currentBlock.data,
+                                            highlights: e.target.value.split("\n"),
+                                        })}
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
+                                    />
+                                    <p className="text-[10px] text-neutral-500">
+                                        문장별로 줄을 나눠 입력하면 미리보기에서는 자연스럽게 이어서 표시됩니다.
+                                    </p>
+                                </>
+                            )}
                         </div>
                     </div>
                 )}
@@ -1332,20 +1375,33 @@ export default function InspectorPanel() {
                                                             {(exp.descriptionStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
                                                         </label>
                                                     </div>
-                                                    <textarea
-                                                        rows={5}
-                                                        placeholder="주요 업무와 성과를 문장별로 입력하세요"
-                                                        value={(exp.description || []).join("\n")}
-                                                        onChange={(event) => handleUpdateExpField(
-                                                            exp.id,
-                                                            "description",
-                                                            event.target.value.split("\n"),
-                                                        )}
-                                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
-                                                    />
-                                                    <p className="text-[10px] text-neutral-500">
-                                                        문장별로 줄을 나눠 입력하세요. 줄글형에서는 자연스럽게 이어서 표시됩니다.
-                                                    </p>
+                                                    {(exp.descriptionStyle || "bullets") === "bullets" ? (
+                                                        <ProjectBulletDocumentEditor
+                                                            descriptions={exp.description || []}
+                                                            levels={(exp.description || []).map(() => 1)}
+                                                            onChange={(description) => handleUpdateExpField(
+                                                                exp.id,
+                                                                "description",
+                                                                description,
+                                                            )}
+                                                            maxLevel={1}
+                                                            allowBold={false}
+                                                            placeholder="주요 업무와 성과를 입력하세요"
+                                                            ariaLabel="회사 소개 및 주요 성과 불렛 목록"
+                                                        />
+                                                    ) : (
+                                                        <textarea
+                                                            rows={5}
+                                                            placeholder="주요 업무와 성과를 문장별로 입력하세요"
+                                                            value={(exp.description || []).join("\n")}
+                                                            onChange={(event) => handleUpdateExpField(
+                                                                exp.id,
+                                                                "description",
+                                                                event.target.value.split("\n"),
+                                                            )}
+                                                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
+                                                        />
+                                                    )}
                                                 </div>
 
                                                 <div className="space-y-3 border-t border-neutral-800 pt-3">
@@ -1776,10 +1832,12 @@ export default function InspectorPanel() {
 
                 {/* [학력(Education) 폼] */}
                 {currentBlock.type === "education" && (
-                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
-                        <div>
-                            <span className="text-xs font-semibold text-neutral-300">학력 목록</span>
-                        </div>
+                    <div className={`inspector-list-section${editingEducation ? " inspector-list-section--experience-detail" : " border-t border-neutral-800 pt-4"}`}>
+                        {!editingEducation && (
+                            <div>
+                                <span className="text-xs font-semibold text-neutral-300">학력 목록</span>
+                            </div>
+                        )}
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
                                 학력 항목을 추가해 주세요.
@@ -1787,21 +1845,65 @@ export default function InspectorPanel() {
                         )}
 
                         {Array.isArray(currentBlock.data) &&
-                            currentBlock.data.map((edu: any) => (
+                            currentBlock.data
+                                .filter((edu: any) => !editingEducation || edu.id === editingEducation.id)
+                                .map((edu: any, educationIndex: number) => (
                                 <div
                                     key={edu.id}
-                                    className="inspector-repeat-card bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-2.5 relative"
+                                    className={editingEducation?.id === edu.id
+                                        ? "inspector-experience-editor__card"
+                                        : "inspector-repeat-card inspector-project-card"}
                                 >
-                                    <button
-                                        onClick={() => handleRemoveEduItem(edu.id)}
-                                        className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        data-tooltip="학력 삭제"
-                                    >
-                                        <Trash2 size={13} />
-                                    </button>
+                                    {!editingEducation && (
+                                        <div className="inspector-project-card__summary">
+                                            <button
+                                                type="button"
+                                                className="inspector-project-card__toggle"
+                                                onClick={() => {
+                                                    setEditingEducationId(edu.id);
+                                                    blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                }}
+                                                aria-label={`${edu.school || "학교명 없음"} 편집`}
+                                            >
+                                                <span className="inspector-project-card__summary-copy">
+                                                    <strong>{edu.school || "학교명 없음"}</strong>
+                                                </span>
+                                                <span className="inspector-project-card__edit-action" aria-hidden="true">편집</span>
+                                            </button>
+                                            <details className="inspector-contact-menu inspector-project-menu">
+                                                <summary
+                                                    data-tooltip={`${edu.school || "학력"} 항목 메뉴`}
+                                                    aria-label={`${edu.school || "학력"} 항목 메뉴`}
+                                                >
+                                                    <MoreHorizontal size={16} />
+                                                </summary>
+                                                <div className="inspector-contact-menu__popover">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleReorderEducation(educationIndex, educationIndex - 1)}
+                                                        disabled={educationIndex === 0}
+                                                    >
+                                                        <ChevronUp size={13} /> 위로 이동
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleReorderEducation(educationIndex, educationIndex + 1)}
+                                                        disabled={educationIndex === currentBlock.data.length - 1}
+                                                    >
+                                                        <ChevronDown size={13} /> 아래로 이동
+                                                    </button>
+                                                    <button type="button" className="is-danger" onClick={() => handleRemoveEduItem(edu.id)}>
+                                                        <Trash2 size={13} /> 삭제
+                                                    </button>
+                                                </div>
+                                            </details>
+                                        </div>
+                                    )}
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">학교명</label>
+                                    {editingEducation?.id === edu.id && (
+                                    <div className="inspector-project-card__body">
+                                    <div className="inspector-field">
+                                        <label className="inspector-label-inset inspector-field-label block">학교명</label>
                                         <input
                                             type="text"
                                             placeholder="학교명"
@@ -1811,8 +1913,8 @@ export default function InspectorPanel() {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">전공</label>
+                                    <div className="inspector-field">
+                                        <label className="inspector-label-inset inspector-field-label block">전공</label>
                                         <input
                                             type="text"
                                             placeholder="전공명"
@@ -1822,9 +1924,9 @@ export default function InspectorPanel() {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">입학일</label>
+                                    <div className="inspector-project-card__dates">
+                                        <div className="inspector-field">
+                                            <label className="inspector-label-inset inspector-field-label block">입학일</label>
                                             <input
                                                 type="text"
                                                 placeholder="예: 2019.03"
@@ -1833,8 +1935,8 @@ export default function InspectorPanel() {
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">졸업일</label>
+                                        <div className="inspector-field">
+                                            <label className="inspector-label-inset inspector-field-label block">졸업일</label>
                                             <input
                                                 type="text"
                                                 placeholder="예: 2023.02"
@@ -1845,9 +1947,9 @@ export default function InspectorPanel() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">상태 (졸업/재학)</label>
+                                    <div className="inspector-project-card__dates">
+                                        <div className="inspector-field">
+                                            <label className="inspector-label-inset inspector-field-label block">상태</label>
                                             <input
                                                 type="text"
                                                 placeholder="예: 졸업"
@@ -1856,8 +1958,8 @@ export default function InspectorPanel() {
                                                 className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">학점 (선택)</label>
+                                        <div className="inspector-field">
+                                            <label className="inspector-label-inset inspector-optional-label">학점 <span className="font-normal text-neutral-600">선택</span></label>
                                             <input
                                                 type="text"
                                                 placeholder="예: 3.8 / 4.5"
@@ -1867,11 +1969,15 @@ export default function InspectorPanel() {
                                             />
                                         </div>
                                     </div>
+                                    </div>
+                                    )}
                                 </div>
                             ))}
-                        <button type="button" onClick={handleAddEducationItem} className="inspector-list-add">
-                            <Plus size={14} /> 학교 추가
-                        </button>
+                        {!editingEducation && (
+                            <button type="button" onClick={handleAddEducationItem} className="inspector-list-add">
+                                <Plus size={14} /> 학력 추가
+                            </button>
+                        )}
                     </div>
                 )}
 
