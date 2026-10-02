@@ -424,6 +424,19 @@ export default function InspectorPanel() {
         } : item));
     };
 
+    const handleReorderExperienceProject = (expId: string, fromIndex: number, toIndex: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(currentBlock.id, prevData.map((item: any) => {
+            if (item.id !== expId) return item;
+            const projects = [...(item.projects || [])];
+            if (toIndex < 0 || toIndex >= projects.length || fromIndex === toIndex) return item;
+            const [movedProject] = projects.splice(fromIndex, 1);
+            if (!movedProject) return item;
+            projects.splice(toIndex, 0, movedProject);
+            return { ...item, projects };
+        }));
+    };
+
     const handleRemoveExperienceProject = (expId: string, projectId: string) => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         updateBlockData(currentBlock.id, prevData.map((item: any) => item.id === expId ? {
@@ -1286,17 +1299,15 @@ export default function InspectorPanel() {
                                             </div>
 
                                             <div className="space-y-3 border-t border-neutral-800 pt-3">
-                                                <div className="inspector-subsection-header">
-                                                    <span>회사 내 프로젝트</span>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleAddExperienceProject(exp.id)}
-                                                        className="inspector-subsection-add"
-                                                    >
-                                                        <Plus size={13} /> 프로젝트 추가
-                                                    </button>
+                                                <div>
+                                                    <span className="text-xs font-semibold text-neutral-300">회사 내 프로젝트</span>
                                                 </div>
-                                                {(exp.projects || []).map((project: any) => (
+                                                {(!Array.isArray(exp.projects) || exp.projects.length === 0) && (
+                                                    <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
+                                                        프로젝트 항목을 추가해 주세요.
+                                                    </p>
+                                                )}
+                                                {(exp.projects || []).map((project: any, experienceProjectIndex: number) => (
                                                     <div key={project.id} className="inspector-repeat-card inspector-project-card">
                                                         <div className="inspector-project-card__summary">
                                                             <button
@@ -1310,15 +1321,45 @@ export default function InspectorPanel() {
                                                                 </span>
                                                                 <ChevronDown className={expandedExperienceProjectId === project.id ? "rotate-180" : ""} size={15} />
                                                             </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleRemoveExperienceProject(exp.id, project.id)}
-                                                                className="inspector-project-card__delete"
-                                                                data-tooltip={`${project.title || "프로젝트"} 삭제`}
-                                                                aria-label={`${project.title || "프로젝트"} 삭제`}
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
+                                                            <details className="inspector-contact-menu inspector-project-menu">
+                                                                <summary
+                                                                    data-tooltip={`${project.title || "프로젝트"} 항목 메뉴`}
+                                                                    aria-label={`${project.title || "프로젝트"} 항목 메뉴`}
+                                                                >
+                                                                    <MoreHorizontal size={16} />
+                                                                </summary>
+                                                                <div className="inspector-contact-menu__popover">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleReorderExperienceProject(
+                                                                            exp.id,
+                                                                            experienceProjectIndex,
+                                                                            experienceProjectIndex - 1,
+                                                                        )}
+                                                                        disabled={experienceProjectIndex === 0}
+                                                                    >
+                                                                        <ChevronUp size={13} /> 위로 이동
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleReorderExperienceProject(
+                                                                            exp.id,
+                                                                            experienceProjectIndex,
+                                                                            experienceProjectIndex + 1,
+                                                                        )}
+                                                                        disabled={experienceProjectIndex === (exp.projects || []).length - 1}
+                                                                    >
+                                                                        <ChevronDown size={13} /> 아래로 이동
+                                                                    </button>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="is-danger"
+                                                                        onClick={() => handleRemoveExperienceProject(exp.id, project.id)}
+                                                                    >
+                                                                        <Trash2 size={13} /> 삭제
+                                                                    </button>
+                                                                </div>
+                                                            </details>
                                                         </div>
                                                         {expandedExperienceProjectId === project.id && (
                                                             <div className="inspector-project-card__body">
@@ -1389,6 +1430,13 @@ export default function InspectorPanel() {
                                                         )}
                                                     </div>
                                                 ))}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAddExperienceProject(exp.id)}
+                                                    className="inspector-list-add"
+                                                >
+                                                    <Plus size={14} /> 프로젝트 추가
+                                                </button>
                                             </div>
                                         </div>
                                     )}

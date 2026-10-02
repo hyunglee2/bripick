@@ -32,7 +32,7 @@ export const createSampleResume = (
                 name: "김브릭",
                 role: "Frontend Engineer",
                 email: "birpick@coreluma.kr",
-                phone: "010-0000-0000",
+                phone: "010-1234-5678",
                 bio: "복잡한 문제를 이해하기 쉬운 화면으로 풀어내는",
                 photo: "/profile_default.png",
                 showPhoto: true,
@@ -40,7 +40,7 @@ export const createSampleResume = (
                 github: "https://coreluma.kr/example",
                 contacts: [
                     { id: "contact-email", label: "Email", value: "birpick@coreluma.kr" },
-                    { id: "contact-phone", label: "Phone", value: "010-0000-0000" },
+                    { id: "contact-phone", label: "Phone", value: "010-1234-5678" },
                     { id: "contact-blog", label: "Blog", value: "https://coreluma.kr/blog" },
                     { id: "contact-github", label: "GitHub", value: "https://coreluma.kr/example", inlineWithPrevious: true },
                 ],

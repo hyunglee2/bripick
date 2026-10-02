@@ -1287,23 +1287,6 @@ body,
   background: var(--inspector-hover);
 }
 
-.inspector-panel .inspector-project-card__delete {
-  display: inline-flex;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border-radius: 7px;
-  color: var(--inspector-muted);
-  transition: background 140ms ease, color 140ms ease;
-}
-
-.inspector-panel .inspector-project-card__delete:hover {
-  background: color-mix(in srgb, #ef4444 12%, transparent);
-  color: #f87171;
-}
-
 .inspector-panel .inspector-project-card__toggle>svg {
   flex: 0 0 auto;
   color: var(--inspector-muted);
@@ -1652,42 +1635,6 @@ body,
 .inspector-panel .inspector-inline-add {
   min-height: 28px;
   font-size: 10px;
-}
-
-.inspector-panel .inspector-subsection-header {
-  display: flex;
-  min-height: 30px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.inspector-panel .inspector-subsection-header>span {
-  color: var(--inspector-text);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.inspector-panel .inspector-subsection-add {
-  display: inline-flex;
-  min-height: 28px;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 5px;
-  padding: 0 9px;
-  border: 1px solid var(--inspector-border);
-  border-radius: 7px;
-  background: var(--inspector-card);
-  color: var(--inspector-muted);
-  font-size: 10px;
-  font-weight: 500;
-  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
-}
-
-.inspector-panel .inspector-subsection-add:hover {
-  border-color: color-mix(in srgb, var(--brand-primary) 45%, var(--inspector-border));
-  background: var(--inspector-hover);
-  color: var(--inspector-text);
 }
 
 .inspector-panel .inspector-repeat-card>button[title*="삭제"],
