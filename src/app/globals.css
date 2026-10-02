@@ -311,6 +311,47 @@ body,
   isolation: isolate;
 }
 
+.resume-drop-indicator {
+  position: absolute;
+  right: -16px;
+  left: -16px;
+  z-index: 30;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--brand-primary);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 85%), 0 2px 8px color-mix(in srgb, var(--brand-primary) 42%, transparent);
+  pointer-events: none;
+}
+
+.resume-drop-indicator::before,
+.resume-drop-indicator::after {
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--brand-primary);
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.resume-drop-indicator::before {
+  left: -1px;
+}
+
+.resume-drop-indicator::after {
+  right: -1px;
+}
+
+.resume-drop-indicator--before {
+  top: -2px;
+}
+
+.resume-drop-indicator--after {
+  bottom: -2px;
+}
+
 .resume-block-selected {
   border-color: transparent !important;
   outline: none !important;

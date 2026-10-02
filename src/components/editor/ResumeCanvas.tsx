@@ -54,11 +54,20 @@ export default function ResumeCanvas() {
 
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+    const [dragOverFragmentKey, setDragOverFragmentKey] = useState<string | null>(null);
+    const [dragOverPosition, setDragOverPosition] = useState<"before" | "after" | null>(null);
     const [zoomLevel, setZoomLevel] = useState<number>(100);
     const [pendingDeleteBlockId, setPendingDeleteBlockId] = useState<string | null>(null);
     const [pagePlacements, setPagePlacements] = useState<BlockPlacement[][]>(() => getInitialPlacements(blocks));
+    const scrollContainerRef = useRef<HTMLElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const paginationFrameRef = useRef<number | null>(null);
+    const dragScrollFrameRef = useRef<number | null>(null);
+    const dragClientYRef = useRef<number | null>(null);
+
+    useEffect(() => () => {
+        if (dragScrollFrameRef.current !== null) cancelAnimationFrame(dragScrollFrameRef.current);
+    }, []);
 
     const templateType = globalStyle?.template || "modern";
     const primaryColor = globalStyle?.primaryColor || "#2f80c3";
@@ -103,30 +112,88 @@ export default function ResumeCanvas() {
     const pendingDeleteBlock = blocks.find((block) => block.id === pendingDeleteBlockId);
 
     // --- 드래그 앤 드롭 핸들러 ---
+    const stopDragAutoScroll = () => {
+        if (dragScrollFrameRef.current !== null) {
+            cancelAnimationFrame(dragScrollFrameRef.current);
+            dragScrollFrameRef.current = null;
+        }
+        dragClientYRef.current = null;
+    };
+
+    const runDragAutoScroll = () => {
+        const container = scrollContainerRef.current;
+        const clientY = dragClientYRef.current;
+        if (!container || clientY === null) {
+            dragScrollFrameRef.current = null;
+            return;
+        }
+
+        const rect = container.getBoundingClientRect();
+        const edgeSize = Math.min(120, rect.height * 0.18);
+        const topDistance = clientY - rect.top;
+        const bottomDistance = rect.bottom - clientY;
+        let scrollDelta = 0;
+
+        if (topDistance < edgeSize) {
+            const intensity = Math.max(0, Math.min(1, (edgeSize - topDistance) / edgeSize));
+            scrollDelta = -(4 + intensity * 18);
+        } else if (bottomDistance < edgeSize) {
+            const intensity = Math.max(0, Math.min(1, (edgeSize - bottomDistance) / edgeSize));
+            scrollDelta = 4 + intensity * 18;
+        }
+
+        if (scrollDelta !== 0) container.scrollTop += scrollDelta;
+        dragScrollFrameRef.current = requestAnimationFrame(runDragAutoScroll);
+    };
+
+    const handleCanvasDragOver = (event: React.DragEvent<HTMLElement>) => {
+        if (draggedIndex === null) return;
+        event.preventDefault();
+        dragClientYRef.current = event.clientY;
+        if (dragScrollFrameRef.current === null) {
+            dragScrollFrameRef.current = requestAnimationFrame(runDragAutoScroll);
+        }
+    };
+
     const handleDragStart = (e: React.DragEvent, globalIdx: number) => {
         setDraggedIndex(globalIdx);
+        setDragOverIndex(null);
+        setDragOverFragmentKey(null);
+        setDragOverPosition(null);
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", globalIdx.toString());
     };
 
-    const handleDragOver = (e: React.DragEvent, globalIdx: number) => {
+    const handleDragOver = (e: React.DragEvent, globalIdx: number, fragmentKey: string) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
+        const rect = e.currentTarget.getBoundingClientRect();
+        const nextPosition = e.clientY < rect.top + rect.height / 2 ? "before" : "after";
         if (dragOverIndex !== globalIdx) setDragOverIndex(globalIdx);
+        if (dragOverFragmentKey !== fragmentKey) setDragOverFragmentKey(fragmentKey);
+        if (dragOverPosition !== nextPosition) setDragOverPosition(nextPosition);
     };
 
     const handleDrop = (e: React.DragEvent, targetGlobalIdx: number) => {
         e.preventDefault();
-        if (draggedIndex !== null && draggedIndex !== targetGlobalIdx) {
-            reorderBlocks(draggedIndex, targetGlobalIdx);
+        stopDragAutoScroll();
+        if (draggedIndex !== null && dragOverPosition) {
+            let insertionIndex = targetGlobalIdx + (dragOverPosition === "after" ? 1 : 0);
+            if (draggedIndex < insertionIndex) insertionIndex -= 1;
+            if (draggedIndex !== insertionIndex) reorderBlocks(draggedIndex, insertionIndex);
         }
         setDraggedIndex(null);
         setDragOverIndex(null);
+        setDragOverFragmentKey(null);
+        setDragOverPosition(null);
     };
 
     const handleDragEnd = () => {
+        stopDragAutoScroll();
         setDraggedIndex(null);
         setDragOverIndex(null);
+        setDragOverFragmentKey(null);
+        setDragOverPosition(null);
     };
 
     const pages = useMemo(() => pagePlacements.map((placements, pageIndex) => ({
@@ -1325,7 +1392,9 @@ export default function ResumeCanvas() {
     return (
         <>
         <main
+            ref={scrollContainerRef}
             onClick={() => setSelectedBlockId(null)}
+            onDragOver={handleCanvasDragOver}
             className="editor-canvas flex-1 bg-[#444444] overflow-y-auto p-8 flex justify-center cursor-default relative"
         >
             <div
@@ -1364,16 +1433,19 @@ export default function ResumeCanvas() {
                             className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : ""}`}
                         >
                             {page.blocks.map(({ block, globalIdx, placement }, fragmentIndex) => {
+                                const fragmentKey = `${page.pageIndex}-${block.id}-${placement.itemStart ?? "all"}-${placement.descriptionStart ?? "all"}-${fragmentIndex}`;
                                 const isSelected = selectedBlockId === block.id;
                                 const isBeingDragged = draggedIndex === globalIdx;
-                                const isTargeted = dragOverIndex === globalIdx && draggedIndex !== globalIdx;
+                                const isTargeted = dragOverIndex === globalIdx
+                                    && dragOverFragmentKey === fragmentKey
+                                    && draggedIndex !== globalIdx;
                                 const isHidden = block.isVisible === false;
                                 const continuesPreviousFragment = page.blocks[fragmentIndex - 1]?.globalIdx === globalIdx;
                                 const continuesNextFragment = page.blocks[fragmentIndex + 1]?.globalIdx === globalIdx;
 
                                 return (
                                     <div
-                                        key={`${page.pageIndex}-${block.id}-${placement.itemStart ?? "all"}-${placement.descriptionStart ?? "all"}-${fragmentIndex}`}
+                                        key={fragmentKey}
                                         data-resume-block-index={globalIdx}
                                         data-block-type={block.type}
                                         data-description-start={placement.descriptionStart ?? 0}
@@ -1381,7 +1453,7 @@ export default function ResumeCanvas() {
                                         data-custom-padding={block.style.useCustomPadding === true}
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, globalIdx)}
-                                        onDragOver={(e) => handleDragOver(e, globalIdx)}
+                                        onDragOver={(e) => handleDragOver(e, globalIdx, fragmentKey)}
                                         onDrop={(e) => handleDrop(e, globalIdx)}
                                         onDragEnd={handleDragEnd}
                                         onClick={() => setSelectedBlockId(block.id)}
@@ -1399,12 +1471,17 @@ export default function ResumeCanvas() {
                                             : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
                                             } ${isSelected ? "resume-block-selected" : ""
                                             } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
-                                            } ${isTargeted ? "border-t-4 border-t-blue-500 -mt-1" : ""
                                             } ${isHidden ? "opacity-40 grayscale border-dashed border-neutral-300 block-hidden" : ""
                                             } ${continuesPreviousFragment ? "resume-block-fragment--continues-previous" : ""
                                             } ${continuesNextFragment ? "resume-block-fragment--continues-next" : ""
                                             } group`}
                                     >
+                                        {isTargeted && dragOverPosition && (
+                                            <div
+                                                className={`resume-drop-indicator resume-drop-indicator--${dragOverPosition}`}
+                                                aria-hidden="true"
+                                            />
+                                        )}
                                         {isHidden && (
                                             <div className="no-print absolute top-2 right-3 flex items-center gap-1 text-[10px] font-semibold text-neutral-500 bg-neutral-200/80 px-2 py-0.5 rounded-full select-none">
                                                 숨김 블록
