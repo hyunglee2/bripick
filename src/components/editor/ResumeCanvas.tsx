@@ -145,6 +145,7 @@ export default function ResumeCanvas() {
         const canvas = canvasRef.current;
         if (!canvas) return;
         let disposed = false;
+        let observer: ResizeObserver | null = null;
 
         const repaginate = () => {
             if (disposed) return;
@@ -446,20 +447,27 @@ export default function ResumeCanvas() {
             paginationFrameRef.current = requestAnimationFrame(() => {
                 paginationFrameRef.current = null;
                 if (disposed) return;
-                setPagePlacements((current) => (
-                    JSON.stringify(current) === nextSignature ? current : nextPages
-                ));
+                setPagePlacements((current) => {
+                    if (JSON.stringify(current) === nextSignature) return current;
+
+                    // 페이지 재배치 자체가 ResizeObserver를 다시 깨우면, 분할 전후의
+                    // 서로 다른 높이를 번갈아 측정하며 두 배치가 무한 반복될 수 있다.
+                    // 실제 콘텐츠/스타일 변경은 effect 의존성으로 다시 측정하므로,
+                    // 배치를 적용하기 직전에 현재 측정 observer를 종료한다.
+                    observer?.disconnect();
+                    return nextPages;
+                });
             });
         };
 
         repaginate();
-        const observer = new ResizeObserver(repaginate);
+        observer = new ResizeObserver(repaginate);
         canvas.querySelectorAll<HTMLElement>("[data-resume-block-index]").forEach((element) => observer.observe(element));
         document.fonts.ready.then(repaginate);
 
         return () => {
             disposed = true;
-            observer.disconnect();
+            observer?.disconnect();
             if (paginationFrameRef.current !== null) {
                 cancelAnimationFrame(paginationFrameRef.current);
                 paginationFrameRef.current = null;
@@ -474,7 +482,9 @@ export default function ResumeCanvas() {
         globalStyle?.bodyFontSize,
         globalStyle?.captionFontSize,
         globalStyle?.blockGap,
-        pagePlacements,
+        // Fast Refresh 중에도 dependency 배열 길이를 유지하되,
+        // pagePlacements 변경으로 측정 effect가 재실행되지는 않게 한다.
+        canvasRef,
         paperPadding,
         templateType,
     ]);
