@@ -73,26 +73,17 @@ const defaultResume: ResumeDocument = {
             order: 0,
             style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
             data: {
-                name: "홍길동",
-                role: "Frontend Engineer",
-                email: "dev.gildong@example.com",
-                phone: "010-1234-5678",
-                bio: "기획·디자인·개발로 사용자 중심의 서비스를 만드는",
+                name: "",
+                role: "",
+                email: "",
+                phone: "",
+                bio: "",
                 photo: "/profile_default.png",
                 showPhoto: true,
-                blog: "https://blog.coreluma.kr",
-                github: "https://github.coreluma.kr",
-                contacts: [
-                    { id: "contact-email", label: "Email", value: "dev.gildong@example.com" },
-                    { id: "contact-phone", label: "Phone", value: "010-1234-5678" },
-                    { id: "contact-blog", label: "Blog", value: "https://blog.coreluma.kr" },
-                    { id: "contact-github", label: "GitHub", value: "https://github.coreluma.kr", inlineWithPrevious: true },
-                ],
-                highlights: [
-                    "제품의 전 과정을 경험하며 사용자 중심의 기능을 구현합니다.",
-                    "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 만듭니다.",
-                    "데이터와 피드백을 기반으로 사용자 경험과 서비스 품질을 개선합니다.",
-                ],
+                blog: "",
+                github: "",
+                contacts: [],
+                highlights: [""],
                 introductionStyle: "bullets",
             },
         },
@@ -105,15 +96,13 @@ const defaultResume: ResumeDocument = {
             style: { paddingY: 20, paddingX: 0, columns: 1, showDivider: true },
             data: [
                 {
-                    id: "exp-1",
-                    company: "테크 스타트업",
-                    role: "Frontend Developer",
-                    startDate: "2024-01",
-                    endDate: "현재 재직 중",
-                    description: [
-                        "모듈형 웹 에디터 인터페이스 설계 및 성능 최적화",
-                        "Next.js App Router 기반 렌더링 파이프라인 구축",
-                    ],
+                    id: "exp-empty",
+                    company: "",
+                    role: "",
+                    startDate: "",
+                    endDate: "",
+                    description: [""],
+                    projects: [],
                 },
             ],
         },
@@ -214,37 +203,54 @@ export const useResumeStore = create<ResumeState>()(
                     let defaultData: any = [];
                     if (type === "profile") {
                         defaultData = {
-                            name: "홍길동",
-                            role: "Frontend Engineer",
-                            email: "dev.gildong@example.com",
-                            phone: "010-1234-5678",
-                            bio: "기획·디자인·개발로 사용자 중심의 서비스를 만드는",
+                            name: "",
+                            role: "",
+                            email: "",
+                            phone: "",
+                            bio: "",
                             photo: "/profile_default.png",
                             showPhoto: true,
-                            blog: "https://blog.coreluma.kr",
-                            github: "https://github.coreluma.kr",
-                            contacts: [
-                                { id: `contact-email-${Date.now()}`, label: "Email", value: "dev.gildong@example.com" },
-                                { id: `contact-phone-${Date.now()}`, label: "Phone", value: "010-1234-5678" },
-                                { id: `contact-blog-${Date.now()}`, label: "Blog", value: "https://blog.coreluma.kr" },
-                                { id: `contact-github-${Date.now()}`, label: "GitHub", value: "https://github.coreluma.kr", inlineWithPrevious: true },
-                            ],
-                            highlights: [
-                                "제품의 전 과정을 경험하며 사용자 중심의 기능을 구현합니다.",
-                                "사용자 흐름과 비즈니스 목표를 연결해 서비스 아이디어를 실제 기능으로 만듭니다.",
-                                "데이터와 피드백을 기반으로 사용자 경험과 서비스 품질을 개선합니다.",
-                            ],
+                            blog: "",
+                            github: "",
+                            contacts: [],
+                            highlights: [""],
                             introductionStyle: "bullets",
                         };
                     } else if (type === "custom_text") {
                         defaultData = { content: "", contentStyle: "bullets" };
+                    } else if (type === "experience") {
+                        defaultData = [
+                            {
+                                id: `exp-${Date.now()}`,
+                                company: "",
+                                role: "",
+                                startDate: "",
+                                endDate: "",
+                                description: [""],
+                                projects: [],
+                            },
+                        ];
+                    } else if (type === "project") {
+                        defaultData = [
+                            {
+                                id: `proj-${Date.now()}`,
+                                title: "",
+                                role: "",
+                                startDate: "",
+                                endDate: "",
+                                link: "",
+                                description: [""],
+                                descriptionLevels: [1],
+                                descriptionHtml: [""],
+                            },
+                        ];
                     } else if (type === "skills") {
                         defaultData = {
                             categories: [
                                 {
                                     id: `skill-category-${Date.now()}`,
-                                    name: "Frontend",
-                                    skills: ["TypeScript", "React", "Next.js"],
+                                    name: "",
+                                    skills: [],
                                 },
                             ],
                         };
@@ -252,22 +258,25 @@ export const useResumeStore = create<ResumeState>()(
                         defaultData = [
                             {
                                 id: `edu-${Date.now()}`,
-                                school: "한국대학교",
-                                major: "컴퓨터공학과",
-                                startDate: "2019.03",
-                                endDate: "2023.02",
-                                status: "졸업",
-                                score: "3.8 / 4.5",
+                                school: "",
+                                major: "",
+                                startDate: "",
+                                endDate: "",
+                                status: "",
+                                score: "",
                             },
                         ];
                     } else if (type === "certification") {
                         defaultData = [
                             {
                                 id: `cert-${Date.now()}`,
-                                title: "기타 경험",
-                                startDate: "2024.01",
+                                title: "",
+                                startDate: "",
                                 endDate: "",
-                                description: ["활동 내용과 성과를 입력해 주세요."],
+                                link: "",
+                                description: [""],
+                                descriptionLevels: [1],
+                                descriptionHtml: [""],
                             },
                         ];
                     } else if (type === "page_break") {

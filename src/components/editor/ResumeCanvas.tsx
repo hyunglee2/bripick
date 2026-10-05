@@ -601,8 +601,27 @@ export default function ResumeCanvas() {
                 const visibleProfileContacts = profileContacts.filter((contact) => (
                     contact.label.trim() || contact.value.trim()
                 ));
+                const placeholderContactId = "profile-contact-placeholder";
+                const displayedProfileContacts = visibleProfileContacts.length > 0
+                    ? visibleProfileContacts
+                    : [{ id: placeholderContactId, label: "", value: "", inlineWithPrevious: false }];
+                const updateDisplayedProfileContact = (
+                    contactId: string,
+                    field: "label" | "value",
+                    value: string,
+                ) => {
+                    const nextContacts = contactId === placeholderContactId
+                        ? [{ id: `contact-${Date.now()}`, label: "", value: "", [field]: value }]
+                        : profileContacts.map((item) => (
+                            item.id === contactId ? { ...item, [field]: value } : item
+                        ));
+                    updateBlockData(
+                        block.id,
+                        withProfileContacts(block.data as ProfileData, nextContacts),
+                    );
+                };
                 const showProfilePhoto = block.data.showPhoto !== false;
-                const profileContactRows = visibleProfileContacts.reduce<typeof visibleProfileContacts[]>((rows, contact) => {
+                const profileContactRows = displayedProfileContacts.reduce<typeof displayedProfileContacts[]>((rows, contact) => {
                     if (contact.inlineWithPrevious && rows.length > 0) {
                         rows[rows.length - 1].push(contact);
                     } else {
@@ -665,7 +684,7 @@ export default function ResumeCanvas() {
                                         <EditableText
                                             tag="span"
                                             value={block.data.role || ""}
-                                            placeholder="프론트엔드 개발자"
+                                            placeholder="개발자"
                                             onChange={(role) => updateBlockData(block.id, { ...block.data, role })}
                                             className="resume-profile-role"
                                         />
@@ -678,8 +697,7 @@ export default function ResumeCanvas() {
                                         />
                                         <span className="resume-profile-suffix">입니다.</span>
                                     </div>
-                                    {visibleProfileContacts.length > 0 && (
-                                        <div className="resume-profile-contacts">
+                                    <div className="resume-profile-contacts">
                                             <strong>CONTACTS</strong>
                                             <div className="resume-contact-list">
                                             {profileContactRows.map((row) => (
@@ -687,20 +705,19 @@ export default function ResumeCanvas() {
                                                     {row.map((contact) => (
                                                         <span key={contact.id} className="resume-contact-row">
                                                             <b>▸</b>
-                                                            <span className="resume-contact-label">{contact.label} :</span>
+                                                            <span className="resume-contact-label">
+                                                                <EditableText
+                                                                    value={contact.label}
+                                                                    placeholder="연락처 항목"
+                                                                    onChange={(label) => updateDisplayedProfileContact(contact.id, "label", label)}
+                                                                />
+                                                                <span> :</span>
+                                                            </span>
                                                             <EditableText
                                                                 value={contact.value}
-                                                                placeholder="내용"
+                                                                placeholder="내용 또는 URL"
                                                                 className={/^https?:\/\//i.test(contact.value) ? "resume-contact-link" : ""}
-                                                                onChange={(value) => {
-                                                                    const nextContacts = profileContacts.map((item) => (
-                                                                        item.id === contact.id ? { ...item, value } : item
-                                                                    ));
-                                                                    updateBlockData(
-                                                                        block.id,
-                                                                        withProfileContacts(block.data as ProfileData, nextContacts),
-                                                                    );
-                                                                }}
+                                                                onChange={(value) => updateDisplayedProfileContact(contact.id, "value", value)}
                                                             />
                                                         </span>
                                                     ))}
@@ -708,7 +725,6 @@ export default function ResumeCanvas() {
                                             ))}
                                             </div>
                                         </div>
-                                    )}
                                 </div>
                             </div>
                             {highlights.length > 0 && introductionStyle === "bullets" && (
@@ -765,10 +781,20 @@ export default function ResumeCanvas() {
                             />
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500 font-medium">
-                            {visibleProfileContacts.map((contact, index) => (
+                            {displayedProfileContacts.map((contact, index) => (
                                 <span key={contact.id} className="inline-flex items-center gap-2">
                                     {index > 0 && <span>|</span>}
-                                    <span>{contact.label}: {contact.value}</span>
+                                    <EditableText
+                                        value={contact.label}
+                                        placeholder="연락처 항목"
+                                        onChange={(label) => updateDisplayedProfileContact(contact.id, "label", label)}
+                                    />
+                                    <span>:</span>
+                                    <EditableText
+                                        value={contact.value}
+                                        placeholder="내용 또는 URL"
+                                        onChange={(value) => updateDisplayedProfileContact(contact.id, "value", value)}
+                                    />
                                 </span>
                             ))}
                         </div>
@@ -1081,8 +1107,7 @@ export default function ResumeCanvas() {
                                                             </a>
                                                         )}
                                                     </div>
-                                                    {(proj.startDate || proj.endDate) && <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
-                                                        {proj.startDate && (
+                                                    <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
                                                         <EditableText
                                                             value={proj.startDate}
                                                             width="short"
@@ -1093,9 +1118,7 @@ export default function ResumeCanvas() {
                                                                 updateBlockData(block.id, updated);
                                                             }}
                                                         />
-                                                        )}
-                                                        {proj.startDate && proj.endDate && <span>~</span>}
-                                                        {proj.endDate && (
+                                                        <span>~</span>
                                                         <EditableText
                                                             value={proj.endDate}
                                                             width="short"
@@ -1106,8 +1129,7 @@ export default function ResumeCanvas() {
                                                                 updateBlockData(block.id, updated);
                                                             }}
                                                         />
-                                                        )}
-                                                    </div>}
+                                                    </div>
                                                 </div>}
                                                 {!isDescriptionContinuation && <EditableText
                                                     tag="div"
@@ -1135,7 +1157,29 @@ export default function ResumeCanvas() {
                                                             const bulletHtml = sanitizeInlineRichText(
                                                                 proj.descriptionHtml?.[i] || escapeHtml(desc),
                                                             );
-                                                            if (!richTextToPlainText(bulletHtml).trim()) return null;
+                                                            if (!richTextToPlainText(bulletHtml).trim()) {
+                                                                return (
+                                                                    <li
+                                                                        key={i}
+                                                                        data-pagination-description-index={i}
+                                                                        data-bullet-level={bulletLevel}
+                                                                        className="list-item"
+                                                                    >
+                                                                        <EditableText
+                                                                            value=""
+                                                                            width="full"
+                                                                            placeholder="프로젝트 기여와 성과"
+                                                                            onChange={(newDescription) => {
+                                                                                const updated = [...block.data];
+                                                                                const newDescriptions = [...proj.description];
+                                                                                newDescriptions[i] = newDescription;
+                                                                                updated[projIndex] = { ...proj, description: newDescriptions };
+                                                                                updateBlockData(block.id, updated);
+                                                                            }}
+                                                                        />
+                                                                    </li>
+                                                                );
+                                                            }
                                                             return (
                                                                 <li
                                                                     key={i}
@@ -1209,8 +1253,7 @@ export default function ResumeCanvas() {
                                     key={category.id}
                                     className={`resume-skill-category ${category.name ? "" : "resume-skill-category--unnamed"}`}
                                 >
-                                    {category.name && (
-                                        <strong>
+                                    <strong>
                                             <EditableText
                                                 value={category.name}
                                                 appearance="plain"
@@ -1221,9 +1264,23 @@ export default function ResumeCanvas() {
                                                     )),
                                                 )}
                                             />
-                                        </strong>
-                                    )}
+                                    </strong>
                                     <div className="flex flex-wrap gap-1.5">
+                                        {category.skills.length === 0 && (
+                                            <span className="rounded border border-neutral-200 bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-900">
+                                                <EditableText
+                                                    value=""
+                                                    placeholder="기술"
+                                                    onChange={(skill) => updateCanvasSkillCategories(
+                                                        skill
+                                                            ? skillCategories.map((item, index) => (
+                                                                index === categoryIndex ? { ...item, skills: [skill] } : item
+                                                            ))
+                                                            : skillCategories,
+                                                    )}
+                                                />
+                                            </span>
+                                        )}
                                         {category.skills.map((skill, skillIndex) => (
                                             <span
                                                 key={`${category.id}-${skillIndex}`}
@@ -1413,9 +1470,7 @@ export default function ResumeCanvas() {
                                                             </a>
                                                         )}
                                                     </div>
-                                                    {(startDate || endDate) && (
-                                                        <div className="resume-other-experience__date flex items-center gap-1 text-xs font-medium text-neutral-500">
-                                                            {startDate && (
+                                                    <div className="resume-other-experience__date flex items-center gap-1 text-xs font-medium text-neutral-500">
                                                                 <EditableText
                                                                     value={startDate}
                                                                     width="short"
@@ -1426,9 +1481,7 @@ export default function ResumeCanvas() {
                                                                         updateBlockData(block.id, updated);
                                                                     }}
                                                                 />
-                                                            )}
-                                                            {startDate && endDate && <span>~</span>}
-                                                            {endDate && (
+                                                            <span>~</span>
                                                                 <EditableText
                                                                     value={endDate}
                                                                     width="short"
@@ -1439,34 +1492,48 @@ export default function ResumeCanvas() {
                                                                         updateBlockData(block.id, updated);
                                                                     }}
                                                                 />
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                    </div>
                                                 </div>}
                                                 <ul className="resume-other-experience__details">
                                                     {visibleDescriptions.map((description: string, localDescriptionIndex: number) => {
                                                         const descriptionIndex = descriptionStart + localDescriptionIndex;
+                                                        const descriptionHtml = cert.descriptionHtml?.[descriptionIndex] || escapeHtml(description);
                                                         return <li key={descriptionIndex} data-pagination-description-index={descriptionIndex}>
-                                                            <RichTextEditable
-                                                                html={cert.descriptionHtml?.[descriptionIndex] || escapeHtml(description)}
-                                                                ariaLabel={`기타 경험 성과 ${descriptionIndex + 1}`}
-                                                                className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
-                                                                onChange={(descriptionHtml) => {
-                                                                    const updated = [...block.data];
-                                                                    const nextDescriptions = [...descriptions];
-                                                                    const nextDescriptionHtml = Array.isArray(cert.descriptionHtml)
-                                                                        ? [...cert.descriptionHtml]
-                                                                        : descriptions.map((item: string) => escapeHtml(item));
-                                                                    nextDescriptions[descriptionIndex] = richTextToPlainText(descriptionHtml);
-                                                                    nextDescriptionHtml[descriptionIndex] = descriptionHtml;
-                                                                    updated[certIdx] = {
-                                                                        ...cert,
-                                                                        description: nextDescriptions,
-                                                                        descriptionHtml: nextDescriptionHtml,
-                                                                    };
-                                                                    updateBlockData(block.id, updated);
-                                                                }}
-                                                            />
+                                                            {richTextToPlainText(descriptionHtml).trim() ? (
+                                                                <RichTextEditable
+                                                                    html={descriptionHtml}
+                                                                    ariaLabel={`기타 경험 성과 ${descriptionIndex + 1}`}
+                                                                    className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
+                                                                    onChange={(nextHtml) => {
+                                                                        const updated = [...block.data];
+                                                                        const nextDescriptions = [...descriptions];
+                                                                        const nextDescriptionHtml = Array.isArray(cert.descriptionHtml)
+                                                                            ? [...cert.descriptionHtml]
+                                                                            : descriptions.map((item: string) => escapeHtml(item));
+                                                                        nextDescriptions[descriptionIndex] = richTextToPlainText(nextHtml);
+                                                                        nextDescriptionHtml[descriptionIndex] = nextHtml;
+                                                                        updated[certIdx] = {
+                                                                            ...cert,
+                                                                            description: nextDescriptions,
+                                                                            descriptionHtml: nextDescriptionHtml,
+                                                                        };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                />
+                                                            ) : (
+                                                                <EditableText
+                                                                    value=""
+                                                                    width="full"
+                                                                    placeholder="활동 내용과 성과"
+                                                                    onChange={(nextDescription) => {
+                                                                        const updated = [...block.data];
+                                                                        const nextDescriptions = [...descriptions];
+                                                                        nextDescriptions[descriptionIndex] = nextDescription;
+                                                                        updated[certIdx] = { ...cert, description: nextDescriptions };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                />
+                                                            )}
                                                         </li>;
                                                     })}
                                                 </ul>
