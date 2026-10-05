@@ -2041,22 +2041,37 @@ body,
 }
 
 .resume-skill-category {
-  display: grid;
-  grid-template-columns: minmax(90px, 120px) minmax(0, 1fr);
+  display: flex;
   align-items: start;
-  gap: 10px;
+  gap: 12px;
 }
 
 .resume-skill-category--unnamed {
-  grid-template-columns: minmax(0, 1fr);
+  display: block;
 }
 
 .resume-skill-category>strong {
+  max-width: 45%;
+  flex: 0 0 auto;
   padding-top: 2px;
   color: #111827;
   font-size: var(--resume-body-size);
   font-weight: 700;
   line-height: 1.35;
+  white-space: nowrap;
+}
+
+.resume-skill-category>div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.reference-template .resume-additional-information__item::before {
+  content: none;
+}
+
+.reference-template .resume-additional-information__item {
+  padding-left: 0;
 }
 
 .inspector-panel .inspector-suggestion-chip {

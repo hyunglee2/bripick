@@ -576,6 +576,7 @@ export default function EditorHeader() {
                     style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
                     data: {
                         content: "기술을 쉽게 설명하고 팀의 지식을 문서로 남기는 일을 좋아합니다. 사내 프론트엔드 스터디를 운영하며 학습 내용을 꾸준히 공유하고 있습니다.",
+                        contentStyle: "bullets",
                     },
                 },
             ],

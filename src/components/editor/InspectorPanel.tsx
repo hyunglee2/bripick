@@ -2223,14 +2223,51 @@ export default function InspectorPanel() {
                             />
                         </div>
                         <div className="inspector-field">
-                            <label className="text-xs text-neutral-400 block">내용</label>
-                            <textarea
-                                rows={6}
-                                value={currentBlock.data?.content || ""}
-                                onChange={(e) => updateBlockData(currentBlock.id, { content: e.target.value })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
-                                placeholder="내용을 입력하세요."
-                            />
+                            <div className="flex items-center justify-between gap-3">
+                                <label className="text-xs text-neutral-400">내용</label>
+                                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
+                                    <input
+                                        type="checkbox"
+                                        checked={(currentBlock.data?.contentStyle || "bullets") === "bullets"}
+                                        onChange={(event) => updateBlockData(currentBlock.id, {
+                                            ...currentBlock.data,
+                                            contentStyle: event.target.checked ? "bullets" : "paragraph",
+                                        })}
+                                        aria-label="추가 정보 내용을 불렛형으로 표시"
+                                    />
+                                    {(currentBlock.data?.contentStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
+                                </label>
+                            </div>
+                            {(currentBlock.data?.contentStyle || "bullets") === "bullets" ? (
+                                <ProjectBulletDocumentEditor
+                                    descriptions={String(currentBlock.data?.content || "")
+                                        .split("\n")
+                                        .filter((line) => line.trim())}
+                                    levels={String(currentBlock.data?.content || "")
+                                        .split("\n")
+                                        .filter((line) => line.trim())
+                                        .map(() => 1)}
+                                    onChange={(content) => updateBlockData(currentBlock.id, {
+                                        ...currentBlock.data,
+                                        content: content.join("\n"),
+                                    })}
+                                    maxLevel={1}
+                                    allowBold={false}
+                                    placeholder="추가 정보를 입력하세요"
+                                    ariaLabel="추가 정보 불렛 목록"
+                                />
+                            ) : (
+                                <textarea
+                                    rows={6}
+                                    value={currentBlock.data?.content || ""}
+                                    onChange={(event) => updateBlockData(currentBlock.id, {
+                                        ...currentBlock.data,
+                                        content: event.target.value,
+                                    })}
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
+                                    placeholder="내용을 입력하세요."
+                                />
+                            )}
                         </div>
                     </div>
                 )}

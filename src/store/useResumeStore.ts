@@ -237,7 +237,7 @@ export const useResumeStore = create<ResumeState>()(
                             introductionStyle: "bullets",
                         };
                     } else if (type === "custom_text") {
-                        defaultData = { content: "" };
+                        defaultData = { content: "", contentStyle: "bullets" };
                     } else if (type === "skills") {
                         defaultData = {
                             categories: [

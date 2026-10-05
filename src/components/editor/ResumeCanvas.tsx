@@ -1227,9 +1227,7 @@ export default function ResumeCanvas() {
                                         {category.skills.map((skill, skillIndex) => (
                                             <span
                                                 key={`${category.id}-${skillIndex}`}
-                                                style={templateType === "modern" ? { borderColor: `${primaryColor}30`, backgroundColor: `${primaryColor}10`, color: primaryColor } : {}}
-                                                className={`px-2 py-0.5 rounded text-xs font-medium ${templateType === "modern" ? "border" : "bg-neutral-100 text-neutral-800 border border-neutral-200"
-                                                    }`}
+                                                className="rounded border border-neutral-200 bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-900"
                                             >
                                                 <EditableText
                                                     value={skill}
@@ -1485,9 +1483,10 @@ export default function ResumeCanvas() {
             case "custom_text":
                 const paragraphs = String(block.data?.content || "").split("\n");
                 const paragraphStart = placement.itemStart ?? 0;
+                const contentStyle = block.data?.contentStyle || "bullets";
                 return (
                     <div className="resume-section">
-                        <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
+                        {!isBlockContinuation && <div className="flex items-center gap-2 border-b border-neutral-200 pb-1.5">
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
@@ -1499,14 +1498,19 @@ export default function ResumeCanvas() {
                                     onChange={(title) => updateBlockTitle(block.id, title)}
                                 />
                             </h2>
-                        </div>
+                        </div>}
                         <div className="space-y-1 pt-1">
                             {paragraphs
                                 .slice(paragraphStart, placement.itemEnd ?? paragraphs.length)
                                 .map((paragraph, localIndex) => {
                                     const paragraphIndex = paragraphStart + localIndex;
                                     return (
-                                        <div key={paragraphIndex} data-pagination-item-index={paragraphIndex}>
+                                        <div
+                                            key={paragraphIndex}
+                                            data-pagination-item-index={paragraphIndex}
+                                            className={`resume-additional-information__item${contentStyle === "bullets" ? " flex items-start gap-2" : " resume-additional-information__item--paragraph"}`}
+                                        >
+                                            {contentStyle === "bullets" && <span aria-hidden="true">▪</span>}
                                             <EditableText
                                                 tag="p"
                                                 multiline
@@ -1515,9 +1519,9 @@ export default function ResumeCanvas() {
                                                 onChange={(newContent) => {
                                                     const updated = [...paragraphs];
                                                     updated[paragraphIndex] = newContent;
-                                                    updateBlockData(block.id, { content: updated.join("\n") });
+                                                    updateBlockData(block.id, { ...block.data, content: updated.join("\n") });
                                                 }}
-                                                className="text-xs text-neutral-700 leading-relaxed whitespace-pre-line block"
+                                                className="block min-w-0 flex-1 whitespace-pre-line text-xs leading-relaxed text-neutral-700"
                                             />
                                         </div>
                                     );
