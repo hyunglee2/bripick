@@ -150,6 +150,52 @@ const migrateTypographyDefaults = (document: ResumeDocument): ResumeDocument => 
     },
 });
 
+const migrateOtherExperience = (document: ResumeDocument): ResumeDocument => ({
+    ...document,
+    blocks: document.blocks.map((block) => {
+        if (block.type !== "certification") return block;
+        return {
+            ...block,
+            title: block.title === "CERTIFICATIONS & AWARDS" ? "Other Experience" : block.title,
+            data: Array.isArray(block.data)
+                ? block.data.map((item: any) => {
+                    const description = Array.isArray(item.description)
+                        ? item.description
+                        : item.description
+                            ? [item.description]
+                            : item.issuer
+                                ? [item.issuer]
+                                : [];
+                    const descriptionHtml = Array.isArray(item.descriptionHtml)
+                        ? item.descriptionHtml
+                        : undefined;
+                    const legacyInlineLink = descriptionHtml
+                        ?.map((value: string) => value.match(/<a\b[^>]*href=["']([^"']+)["'][^>]*>/i)?.[1])
+                        .find(Boolean);
+                    const legacyDateParts = String(item.date || "").split(/\s*~\s*/);
+                    return {
+                        ...item,
+                        link: item.link || legacyInlineLink || "",
+                        startDate: item.startDate ?? legacyDateParts[0] ?? "",
+                        endDate: item.endDate ?? legacyDateParts[1] ?? "",
+                        description,
+                        descriptionLevels: Array.isArray(item.descriptionLevels)
+                            ? item.descriptionLevels
+                            : description.map(() => 1),
+                        descriptionHtml: descriptionHtml?.map((value: string) => (
+                            value.replace(/<a\b[^>]*>/gi, "").replace(/<\/a>/gi, "")
+                        )),
+                    };
+                })
+                : block.data,
+        };
+    }),
+});
+
+const migrateResumeDocument = (document: ResumeDocument) => (
+    migrateOtherExperience(migrateTypographyDefaults(document))
+);
+
 export const useResumeStore = create<ResumeState>()(
     persist(
         (set, get) => ({
@@ -219,7 +265,8 @@ export const useResumeStore = create<ResumeState>()(
                             {
                                 id: `cert-${Date.now()}`,
                                 title: "기타 경험",
-                                date: "2024.01",
+                                startDate: "2024.01",
+                                endDate: "",
                                 description: ["활동 내용과 성과를 입력해 주세요."],
                             },
                         ];
@@ -383,13 +430,16 @@ export const useResumeStore = create<ResumeState>()(
                 }),
 
             loadResume: (newResume) =>
-                set((state) => ({
+                set((state) => {
+                    const migratedResume = migrateResumeDocument(newResume);
+                    return ({
                     past: [...state.past.slice(-MAX_HISTORY_LIMIT), state.resume],
                     future: [],
-                    resume: newResume,
-                    resumeList: syncList(state.resumeList, newResume),
+                    resume: migratedResume,
+                    resumeList: syncList(state.resumeList, migratedResume),
                     selectedBlockId: null,
-                })),
+                    });
+                }),
 
             updateGlobalStyle: (newStyle) =>
                 set((state) => {
@@ -534,14 +584,14 @@ export const useResumeStore = create<ResumeState>()(
         }),
         {
             name: "bripick-resume-storage",
-            version: 4,
+            version: 7,
             migrate: (persistedState) => {
                 const state = persistedState as Partial<ResumeState>;
                 return {
                     ...state,
-                    resume: state.resume ? migrateTypographyDefaults(state.resume) : initialSampleResume,
+                    resume: state.resume ? migrateResumeDocument(state.resume) : initialSampleResume,
                     resumeList: state.resumeList?.length
-                        ? state.resumeList.map(migrateTypographyDefaults)
+                        ? state.resumeList.map(migrateResumeDocument)
                         : [initialSampleResume],
                 } as ResumeState;
             },

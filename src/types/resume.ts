@@ -19,6 +19,7 @@ export interface BlockStyle {
     showDivider: boolean;
     keepTogether?: boolean;
     useCustomPadding?: boolean;
+    otherExperienceLeftColumnRatio?: number;
 }
 
 export interface ProfileData {
@@ -92,8 +93,13 @@ export interface EducationItem {
 export interface CertificationItem {
     id: string;
     title: string;
-    date: string;
+    date?: string;
+    startDate?: string;
+    endDate?: string;
+    link?: string;
     description?: string[] | string;
+    descriptionLevels?: number[];
+    descriptionHtml?: string[];
     issuer?: string;
 }
 

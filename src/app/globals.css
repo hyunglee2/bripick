@@ -2639,6 +2639,12 @@ summary[data-tooltip],
   transform: translateY(0) scale(1);
 }
 
+.inspector-panel .inspector-heading__back[data-tooltip]::after {
+  right: auto;
+  left: 0;
+  transform-origin: top left;
+}
+
 .inspector-panel .inspector-contact-drag[data-tooltip]::after {
   right: auto;
   left: 0;
@@ -2847,6 +2853,15 @@ summary[data-tooltip],
   grid-template-columns: minmax(130px, 0.34fr) minmax(0, 1fr);
   align-items: start;
   gap: 20px;
+  padding-left: 0 !important;
+}
+
+.reference-template .resume-other-experience__item::before {
+  content: none;
+}
+
+.resume-other-experience__item--continuation .resume-other-experience__details {
+  grid-column: 1 / -1;
 }
 
 .resume-other-experience__summary {
@@ -2862,8 +2877,8 @@ summary[data-tooltip],
   position: absolute;
   top: 7px;
   left: 0;
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   background: var(--resume-primary-color, #2f80c3);
   content: "";
 }
@@ -2890,6 +2905,19 @@ summary[data-tooltip],
   list-style: disc;
 }
 
+.reference-template .resume-other-experience__item .resume-other-experience__details {
+  margin: 0 !important;
+  padding: 0 0 0 14px !important;
+  border-left: 0 !important;
+}
+
 .resume-other-experience__details li {
   padding-left: 1px;
+}
+
+.resume-other-experience__details a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }

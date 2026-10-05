@@ -64,6 +64,7 @@ export default function InspectorPanel() {
     const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
     const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
     const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
+    const [editingCertificationId, setEditingCertificationId] = useState<string | null>(null);
     const [expandedExperienceProjectId, setExpandedExperienceProjectId] = useState<string | null>(null);
     const blockPanelRef = useRef<HTMLElement>(null);
 
@@ -71,6 +72,7 @@ export default function InspectorPanel() {
         blockPanelRef.current?.scrollTo({ top: 0 });
         setEditingExperienceId(null);
         setEditingEducationId(null);
+        setEditingCertificationId(null);
         setExpandedExperienceProjectId(null);
     }, [selectedBlockId]);
 
@@ -84,6 +86,9 @@ export default function InspectorPanel() {
         : undefined;
     const editingEducation = currentBlock?.type === "education" && Array.isArray(currentBlock.data)
         ? currentBlock.data.find((education: any) => education.id === editingEducationId)
+        : undefined;
+    const editingCertification = currentBlock?.type === "certification" && Array.isArray(currentBlock.data)
+        ? currentBlock.data.find((certification: any) => certification.id === editingCertificationId)
         : undefined;
 
     useEffect(() => {
@@ -695,11 +700,13 @@ export default function InspectorPanel() {
         const newItem = {
             id: `cert-${Date.now()}`,
             title: "",
-            issuer: "",
-            date: "",
-            description: "",
+            startDate: "",
+            endDate: "",
+            link: "",
+            description: [],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
+        setEditingCertificationId(newItem.id);
     };
 
     const handleUpdateCertField = (certId: string, field: string, value: any) => {
@@ -710,12 +717,37 @@ export default function InspectorPanel() {
         );
     };
 
+    const handleUpdateCertDescription = (
+        certId: string,
+        description: string[],
+        descriptionLevels: number[],
+        descriptionHtml: string[],
+    ) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(currentBlock.id, prevData.map((item: any) => (
+            item.id === certId
+                ? { ...item, description, descriptionLevels, descriptionHtml }
+                : item
+        )));
+    };
+
     const handleRemoveCertItem = (certId: string) => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         updateBlockData(
             currentBlock.id,
             prevData.filter((item: any) => item.id !== certId)
         );
+        if (editingCertificationId === certId) setEditingCertificationId(null);
+    };
+
+    const handleReorderCertification = (fromIndex: number, toIndex: number) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        if (toIndex < 0 || toIndex >= prevData.length || fromIndex === toIndex) return;
+        const nextData = [...prevData];
+        const [movedCertification] = nextData.splice(fromIndex, 1);
+        if (!movedCertification) return;
+        nextData.splice(toIndex, 0, movedCertification);
+        updateBlockData(currentBlock.id, nextData);
     };
 
     // --- 스킬(Skills) 핸들러 ---
@@ -756,7 +788,7 @@ export default function InspectorPanel() {
         <aside ref={blockPanelRef} className="inspector-panel inspector-panel--block w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
             <div className="inspector-panel-stack">
                 {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
-                {editingExperience || editingEducation ? (
+                {editingExperience || editingEducation || editingCertification ? (
                     <div className="inspector-heading inspector-heading--experience-detail border-b border-neutral-800">
                         <div className="inspector-heading__detail-title">
                             <button
@@ -765,18 +797,29 @@ export default function InspectorPanel() {
                                 onClick={() => {
                                     setEditingExperienceId(null);
                                     setEditingEducationId(null);
+                                    setEditingCertificationId(null);
                                     setExpandedExperienceProjectId(null);
                                     blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                                 }}
-                                data-tooltip={editingExperience ? "경력(회사) 목록으로 돌아가기" : "학력 목록으로 돌아가기"}
-                                aria-label={editingExperience ? "경력(회사) 목록으로 돌아가기" : "학력 목록으로 돌아가기"}
+                                data-tooltip={editingExperience
+                                    ? "경력(회사) 목록으로 돌아가기"
+                                    : editingEducation
+                                        ? "학력 목록으로 돌아가기"
+                                        : "기타 경험 목록으로 돌아가기"}
+                                aria-label={editingExperience
+                                    ? "경력(회사) 목록으로 돌아가기"
+                                    : editingEducation
+                                        ? "학력 목록으로 돌아가기"
+                                        : "기타 경험 목록으로 돌아가기"}
                             >
                                 <ChevronLeft size={14} />
                             </button>
                             <span>
                                 {editingExperience
                                     ? `${editingExperience.company || "회사명 없음"} 편집`
-                                    : `${editingEducation?.school || "학교명 없음"} 편집`}
+                                    : editingEducation
+                                        ? `${editingEducation.school || "학교명 없음"} 편집`
+                                        : `${editingCertification?.title || "활동명 없음"} 편집`}
                             </span>
                         </div>
                     </div>
@@ -784,7 +827,7 @@ export default function InspectorPanel() {
                     <div className="inspector-heading flex items-center justify-between border-b border-neutral-800 pb-3">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
                             <Layers size={14} className="text-blue-500" />
-                            <span>{currentBlock.type} 설정</span>
+                            <span>{currentBlock.type === "certification" ? "OTHER EXPERIENCE" : currentBlock.type} 설정</span>
                             {currentBlock.isVisible === false && (
                                 <span className="text-[10px] bg-red-950/60 text-red-400 px-1.5 py-0.5 rounded border border-red-900/60 lowercase font-normal">
                                     숨김
@@ -831,13 +874,15 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {!editingExperience && !editingEducation && (
+                {!editingExperience && !editingEducation && !editingCertification && (
                     <>
                         <div className="inspector-field space-y-1.5">
                             <label className="inspector-label-inset block text-xs font-medium text-neutral-300">블록 제목</label>
                             <input
                                 type="text"
-                                value={currentBlock.title || ""}
+                                value={currentBlock.type === "certification" && currentBlock.title === "CERTIFICATIONS & AWARDS"
+                                    ? "Other Experience"
+                                    : currentBlock.title || ""}
                                 placeholder="블록 제목을 입력하세요"
                                 onChange={(e) => updateBlockTitle(currentBlock.id, e.target.value)}
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
@@ -887,6 +932,29 @@ export default function InspectorPanel() {
                                         className="h-4 w-4 cursor-pointer accent-blue-500"
                                     />
                                 </div>
+
+                                {currentBlock.type === "certification" && (
+                                    <div className="space-y-2 rounded-lg bg-neutral-950/40 p-3">
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-neutral-300">왼쪽 영역 비율</span>
+                                            <span className="font-mono text-neutral-400">
+                                                {currentBlock.style.otherExperienceLeftColumnRatio ?? 34}%
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="24"
+                                            max="48"
+                                            step="1"
+                                            value={currentBlock.style.otherExperienceLeftColumnRatio ?? 34}
+                                            onChange={(event) => updateBlockStyle(currentBlock.id, {
+                                                otherExperienceLeftColumnRatio: Number(event.target.value),
+                                            })}
+                                            aria-label="기타 경험 왼쪽 영역 비율"
+                                            className="w-full cursor-pointer accent-blue-500"
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="min-w-0 flex-1">
@@ -1949,7 +2017,7 @@ export default function InspectorPanel() {
 
                                     <div className="inspector-project-card__dates">
                                         <div className="inspector-field">
-                                            <label className="inspector-label-inset inspector-field-label block">상태</label>
+                                            <label className="inspector-label-inset inspector-optional-label">상태 <span className="font-normal text-neutral-600">선택</span></label>
                                             <input
                                                 type="text"
                                                 placeholder="예: 졸업"
@@ -1981,70 +2049,164 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {/* [자격/수상(Certification) 폼] */}
+                {/* [기타 경험(Other Experience) 폼] */}
                 {currentBlock.type === "certification" && (
-                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
-                        <div>
-                            <span className="text-xs font-semibold text-neutral-300">자격 및 수상 목록</span>
-                        </div>
+                    <div className={`inspector-list-section${editingCertification ? " inspector-list-section--experience-detail" : " border-t border-neutral-800 pt-4"}`}>
+                        {!editingCertification && (
+                            <div>
+                                <span className="text-xs font-semibold text-neutral-300">기타 경험 목록</span>
+                            </div>
+                        )}
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
-                                자격·수상 항목을 추가해 주세요.
+                                기타 경험을 추가해 주세요.
                             </p>
                         )}
 
                         {Array.isArray(currentBlock.data) &&
-                            currentBlock.data.map((cert: any) => (
+                            currentBlock.data
+                                .filter((cert: any) => !editingCertification || cert.id === editingCertification.id)
+                                .map((cert: any, certificationIndex: number) => (
                                 <div
                                     key={cert.id}
-                                    className="inspector-repeat-card bg-neutral-900/90 border border-neutral-800 rounded p-3 space-y-2.5 relative"
+                                    className={editingCertification?.id === cert.id
+                                        ? "inspector-experience-editor__card"
+                                        : "inspector-repeat-card inspector-project-card"}
                                 >
-                                    <button
-                                        onClick={() => handleRemoveCertItem(cert.id)}
-                                        className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-red-400 transition"
-                                        data-tooltip="항목 삭제"
-                                    >
-                                        <Trash2 size={13} />
-                                    </button>
+                                    {!editingCertification && (
+                                        <div className="inspector-project-card__summary">
+                                            <button
+                                                type="button"
+                                                className="inspector-project-card__toggle"
+                                                onClick={() => {
+                                                    setEditingCertificationId(cert.id);
+                                                    blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                }}
+                                                aria-label={`${cert.title || "활동명 없음"} 편집`}
+                                            >
+                                                <span className="inspector-project-card__summary-copy">
+                                                    <strong>{cert.title || "활동명 없음"}</strong>
+                                                </span>
+                                                <span className="inspector-project-card__edit-action" aria-hidden="true">편집</span>
+                                            </button>
+                                            <details className="inspector-contact-menu inspector-project-menu">
+                                                <summary
+                                                    data-tooltip={`${cert.title || "기타 경험"} 항목 메뉴`}
+                                                    aria-label={`${cert.title || "기타 경험"} 항목 메뉴`}
+                                                >
+                                                    <MoreHorizontal size={16} />
+                                                </summary>
+                                                <div className="inspector-contact-menu__popover">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleReorderCertification(certificationIndex, certificationIndex - 1)}
+                                                        disabled={certificationIndex === 0}
+                                                    >
+                                                        <ChevronUp size={13} /> 위로 이동
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleReorderCertification(certificationIndex, certificationIndex + 1)}
+                                                        disabled={certificationIndex === currentBlock.data.length - 1}
+                                                    >
+                                                        <ChevronDown size={13} /> 아래로 이동
+                                                    </button>
+                                                    <button type="button" className="is-danger" onClick={() => handleRemoveCertItem(cert.id)}>
+                                                        <Trash2 size={13} /> 삭제
+                                                    </button>
+                                                </div>
+                                            </details>
+                                        </div>
+                                    )}
 
-                                    <div>
-                                        <label className="text-[11px] text-neutral-400 block">자격/수상/시험명</label>
-                                        <input
-                                            type="text"
-                                            placeholder="자격증·수상·시험명"
+                                    {editingCertification?.id === cert.id && (
+                                    <div className="inspector-project-card__body">
+                                    <div className="inspector-field">
+                                        <label className="inspector-label-inset inspector-field-label block">활동명</label>
+                                        <textarea
+                                            rows={2}
+                                            placeholder="활동, 수상 또는 프로그램명"
                                             value={cert.title || ""}
                                             onChange={(e) => handleUpdateCertField(cert.id, "title", e.target.value)}
-                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                            className="w-full resize-y bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">발행/주관 기관</label>
+                                    <div className="inspector-project-card__dates">
+                                        <div className="inspector-field">
+                                            <label className="inspector-label-inset inspector-optional-label">시작일 <span className="font-normal text-neutral-600">선택</span></label>
                                             <input
                                                 type="text"
-                                                placeholder="발행 또는 주관 기관"
-                                                value={cert.issuer || ""}
-                                                onChange={(e) => handleUpdateCertField(cert.id, "issuer", e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                placeholder="예: 2024.09"
+                                                value={cert.startDate || ""}
+                                                onChange={(event) => handleUpdateCertField(cert.id, "startDate", event.target.value)}
+                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="text-[11px] text-neutral-400 block">취득/수상 일자</label>
+                                        <div className="inspector-field">
+                                            <label className="inspector-label-inset inspector-optional-label">종료일 <span className="font-normal text-neutral-600">선택</span></label>
                                             <input
                                                 type="text"
-                                                placeholder="예: 2024.01"
-                                                value={cert.date || ""}
-                                                onChange={(e) => handleUpdateCertField(cert.id, "date", e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                placeholder="예: 2025.01"
+                                                value={cert.endDate || ""}
+                                                onChange={(event) => handleUpdateCertField(cert.id, "endDate", event.target.value)}
+                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                             />
                                         </div>
                                     </div>
+
+                                    <div className="inspector-field">
+                                        <label className="inspector-label-inset inspector-optional-label">링크 URL <span className="font-normal text-neutral-600">선택</span></label>
+                                        <input
+                                            type="text"
+                                            placeholder="https://github.com/..."
+                                            value={cert.link || ""}
+                                            onChange={(event) => handleUpdateCertField(cert.id, "link", event.target.value)}
+                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                        />
+                                    </div>
+
+                                    <div className="inspector-field inspector-project-card__bullets">
+                                        <div>
+                                            <label className="inspector-label-inset inspector-field-label block">활동 내용 및 성과</label>
+                                            <div className="inspector-shortcut-guide" aria-label="기타 경험 불렛 편집 단축키">
+                                                <span><Kbd>Enter</Kbd> 새 불렛</span>
+                                                <span><Kbd>Ctrl/⌘ + B</Kbd> 볼드</span>
+                                            </div>
+                                        </div>
+                                        <ProjectBulletDocumentEditor
+                                            descriptions={Array.isArray(cert.description)
+                                                ? cert.description
+                                                : cert.description
+                                                    ? [cert.description]
+                                                    : cert.issuer
+                                                        ? [cert.issuer]
+                                                        : []}
+                                            levels={(Array.isArray(cert.description) ? cert.description : []).map(() => 1)}
+                                            html={cert.descriptionHtml || []}
+                                            onChange={(description, descriptionLevels, descriptionHtml) => (
+                                                handleUpdateCertDescription(
+                                                    cert.id,
+                                                    description,
+                                                    descriptionLevels,
+                                                    descriptionHtml,
+                                                )
+                                            )}
+                                            maxLevel={1}
+                                            allowBold
+                                            placeholder="활동 내용이나 성과를 입력하세요"
+                                            ariaLabel="기타 경험 활동 내용 및 성과"
+                                        />
+                                    </div>
+                                    </div>
+                                    )}
                                 </div>
                             ))}
-                        <button type="button" onClick={handleAddCertItem} className="inspector-list-add">
-                            <Plus size={14} /> 자격·수상 항목 추가
-                        </button>
+                        {!editingCertification && (
+                            <button type="button" onClick={handleAddCertItem} className="inspector-list-add">
+                                <Plus size={14} /> 기타 경험 추가
+                            </button>
+                        )}
                     </div>
                 )}
 
