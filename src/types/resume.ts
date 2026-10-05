@@ -145,4 +145,8 @@ export interface ResumeDocument {
     updatedAt: string;
     globalStyle: GlobalStyle;
     blocks: ResumeBlock[];
+    publication?: {
+        slug: string;
+        publishedAt: string;
+    };
 }

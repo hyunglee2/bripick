@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
 import { FileText, GripVertical, ImagePlus, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
-import { ProfileData, ResumeBlock, SkillsData } from "@/types/resume";
+import { ProfileData, ResumeBlock, ResumeDocument, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
@@ -43,15 +43,29 @@ function getInitialPlacements(blocks: ResumeBlock[]): BlockPlacement[][] {
     return [blocks.flatMap((block, blockIndex) => block.type === "page_break" ? [] : [{ blockIndex }])];
 }
 
-export default function ResumeCanvas() {
-    const blocks = useResumeStore((state) => state.resume.blocks);
-    const globalStyle = useResumeStore((state) => state.resume.globalStyle);
-    const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
-    const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
-    const updateBlockData = useResumeStore((state) => state.updateBlockData);
-    const updateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
-    const reorderBlocks = useResumeStore((state) => state.reorderBlocks);
-    const removeBlock = useResumeStore((state) => state.removeBlock);
+export default function ResumeCanvas({
+    resumeOverride,
+    readOnly = false,
+}: {
+    resumeOverride?: ResumeDocument;
+    readOnly?: boolean;
+} = {}) {
+    const storedBlocks = useResumeStore((state) => state.resume.blocks);
+    const storedGlobalStyle = useResumeStore((state) => state.resume.globalStyle);
+    const storedSelectedBlockId = useResumeStore((state) => state.selectedBlockId);
+    const storeSetSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
+    const storeUpdateBlockData = useResumeStore((state) => state.updateBlockData);
+    const storeUpdateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
+    const storeReorderBlocks = useResumeStore((state) => state.reorderBlocks);
+    const storeRemoveBlock = useResumeStore((state) => state.removeBlock);
+    const blocks = resumeOverride?.blocks ?? storedBlocks;
+    const globalStyle = resumeOverride?.globalStyle ?? storedGlobalStyle;
+    const selectedBlockId = readOnly ? null : storedSelectedBlockId;
+    const setSelectedBlockId = readOnly ? (() => undefined) : storeSetSelectedBlockId;
+    const updateBlockData = readOnly ? (() => undefined) : storeUpdateBlockData;
+    const updateBlockTitle = readOnly ? (() => undefined) : storeUpdateBlockTitle;
+    const reorderBlocks = readOnly ? (() => undefined) : storeReorderBlocks;
+    const removeBlock = readOnly ? (() => undefined) : storeRemoveBlock;
 
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -1608,7 +1622,7 @@ export default function ResumeCanvas() {
             ref={scrollContainerRef}
             onClick={() => setSelectedBlockId(null)}
             onDragOver={handleCanvasDragOver}
-            className="editor-canvas flex-1 bg-[#444444] overflow-y-auto p-8 flex justify-center cursor-default relative"
+            className={`editor-canvas flex-1 bg-[#444444] overflow-y-auto p-8 flex justify-center cursor-default relative${readOnly ? " resume-canvas--readonly" : ""}`}
         >
             <div
                 ref={canvasRef}

@@ -5,6 +5,7 @@ import { useRef, useState, useEffect } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import AtsCheckerModal from "@/components/editor/AtsCheckerModal";
 import ServiceDialog, { ServiceDialogVariant } from "@/components/ui/ServiceDialog";
+import PublishResumeButton from "@/components/editor/PublishResumeButton";
 import {
     Plus,
     Download,
@@ -784,6 +785,7 @@ export default function EditorHeader() {
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
+                    <PublishResumeButton />
                     {shouldShowSample && (
                         <button
                             type="button"

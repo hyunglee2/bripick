@@ -19,14 +19,18 @@ function Invoke-Checked {
 }
 
 try {
-    Write-Host "[1/4] Building static export..."
+    Write-Host "[1/4] Building Next.js standalone server..."
     Invoke-Checked { npm run build } "Next.js build failed."
+
+    Copy-Item -Recurse -Force "public" ".next/standalone/public"
+    New-Item -ItemType Directory -Force -Path ".next/standalone/.next/static" | Out-Null
+    Copy-Item -Recurse -Force ".next/static/*" ".next/standalone/.next/static"
 
     Write-Host "[2/4] Creating deployment archive..."
     if (Test-Path -LiteralPath $archivePath) {
         Remove-Item -LiteralPath $archivePath -Force
     }
-    Invoke-Checked { tar -czf $archivePath -C out . } "Could not create the deployment archive."
+    Invoke-Checked { tar -czf $archivePath -C .next/standalone . } "Could not create the deployment archive."
 
     Write-Host "[3/4] Uploading and activating release..."
     $securePassword = Read-Host "SSH/sudo password for $server" -AsSecureString

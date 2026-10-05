@@ -2936,3 +2936,66 @@ summary[data-tooltip],
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
+
+.publish-action-button,
+.publish-primary-button,
+.publish-danger-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: 150ms ease;
+}
+
+.publish-action-button {
+  border: 1px solid #40424c;
+  color: #d4d4d8;
+}
+
+.publish-action-button:hover { background: #272933; color: white; }
+.publish-primary-button { width: 100%; background: #2563eb; color: white; }
+.publish-primary-button:hover { background: #3b82f6; }
+.publish-danger-button { width: 100%; color: #f87171; }
+.publish-danger-button:hover { background: rgb(239 68 68 / 0.1); }
+.publish-primary-button:disabled,
+.publish-danger-button:disabled { cursor: wait; opacity: 0.55; }
+
+.public-resume-shell {
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  background: #444;
+}
+
+.public-resume-header {
+  display: flex;
+  height: 56px;
+  flex: 0 0 56px;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid #2b2d35;
+  background: #12131a;
+  padding: 0 20px;
+  color: #d4d4d8;
+  font-size: 13px;
+}
+
+.public-resume-header img { width: 112px; height: auto; }
+.resume-canvas--readonly .resume-paper { pointer-events: none; }
+.resume-canvas--readonly .no-print,
+.resume-canvas--readonly [data-tooltip] { display: none !important; }
+
+.public-resume-state {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #12131a;
+  color: #a1a1aa;
+  font-size: 14px;
+}

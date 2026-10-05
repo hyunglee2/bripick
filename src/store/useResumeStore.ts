@@ -36,6 +36,7 @@ interface ResumeState {
     duplicateResume: (id: string) => void;
     deleteResume: (id: string) => void;
     updateVersionName: (name: string) => void;
+    updatePublication: (publication?: ResumeDocument["publication"]) => void;
 
     // History Actions
     undo: () => void;
@@ -476,6 +477,15 @@ export const useResumeStore = create<ResumeState>()(
                     };
                 }),
 
+            updatePublication: (publication) =>
+                set((state) => {
+                    const newResume = { ...state.resume, publication };
+                    return {
+                        resume: newResume,
+                        resumeList: syncList(state.resumeList, newResume),
+                    };
+                }),
+
             switchResume: (id) => {
                 const target = get().resumeList.find((r) => r.id === id);
                 if (target) {
@@ -514,6 +524,7 @@ export const useResumeStore = create<ResumeState>()(
                     id: newId,
                     versionName: `${current.versionName} (사본)`,
                     updatedAt: new Date().toISOString(),
+                    publication: undefined,
                 };
 
                 set((state) => ({
@@ -533,6 +544,7 @@ export const useResumeStore = create<ResumeState>()(
                     id: `resume-${Date.now()}`,
                     versionName: `${source.versionName} (사본)`,
                     updatedAt: new Date().toISOString(),
+                    publication: undefined,
                 };
 
                 set((state) => ({
