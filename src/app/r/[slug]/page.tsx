@@ -1,11 +1,28 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PublicResumeViewer from "@/components/public/PublicResumeViewer";
-import { OPEN_GRAPH_IMAGE, SITE_NAME } from "@/lib/site";
+import { OPEN_GRAPH_IMAGE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import { findPublicResume } from "@/server/resumes/resume-publication.service";
 import { PUBLIC_SLUG_PATTERN } from "@/server/resumes/resume.validator";
+import type { ProfileData, ResumeDocument } from "@/types/resume";
 
 export const dynamic = "force-dynamic";
+
+function getResumeDescription(resume: ResumeDocument) {
+    const profile = resume.blocks.find(
+        (block) => block.type === "profile" && block.isVisible,
+    )?.data as ProfileData | undefined;
+
+    const bio = profile?.bio?.trim();
+    const role = profile?.role?.trim();
+    const name = profile?.name?.trim();
+
+    if (bio && role && name) return `${bio} ${role} ${name}입니다`;
+    if (role && name) return `${role} ${name}입니다`;
+    if (bio) return bio;
+    if (name) return `${name}의 개발자 이력서입니다`;
+    return SITE_DESCRIPTION;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
@@ -19,7 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
 
     const title = resume.versionName || "개발자 이력서";
-    const description = "Bripick에서 경험을 블록처럼 쌓아 만든 개발자 이력서입니다.";
+    const description = getResumeDescription(resume);
     const url = `/r/${slug}`;
 
     return {
