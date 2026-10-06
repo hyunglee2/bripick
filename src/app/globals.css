@@ -659,10 +659,12 @@ body,
 .resume-profile-photo {
   width: 132px;
   height: 166px;
+  box-sizing: border-box;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid rgb(236, 236, 236);
   border-radius: 15px 25px 0 25px;
   background: #d6d3d1;
   color: #64748b;
@@ -2956,13 +2958,35 @@ summary[data-tooltip],
   color: #d4d4d8;
 }
 
-.publish-action-button:hover { background: #272933; color: white; }
-.publish-primary-button { width: 100%; background: #2563eb; color: white; }
-.publish-primary-button:hover { background: #3b82f6; }
-.publish-danger-button { width: 100%; color: #f87171; }
-.publish-danger-button:hover { background: rgb(239 68 68 / 0.1); }
+.publish-action-button:hover {
+  background: #272933;
+  color: white;
+}
+
+.publish-primary-button {
+  width: 100%;
+  background: #2563eb;
+  color: white;
+}
+
+.publish-primary-button:hover {
+  background: #3b82f6;
+}
+
+.publish-danger-button {
+  width: 100%;
+  color: #f87171;
+}
+
+.publish-danger-button:hover {
+  background: rgb(239 68 68 / 0.1);
+}
+
 .publish-primary-button:disabled,
-.publish-danger-button:disabled { cursor: wait; opacity: 0.55; }
+.publish-danger-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
 
 .public-resume-shell {
   display: flex;
@@ -2999,7 +3023,11 @@ summary[data-tooltip],
   outline-offset: 4px;
 }
 
-.public-resume-home-link img { width: 112px; height: auto; }
+.public-resume-home-link img {
+  width: 112px;
+  height: auto;
+}
+
 .resume-canvas--readonly {
   padding: clamp(8px, 3vw, 32px) !important;
   overscroll-behavior: contain;
@@ -3012,9 +3040,14 @@ summary[data-tooltip],
   padding-bottom: 96px !important;
 }
 
-.resume-canvas--readonly .resume-paper { pointer-events: none; }
+.resume-canvas--readonly .resume-paper {
+  pointer-events: none;
+}
+
 .resume-canvas--readonly .no-print,
-.resume-canvas--readonly [data-tooltip] { display: none !important; }
+.resume-canvas--readonly [data-tooltip] {
+  display: none !important;
+}
 
 .resume-canvas--readonly .public-resume-zoom-controls {
   right: auto;

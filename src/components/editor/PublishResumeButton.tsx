@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Copy, ExternalLink, Globe2, LoaderCircle, RefreshCw, Unlink } from "lucide-react";
+import { AlertCircle, CheckCircle2, Copy, ExternalLink, EyeOff, Globe, LoaderCircle, RefreshCw } from "lucide-react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { getPublicResumeUrl, publishResume, unpublishResume } from "@/lib/resumePublishing";
 
@@ -10,7 +10,7 @@ export default function PublishResumeButton() {
     const updatePublication = useResumeStore((state) => state.updatePublication);
     const [open, setOpen] = useState(false);
     const [busy, setBusy] = useState(false);
-    const [message, setMessage] = useState("");
+    const [toast, setToast] = useState<{ id: number; message: string; variant: "success" | "error" } | null>(null);
     const rootRef = useRef<HTMLDivElement>(null);
     const publicUrl = resume.publication ? getPublicResumeUrl(resume.publication.slug) : "";
 
@@ -23,35 +23,48 @@ export default function PublishResumeButton() {
         return () => window.removeEventListener("pointerdown", close);
     }, [open]);
 
+    useEffect(() => {
+        if (!toast) return;
+        const timeoutId = window.setTimeout(() => setToast(null), 2400);
+        return () => window.clearTimeout(timeoutId);
+    }, [toast]);
+
+    const showToast = (message: string, variant: "success" | "error" = "success") => {
+        setToast({ id: Date.now(), message, variant });
+    };
+
     const handlePublish = async () => {
         setBusy(true);
-        setMessage("");
+        const isUpdating = Boolean(resume.publication);
         try {
             const publication = await publishResume(resume);
             updatePublication(publication);
-            setMessage(resume.publication ? "변경사항을 게시했어요." : "이력서를 게시했어요.");
+            showToast(isUpdating ? "변경사항을 게시했어요." : "이력서를 게시했어요.");
         } catch (error) {
-            setMessage(error instanceof Error ? error.message : "게시하지 못했습니다.");
+            showToast(error instanceof Error ? error.message : "게시하지 못했습니다.", "error");
         } finally {
             setBusy(false);
         }
     };
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(publicUrl);
-        setMessage("공개 링크를 복사했어요.");
+        try {
+            await navigator.clipboard.writeText(publicUrl);
+            showToast("공개 링크를 복사했어요.");
+        } catch {
+            showToast("공개 링크를 복사하지 못했습니다.", "error");
+        }
     };
 
     const handleUnpublish = async () => {
         if (!resume.publication) return;
         setBusy(true);
-        setMessage("");
         try {
             await unpublishResume(resume.publication.slug);
             updatePublication(undefined);
-            setMessage("게시를 취소했어요.");
+            showToast("게시를 취소했어요.");
         } catch (error) {
-            setMessage(error instanceof Error ? error.message : "게시를 취소하지 못했습니다.");
+            showToast(error instanceof Error ? error.message : "게시를 취소하지 못했습니다.", "error");
         } finally {
             setBusy(false);
         }
@@ -61,14 +74,11 @@ export default function PublishResumeButton() {
         <div ref={rootRef} className="relative">
             <button
                 type="button"
-                onClick={() => {
-                    setOpen((value) => !value);
-                    setMessage("");
-                }}
+                onClick={() => setOpen((value) => !value)}
                 className="header-button header-button--outline flex h-8 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-xs font-medium text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-800"
                 aria-expanded={open}
             >
-                <Globe2 size={14} />
+                <Globe size={14} />
                 <span className="hidden sm:inline">{resume.publication ? "게시됨" : "게시"}</span>
             </button>
             {open && (
@@ -97,16 +107,34 @@ export default function PublishResumeButton() {
                                 변경사항 게시
                             </button>
                             <button type="button" onClick={handleUnpublish} disabled={busy} className="publish-danger-button">
-                                <Unlink size={13} /> 게시 취소
+                                <EyeOff size={13} /> 게시 취소
                             </button>
                         </div>
                     ) : (
                         <button type="button" onClick={handlePublish} disabled={busy} className="publish-primary-button">
-                            {busy ? <LoaderCircle size={14} className="animate-spin" /> : <Globe2 size={14} />}
+                            {busy ? <LoaderCircle size={14} className="animate-spin" /> : <Globe size={14} />}
                             이력서 게시하기
                         </button>
                     )}
-                    {message && <p className="mt-3 text-[11px] text-blue-300" role="status">{message}</p>}
+                </div>
+            )}
+            {toast && (
+                <div className="pointer-events-none fixed inset-x-0 top-16 z-[80] flex justify-center px-4">
+                    <div
+                        key={toast.id}
+                        role={toast.variant === "error" ? "alert" : "status"}
+                        aria-live={toast.variant === "error" ? "assertive" : "polite"}
+                        className={`service-toast inline-flex w-fit max-w-full items-center gap-2.5 rounded-xl border bg-[#171c26] px-4 py-3 text-xs font-medium text-neutral-100 shadow-2xl ${
+                            toast.variant === "error" ? "border-red-500/40" : "border-blue-500/35"
+                        }`}
+                    >
+                        {toast.variant === "error" ? (
+                            <AlertCircle size={17} className="shrink-0 text-red-400" aria-hidden="true" />
+                        ) : (
+                            <CheckCircle2 size={17} className="shrink-0 text-blue-400" aria-hidden="true" />
+                        )}
+                        {toast.message}
+                    </div>
                 </div>
             )}
         </div>
