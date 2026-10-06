@@ -1,7 +1,7 @@
 // src/components/editor/ResumeCanvas.tsx
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
 import { FileText, GripVertical, ImagePlus, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
@@ -72,11 +72,30 @@ export default function ResumeCanvas({
     const [dragOverFragmentKey, setDragOverFragmentKey] = useState<string | null>(null);
     const [dragOverPosition, setDragOverPosition] = useState<"before" | "after" | null>(null);
     const [zoomLevel, setZoomLevel] = useState<number>(100);
+    const [fitToWidth, setFitToWidth] = useState(readOnly);
     const [pendingDeleteBlockId, setPendingDeleteBlockId] = useState<string | null>(null);
     const [profilePhotoMenu, setProfilePhotoMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
     const [pagePlacements, setPagePlacements] = useState<BlockPlacement[][]>(() => getInitialPlacements(blocks));
     const scrollContainerRef = useRef<HTMLElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
+    const zoomLevelRef = useRef(zoomLevel);
+    const zoomLabelRef = useRef<HTMLSpanElement>(null);
+    const publicTouchGestureRef = useRef<
+        | { mode: "pan"; lastX: number; lastY: number }
+        | {
+            mode: "pinch";
+            startDistance: number;
+            startZoom: number;
+            currentZoom: number;
+            focalX: number;
+            focalY: number;
+            startCenterX: number;
+            startCenterY: number;
+            currentCenterX: number;
+            currentCenterY: number;
+        }
+        | null
+    >(null);
     const paginationFrameRef = useRef<number | null>(null);
     const dragScrollFrameRef = useRef<number | null>(null);
     const dragClientYRef = useRef<number | null>(null);
@@ -124,9 +143,187 @@ export default function ResumeCanvas({
         "--resume-block-gap": `${globalStyle?.blockGap ?? 18}px`,
     } as React.CSSProperties;
 
-    const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 10, 150));
-    const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 10, 50));
-    const handleZoomReset = () => setZoomLevel(100);
+    const fitCanvasToWidth = useCallback(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const paperWidth = globalStyle?.contentWidth || 800;
+        const horizontalPadding = container.clientWidth < 768 ? 16 : 64;
+        const nextZoom = Math.floor(((container.clientWidth - horizontalPadding) / paperWidth) * 100);
+        setZoomLevel(Math.max(25, Math.min(nextZoom, 100)));
+        container.scrollLeft = 0;
+    }, [globalStyle?.contentWidth]);
+
+    useLayoutEffect(() => {
+        if (!readOnly || !fitToWidth) return;
+
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        fitCanvasToWidth();
+        const resizeObserver = new ResizeObserver(fitCanvasToWidth);
+        resizeObserver.observe(container);
+        return () => resizeObserver.disconnect();
+    }, [fitCanvasToWidth, fitToWidth, readOnly]);
+
+    const minimumZoom = readOnly ? 25 : 50;
+    useEffect(() => {
+        zoomLevelRef.current = zoomLevel;
+    }, [zoomLevel]);
+
+    useEffect(() => {
+        if (!readOnly) return;
+
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const getDistance = (touches: TouchList) => Math.hypot(
+            touches[1].clientX - touches[0].clientX,
+            touches[1].clientY - touches[0].clientY,
+        );
+        const getCenter = (touches: TouchList) => ({
+            x: (touches[0].clientX + touches[1].clientX) / 2,
+            y: (touches[0].clientY + touches[1].clientY) / 2,
+        });
+
+        const startPinch = (touches: TouchList) => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+
+            const center = getCenter(touches);
+            const rect = canvas.getBoundingClientRect();
+            const renderedScale = zoomLevelRef.current / 100;
+            const focalX = (center.x - rect.left) / renderedScale;
+            const focalY = (center.y - rect.top) / renderedScale;
+            canvas.style.transformOrigin = `${focalX}px ${focalY}px`;
+            canvas.style.willChange = "transform";
+            publicTouchGestureRef.current = {
+                mode: "pinch",
+                startDistance: Math.max(getDistance(touches), 1),
+                startZoom: zoomLevelRef.current,
+                currentZoom: zoomLevelRef.current,
+                focalX,
+                focalY,
+                startCenterX: center.x,
+                startCenterY: center.y,
+                currentCenterX: center.x,
+                currentCenterY: center.y,
+            };
+            setFitToWidth(false);
+        };
+
+        const handleTouchStart = (event: TouchEvent) => {
+            if ((event.target as HTMLElement).closest("button, a")) return;
+
+            if (event.touches.length >= 2) {
+                event.preventDefault();
+                startPinch(event.touches);
+                return;
+            }
+
+            const touch = event.touches[0];
+            if (touch) {
+                publicTouchGestureRef.current = {
+                    mode: "pan",
+                    lastX: touch.clientX,
+                    lastY: touch.clientY,
+                };
+            }
+        };
+
+        const handleTouchMove = (event: TouchEvent) => {
+            if (event.touches.length >= 2) {
+                event.preventDefault();
+                if (publicTouchGestureRef.current?.mode !== "pinch") startPinch(event.touches);
+
+                const gesture = publicTouchGestureRef.current;
+                if (gesture?.mode !== "pinch") return;
+
+                const nextZoom = Math.max(
+                    minimumZoom,
+                    Math.min(Math.round(gesture.startZoom * (getDistance(event.touches) / gesture.startDistance)), 150),
+                );
+                const center = getCenter(event.touches);
+                gesture.currentZoom = nextZoom;
+                gesture.currentCenterX = center.x;
+                gesture.currentCenterY = center.y;
+                zoomLevelRef.current = nextZoom;
+                if (canvasRef.current) {
+                    const previewScale = nextZoom / gesture.startZoom;
+                    const baseScale = gesture.startZoom / 100;
+                    const translateX = (center.x - gesture.startCenterX) / baseScale;
+                    const translateY = (center.y - gesture.startCenterY) / baseScale;
+                    canvasRef.current.style.transform = `translate3d(${translateX}px, ${translateY}px, 0) scale(${previewScale})`;
+                }
+                if (zoomLabelRef.current) zoomLabelRef.current.textContent = `${nextZoom}%`;
+                return;
+            }
+
+            const touch = event.touches[0];
+            const gesture = publicTouchGestureRef.current;
+            if (!touch || gesture?.mode !== "pan") return;
+
+            event.preventDefault();
+            container.scrollLeft -= touch.clientX - gesture.lastX;
+            container.scrollTop -= touch.clientY - gesture.lastY;
+            gesture.lastX = touch.clientX;
+            gesture.lastY = touch.clientY;
+        };
+
+        const handleTouchEnd = (event: TouchEvent) => {
+            const gesture = publicTouchGestureRef.current;
+            if (gesture?.mode === "pinch") {
+                const canvas = canvasRef.current;
+                if (canvas) {
+                    canvas.style.zoom = String(gesture.currentZoom / 100);
+                    canvas.style.transform = "none";
+                    canvas.style.willChange = "auto";
+
+                    const committedScale = gesture.currentZoom / 100;
+                    const committedRect = canvas.getBoundingClientRect();
+                    const focalClientX = committedRect.left + gesture.focalX * committedScale;
+                    const focalClientY = committedRect.top + gesture.focalY * committedScale;
+                    container.scrollLeft += focalClientX - gesture.currentCenterX;
+                    container.scrollTop += focalClientY - gesture.currentCenterY;
+                    canvas.style.transformOrigin = "top center";
+                }
+                setZoomLevel(gesture.currentZoom);
+            }
+
+            const touch = event.touches[0];
+            publicTouchGestureRef.current = touch
+                ? { mode: "pan", lastX: touch.clientX, lastY: touch.clientY }
+                : null;
+        };
+
+        container.addEventListener("touchstart", handleTouchStart, { passive: false });
+        container.addEventListener("touchmove", handleTouchMove, { passive: false });
+        container.addEventListener("touchend", handleTouchEnd, { passive: false });
+        container.addEventListener("touchcancel", handleTouchEnd, { passive: false });
+        return () => {
+            container.removeEventListener("touchstart", handleTouchStart);
+            container.removeEventListener("touchmove", handleTouchMove);
+            container.removeEventListener("touchend", handleTouchEnd);
+            container.removeEventListener("touchcancel", handleTouchEnd);
+        };
+    }, [minimumZoom, readOnly]);
+
+    const handleZoomIn = () => {
+        setFitToWidth(false);
+        setZoomLevel((prev) => Math.min(prev + 10, 150));
+    };
+    const handleZoomOut = () => {
+        setFitToWidth(false);
+        setZoomLevel((prev) => Math.max(prev - 10, minimumZoom));
+    };
+    const handleZoomReset = () => {
+        if (readOnly) {
+            setFitToWidth(true);
+            fitCanvasToWidth();
+            return;
+        }
+        setZoomLevel(100);
+    };
 
     const handleProfilePhotoUpload = async (block: ResumeBlock | undefined, file?: File) => {
         if (!file || !block || block.type !== "profile") return;
@@ -1622,16 +1819,23 @@ export default function ResumeCanvas({
             ref={scrollContainerRef}
             onClick={() => setSelectedBlockId(null)}
             onDragOver={handleCanvasDragOver}
-            className={`editor-canvas flex-1 bg-[#444444] overflow-y-auto p-8 flex justify-center cursor-default relative${readOnly ? " resume-canvas--readonly" : ""}`}
+            className={`editor-canvas flex-1 bg-[#444444] overflow-auto p-8 flex ${readOnly ? "items-start" : "justify-center"} cursor-default relative${readOnly ? " resume-canvas--readonly" : ""}`}
         >
             <div
                 ref={canvasRef}
-                style={{
+                style={readOnly ? {
+                    width: `${globalStyle?.contentWidth || 800}px`,
+                    zoom: zoomLevel / 100,
+                    marginInline: "auto",
+                    transformOrigin: "top center",
+                    backfaceVisibility: "hidden",
+                } : {
+                    width: "100%",
                     transform: `scale(${zoomLevel / 100})`,
                     transformOrigin: "top center",
                     transition: "transform 0.15s ease-out",
                 }}
-                className="w-full flex flex-col items-center gap-10 pb-36"
+                className="resume-canvas-pages flex flex-col items-center gap-10 pb-36"
             >
                 {/* 실제 A4 시트 단위 분할 렌더링 */}
                 {pages.map((page) => (
@@ -1789,25 +1993,27 @@ export default function ResumeCanvas({
 
             {/* 캔버스 우측 하단 줌 컨트롤 바 */}
             <div
-                className="editor-zoom-controls no-print fixed bottom-6 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40"
-                style={{ right: 'calc(clamp(380px, 30vw, 480px) + 1.5rem)' }}
+                className={`editor-zoom-controls no-print fixed bottom-6 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40${readOnly ? " public-resume-zoom-controls" : ""}`}
+                style={readOnly ? undefined : { right: 'calc(clamp(380px, 30vw, 480px) + 1.5rem)' }}
             >
                 <button
                     onClick={handleZoomOut}
-                    disabled={zoomLevel <= 50}
+                    disabled={zoomLevel <= minimumZoom}
                     className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                    data-tooltip="축소"
+                    data-tooltip={readOnly ? undefined : "축소"}
+                    aria-label="축소"
                 >
                     <ZoomOut size={14} />
                 </button>
-                <span className="text-[11px] font-mono font-medium text-neutral-300 min-w-[36px] text-center select-none">
+                <span ref={zoomLabelRef} className="text-[11px] font-mono font-medium text-neutral-300 min-w-[36px] text-center select-none">
                     {zoomLevel}%
                 </span>
                 <button
                     onClick={handleZoomIn}
                     disabled={zoomLevel >= 150}
                     className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                    data-tooltip="확대"
+                    data-tooltip={readOnly ? undefined : "확대"}
+                    aria-label="확대"
                 >
                     <ZoomIn size={14} />
                 </button>
@@ -1815,7 +2021,8 @@ export default function ResumeCanvas({
                 <button
                     onClick={handleZoomReset}
                     className="p-1 text-neutral-400 hover:text-white transition"
-                    data-tooltip="100%로 리셋"
+                    data-tooltip={readOnly ? undefined : "100%로 리셋"}
+                    aria-label={readOnly ? "화면 너비에 맞춤" : "100%로 리셋"}
                 >
                     <RotateCcw size={12} />
                 </button>
