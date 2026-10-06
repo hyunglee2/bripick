@@ -1,14 +1,16 @@
 import { Client } from "ssh2";
 
 const archivePath = process.argv[2];
+const environmentPath = process.argv[3];
 const password = process.env.BRIPICK_DEPLOY_PASSWORD;
 
-if (!archivePath || !password) {
-  console.error("Deployment archive or password is missing.");
+if (!archivePath || !environmentPath || !password) {
+  console.error("Deployment archive, environment file, or password is missing.");
   process.exit(1);
 }
 
 const remoteArchive = "/home/bobf/bripick-deploy.tar.gz";
+const remoteEnvironment = "/home/bobf/bripick-deploy.env";
 const remoteScript = "/home/bobf/deploy-bripick.sh";
 const expectedHostHash =
   "0c6aa8bc4fe8a5460e670a83433e1d8ccfb9fc2193f06e5a572948d9e4258982";
@@ -24,6 +26,14 @@ function openSftp() {
 function upload(sftp, localPath, remotePath) {
   return new Promise((resolve, reject) => {
     sftp.fastPut(localPath, remotePath, (error) =>
+      error ? reject(error) : resolve(),
+    );
+  });
+}
+
+function chmod(sftp, path, mode) {
+  return new Promise((resolve, reject) => {
+    sftp.chmod(path, mode, (error) =>
       error ? reject(error) : resolve(),
     );
   });
@@ -67,13 +77,17 @@ connection
     const sftp = await openSftp();
     try {
       await upload(sftp, archivePath, remoteArchive);
+      await upload(sftp, environmentPath, remoteEnvironment);
+      await chmod(sftp, remoteEnvironment, 0o600);
       await upload(sftp, "scripts/deploy-bripick.sh", remoteScript);
       await runDeployment();
       await removeRemoteFile(sftp, remoteScript);
+      await removeRemoteFile(sftp, remoteEnvironment);
       connection.end();
     } catch (error) {
       await removeRemoteFile(sftp, remoteArchive);
       await removeRemoteFile(sftp, remoteScript);
+      await removeRemoteFile(sftp, remoteEnvironment);
       connection.end();
       console.error(error instanceof Error ? error.message : error);
       process.exitCode = 1;

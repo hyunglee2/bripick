@@ -2984,7 +2984,18 @@ summary[data-tooltip],
   font-size: 13px;
 }
 
-.public-resume-header img { width: 112px; height: auto; }
+.public-resume-home-link {
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.public-resume-home-link:focus-visible {
+  outline: 2px solid #6392ff;
+  outline-offset: 4px;
+}
+
+.public-resume-home-link img { width: 112px; height: auto; }
 .resume-canvas--readonly .resume-paper { pointer-events: none; }
 .resume-canvas--readonly .no-print,
 .resume-canvas--readonly [data-tooltip] { display: none !important; }

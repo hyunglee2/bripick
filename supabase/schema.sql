@@ -9,6 +9,11 @@ create table if not exists public.published_resumes (
 
 alter table public.published_resumes enable row level security;
 
+-- 새 테이블 자동 노출을 끈 프로젝트에서는 Data API 역할의 테이블 권한을
+-- 직접 부여해야 합니다. 실제 행 접근 범위는 아래 RLS 정책이 제한합니다.
+grant select on table public.published_resumes to anon, authenticated;
+grant insert, update, delete on table public.published_resumes to authenticated;
+
 drop policy if exists "published resumes are publicly readable" on public.published_resumes;
 create policy "published resumes are publicly readable"
 on public.published_resumes for select using (true);

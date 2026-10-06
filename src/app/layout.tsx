@@ -1,32 +1,40 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import {
+  OPEN_GRAPH_IMAGE,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_URL,
+} from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://coreluma.kr"),
-  title: "Bripick - 모듈식 이력서 빌더",
-  description: "Next.js 기반 고성능 인터랙티브 이력서 제작기",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: ["개발자 이력서", "이력서 빌더", "개발자 포트폴리오", "경력기술서"],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Bripick - 모듈식 이력서 빌더",
-    description: "Next.js 기반 고성능 인터랙티브 이력서 제작기",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     url: "/",
-    siteName: "Bripick",
+    siteName: SITE_NAME,
     locale: "ko_KR",
     type: "website",
-    images: [
-      {
-        url: "/opengraph-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Bripick 모듈식 이력서 빌더",
-      },
-    ],
+    images: [OPEN_GRAPH_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Bripick - 모듈식 이력서 빌더",
-    description: "Next.js 기반 고성능 인터랙티브 이력서 제작기",
-    images: ["/opengraph-image.png"],
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OPEN_GRAPH_IMAGE.url],
   },
 };
 
