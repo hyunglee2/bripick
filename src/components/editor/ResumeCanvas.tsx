@@ -1245,6 +1245,7 @@ export default function ResumeCanvas({
                                                                         >
                                                                             <RichTextEditable
                                                                                 html={project.descriptionHtml?.[descriptionIndex] || escapeHtml(description)}
+                                                                                readOnly={readOnly}
                                                                                 ariaLabel="프로젝트 기여와 성과"
                                                                                 className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
                                                                                 onKeyDown={(event) => {
@@ -1408,6 +1409,7 @@ export default function ResumeCanvas({
                                                                 >
                                                                     <RichTextEditable
                                                                         html={bulletHtml}
+                                                                        readOnly={readOnly}
                                                                         ariaLabel="프로젝트 성과"
                                                                         className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
                                                                         onKeyDown={(event) => {
@@ -1721,6 +1723,7 @@ export default function ResumeCanvas({
                                                             {richTextToPlainText(descriptionHtml).trim() ? (
                                                                 <RichTextEditable
                                                                     html={descriptionHtml}
+                                                                    readOnly={readOnly}
                                                                     ariaLabel={`기타 경험 성과 ${descriptionIndex + 1}`}
                                                                     className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
                                                                     onChange={(nextHtml) => {

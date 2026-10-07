@@ -1302,7 +1302,6 @@ export default function InspectorPanel() {
                                             highlights,
                                         })}
                                         maxLevel={1}
-                                        allowBold={false}
                                         placeholder="핵심 경험이나 강점을 입력하세요"
                                         ariaLabel="자기소개 불렛 목록"
                                     />
@@ -1541,7 +1540,6 @@ export default function InspectorPanel() {
                                                                 description,
                                                             )}
                                                             maxLevel={1}
-                                                            allowBold={false}
                                                             placeholder="주요 업무와 성과를 입력하세요"
                                                             ariaLabel="회사 소개 및 주요 성과 불렛 목록"
                                                         />
@@ -2340,7 +2338,6 @@ export default function InspectorPanel() {
                                         content: content.join("\n"),
                                     })}
                                     maxLevel={1}
-                                    allowBold={false}
                                     placeholder="추가 정보를 입력하세요"
                                     ariaLabel="추가 정보 불렛 목록"
                                 />

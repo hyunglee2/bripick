@@ -23,6 +23,8 @@ export function sanitizeInlineRichText(value: string) {
         .replace(/<\s*\/\s*b\s*>/gi, "</strong>")
         .replace(/<\s*strong(?:\s[^>]*)?>/gi, "<strong>")
         .replace(/<\s*\/\s*strong\s*>/gi, "</strong>")
+        .replace(/<\s*u(?:\s[^>]*)?>/gi, "<u>")
+        .replace(/<\s*\/\s*u\s*>/gi, "</u>")
         .replace(/<\s*a\b([^>]*)>/gi, (_tag, attributes: string) => {
             const hrefMatch = attributes.match(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
             const href = sanitizeHref(hrefMatch?.[1] || hrefMatch?.[2] || hrefMatch?.[3] || "");
@@ -30,7 +32,7 @@ export function sanitizeInlineRichText(value: string) {
         })
         .replace(/<\s*\/\s*a\s*>/gi, "</a>")
         .replace(/<\s*br\s*\/?>/gi, "<br>")
-        .replace(/<(?!\/?strong\b|\/?a\b|br\b)[^>]*>/gi, "");
+        .replace(/<(?!\/?strong\b|\/?u\b|\/?a\b|br\b)[^>]*>/gi, "");
 }
 
 export function richTextToPlainText(value: string) {

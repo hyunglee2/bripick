@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
+import RichTextBubbleToolbar from "@/components/editor/RichTextBubbleToolbar";
 
 type ProjectBulletDocumentEditorProps = {
     descriptions: string[];
@@ -219,6 +220,7 @@ export default function ProjectBulletDocumentEditor({
     }, [descriptions, levels, html, onChange]);
 
     return (
+        <>
         <div
             ref={editorRef}
             contentEditable
@@ -245,6 +247,18 @@ export default function ProjectBulletDocumentEditor({
                 const target = event.target as HTMLElement;
                 setActiveContent(target.closest<HTMLElement>("[data-project-bullet-content]"));
             }}
+            onClick={(event) => {
+                const target = event.target as HTMLElement;
+                const anchor = target.closest<HTMLAnchorElement>("a");
+                if (!anchor || !editorRef.current?.contains(anchor)) return;
+                event.preventDefault();
+                const range = document.createRange();
+                range.selectNodeContents(anchor);
+                const selection = window.getSelection();
+                selection?.removeAllRanges();
+                selection?.addRange(range);
+                editorRef.current.dispatchEvent(new CustomEvent("open-rich-text-link"));
+            }}
             onPaste={handlePaste}
             onInput={readDocument}
             onBlur={() => {
@@ -263,6 +277,18 @@ export default function ProjectBulletDocumentEditor({
                 if (allowBold && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
                     event.preventDefault();
                     document.execCommand("bold");
+                    readDocument();
+                    return;
+                }
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "u") {
+                    event.preventDefault();
+                    document.execCommand("underline");
+                    readDocument();
+                    return;
+                }
+                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+                    event.preventDefault();
+                    editorRef.current?.dispatchEvent(new CustomEvent("open-rich-text-link"));
                     return;
                 }
                 if (event.key === "Tab" || event.code === "Tab") {
@@ -299,5 +325,11 @@ export default function ProjectBulletDocumentEditor({
                 }
             }}
         />
+        <RichTextBubbleToolbar
+            editorRef={editorRef}
+            onFormat={readDocument}
+            allowBold={allowBold}
+        />
+        </>
     );
 }

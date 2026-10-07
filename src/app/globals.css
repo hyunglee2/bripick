@@ -1182,6 +1182,7 @@ body,
   border-radius: 4px;
   color: #e5e7eb;
   font-size: 12px;
+  font-weight: 400;
   line-height: 18px;
   outline: none;
   white-space: pre-wrap;
@@ -3065,6 +3066,10 @@ summary[data-tooltip],
   pointer-events: none;
 }
 
+.resume-canvas--readonly .resume-paper a {
+  pointer-events: auto;
+}
+
 .resume-canvas--readonly .no-print,
 .resume-canvas--readonly [data-tooltip] {
   display: none !important;
@@ -3087,4 +3092,133 @@ summary[data-tooltip],
   background: #12131a;
   color: #a1a1aa;
   font-size: 14px;
+}
+
+.project-bullet-editor__content strong {
+  color: inherit;
+  font-weight: 800;
+}
+
+.project-bullet-editor__content u {
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.project-bullet-editor__content a {
+  color: inherit;
+  font-weight: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rich-text-bubble-toolbar {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 1px solid #363b46;
+  border-radius: 9px;
+  background: #17191f;
+  color: #f5f5f5;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  transform: translate(-50%, -100%);
+}
+
+.rich-text-bubble-toolbar>button {
+  display: inline-flex;
+  width: 28px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  color: #d4d4d8;
+  background: transparent;
+}
+
+.rich-text-bubble-toolbar>button:hover,
+.rich-text-bubble-toolbar>button:focus-visible {
+  color: #fff;
+  background: #2b3039;
+  outline: none;
+}
+
+.rich-text-bubble-toolbar__link-form {
+  display: flex;
+  width: 290px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+  padding: 7px;
+}
+
+.rich-text-bubble-toolbar__link-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #a1a1aa;
+  font-size: 11px;
+}
+
+.rich-text-bubble-toolbar__link-form input {
+  width: 100%;
+  height: 27px;
+  padding: 0 8px;
+  border: 1px solid #3f4653;
+  border-radius: 5px;
+  outline: none;
+  background: #0f1116;
+  color: #f5f5f5;
+  font-size: 12px;
+}
+
+.rich-text-bubble-toolbar__link-form input:focus {
+  border-color: var(--brand-primary);
+}
+
+.rich-text-bubble-toolbar__link-form button {
+  height: 27px;
+  padding: 0 8px;
+  border-radius: 5px;
+  color: #d4d4d8;
+  font-size: 11px;
+  background: #2b3039;
+}
+
+.rich-text-bubble-toolbar__link-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  padding-top: 2px;
+  border-top: 1px solid #30343d;
+}
+
+.rich-text-bubble-toolbar__link-form button:hover {
+  color: #fff;
+  background: #3a414d;
+}
+
+.project-bullet-editor__content a,
+.resume-rich-bullet a,
+[data-project-bullet-editor] a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.project-bullet-editor__content a::after,
+.resume-rich-bullet a::after,
+[data-project-bullet-editor] a::after {
+  content: " 링크 ↗";
+  display: inline-block;
+  margin-left: 3px;
+  color: var(--resume-blue, #60a5fa);
+  font-size: 0.78em;
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
 }
