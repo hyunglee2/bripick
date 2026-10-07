@@ -48,6 +48,10 @@ const DEFAULT_GLOBAL_STYLE = {
 
 export default function InspectorPanel() {
     const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
+    const selectedBlockItemId = useResumeStore((state) => state.selectedBlockItemId);
+    const selectedBlockSubItemId = useResumeStore((state) => state.selectedBlockSubItemId);
+    const setSelectedBlockItemId = useResumeStore((state) => state.setSelectedBlockItemId);
+    const setSelectedBlockSubItemId = useResumeStore((state) => state.setSelectedBlockSubItemId);
     const blocks = useResumeStore((state) => state.resume.blocks);
     const globalStyle = useResumeStore((state) => state.resume.globalStyle);
     const updateGlobalStyle = useResumeStore((state) => state.updateGlobalStyle);
@@ -62,27 +66,32 @@ export default function InspectorPanel() {
     const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
     const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
     const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
-    const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
     const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
     const [editingCertificationId, setEditingCertificationId] = useState<string | null>(null);
-    const [expandedExperienceProjectId, setExpandedExperienceProjectId] = useState<string | null>(null);
     const blockPanelRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
         blockPanelRef.current?.scrollTo({ top: 0 });
-        setEditingExperienceId(null);
         setEditingEducationId(null);
         setEditingCertificationId(null);
-        setExpandedExperienceProjectId(null);
     }, [selectedBlockId]);
 
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
     const currentBlock = blocks[currentIndex];
+    const editingExperienceId = currentBlock?.type === "experience" ? selectedBlockItemId : null;
+    const setEditingExperienceId = setSelectedBlockItemId;
+    const expandedExperienceProjectId = currentBlock?.type === "experience"
+        ? selectedBlockSubItemId
+        : null;
+    const setExpandedExperienceProjectId = setSelectedBlockSubItemId;
     const profileContacts = currentBlock?.type === "profile"
         ? getProfileContacts(currentBlock.data as ProfileData)
         : [];
     const editingExperience = currentBlock?.type === "experience" && Array.isArray(currentBlock.data)
         ? currentBlock.data.find((experience: any) => experience.id === editingExperienceId)
+        : undefined;
+    const editingExperienceProject = editingExperience && Array.isArray(editingExperience.projects)
+        ? editingExperience.projects.find((project: any) => project.id === expandedExperienceProjectId)
         : undefined;
     const editingEducation = currentBlock?.type === "education" && Array.isArray(currentBlock.data)
         ? currentBlock.data.find((education: any) => education.id === editingEducationId)
@@ -795,18 +804,27 @@ export default function InspectorPanel() {
                                 type="button"
                                 className="inspector-heading__back"
                                 onClick={() => {
+                                    if (editingExperienceProject) {
+                                        setExpandedExperienceProjectId(null);
+                                        blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                        return;
+                                    }
                                     setEditingExperienceId(null);
                                     setEditingEducationId(null);
                                     setEditingCertificationId(null);
                                     setExpandedExperienceProjectId(null);
                                     blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                                 }}
-                                data-tooltip={editingExperience
+                                data-tooltip={editingExperienceProject
+                                    ? "회사 설정으로 돌아가기"
+                                    : editingExperience
                                     ? "경력(회사) 목록으로 돌아가기"
                                     : editingEducation
                                         ? "학력 목록으로 돌아가기"
                                         : "기타 경험 목록으로 돌아가기"}
-                                aria-label={editingExperience
+                                aria-label={editingExperienceProject
+                                    ? "회사 설정으로 돌아가기"
+                                    : editingExperience
                                     ? "경력(회사) 목록으로 돌아가기"
                                     : editingEducation
                                         ? "학력 목록으로 돌아가기"
@@ -815,11 +833,13 @@ export default function InspectorPanel() {
                                 <ChevronLeft size={14} />
                             </button>
                             <span>
-                                {editingExperience
-                                    ? `${editingExperience.company || "회사명 없음"} 편집`
+                                {editingExperienceProject
+                                    ? (editingExperienceProject.title || "제목 없는 프로젝트")
+                                    : editingExperience
+                                    ? (editingExperience.company || "회사명 없음")
                                     : editingEducation
-                                        ? `${editingEducation.school || "학교명 없음"} 편집`
-                                        : `${editingCertification?.title || "활동명 없음"} 편집`}
+                                        ? (editingEducation.school || "학교명 없음")
+                                        : (editingCertification?.title || "활동명 없음")}
                             </span>
                         </div>
                     </div>
@@ -1378,7 +1398,75 @@ export default function InspectorPanel() {
                                             </div>
                                         )}
 
-                                        {editingExperience?.id === exp.id && (
+                                        {editingExperience?.id === exp.id && editingExperienceProject && (
+                                            <div className="inspector-project-card__body">
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
+                                                    <input
+                                                        value={editingExperienceProject.title || ""}
+                                                        placeholder="프로젝트명"
+                                                        onChange={(event) => handleUpdateExperienceProject(exp.id, editingExperienceProject.id, { title: event.target.value })}
+                                                        className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-field-label block">역할 / 프로젝트 소개</label>
+                                                    <input
+                                                        value={editingExperienceProject.role || ""}
+                                                        placeholder="담당 역할 또는 프로젝트 소개"
+                                                        onChange={(event) => handleUpdateExperienceProject(exp.id, editingExperienceProject.id, { role: event.target.value })}
+                                                        className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+                                                <div className="inspector-project-card__dates">
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">시작일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                        <input
+                                                            value={editingExperienceProject.startDate || ""}
+                                                            placeholder="예: 2024.01"
+                                                            onChange={(event) => handleUpdateExperienceProject(exp.id, editingExperienceProject.id, { startDate: event.target.value })}
+                                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">종료일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                        <input
+                                                            value={editingExperienceProject.endDate || ""}
+                                                            placeholder="예: 진행 중"
+                                                            onChange={(event) => handleUpdateExperienceProject(exp.id, editingExperienceProject.id, { endDate: event.target.value })}
+                                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="inspector-field inspector-project-card__bullets">
+                                                    <div>
+                                                        <label className="inspector-label-inset inspector-field-label block">기여/성과</label>
+                                                        <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
+                                                            <span><Kbd>Enter</Kbd> 새 불릿</span>
+                                                            <span><Kbd>Tab</Kbd> 들여쓰기</span>
+                                                            <span>
+                                                                <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
+                                                                볼드
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <ProjectBulletDocumentEditor
+                                                        descriptions={editingExperienceProject.description || []}
+                                                        levels={editingExperienceProject.descriptionLevels || []}
+                                                        html={editingExperienceProject.descriptionHtml || []}
+                                                        onChange={(description, descriptionLevels, descriptionHtml) => (
+                                                            handleUpdateExperienceProject(exp.id, editingExperienceProject.id, {
+                                                                description,
+                                                                descriptionLevels,
+                                                                descriptionHtml,
+                                                            })
+                                                        )}
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {editingExperience?.id === exp.id && !editingExperienceProject && (
                                             <div className="inspector-project-card__body">
 
                                                 <div className="inspector-field">
@@ -1485,16 +1573,16 @@ export default function InspectorPanel() {
                                                                 <button
                                                                     type="button"
                                                                     className="inspector-project-card__toggle"
-                                                                    onClick={() => setExpandedExperienceProjectId((current) => (
-                                                                        current === project.id ? null : project.id
-                                                                    ))}
-                                                                    aria-expanded={expandedExperienceProjectId === project.id}
+                                                                    onClick={() => {
+                                                                        setExpandedExperienceProjectId(project.id);
+                                                                        blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                                    }}
                                                                 >
                                                                     <span className="inspector-project-card__summary-copy">
                                                                         <strong>{project.title || "제목 없는 프로젝트"}</strong>
                                                                     </span>
                                                                     <span className="inspector-project-card__edit-action" aria-hidden="true">
-                                                                        {expandedExperienceProjectId === project.id ? "접기" : "편집"}
+                                                                        편집
                                                                     </span>
                                                                 </button>
                                                                 <details className="inspector-contact-menu inspector-project-menu">

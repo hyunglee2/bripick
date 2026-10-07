@@ -1067,6 +1067,12 @@ body,
   gap: var(--inspector-section-gap);
 }
 
+/* 목록 끝에서 연 더보기 메뉴가 스크롤 컨테이너 아래에 잘리지 않도록
+   팝오버 높이만큼 스크롤 가능한 여유 공간을 둡니다. */
+.inspector-panel--block .inspector-panel-stack {
+  padding-bottom: 100px;
+}
+
 .inspector-panel .inspector-heading {
   position: sticky;
   z-index: 20;

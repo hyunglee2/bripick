@@ -54,6 +54,7 @@ export default function ResumeCanvas({
     const storedGlobalStyle = useResumeStore((state) => state.resume.globalStyle);
     const storedSelectedBlockId = useResumeStore((state) => state.selectedBlockId);
     const storeSetSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
+    const storeSetSelectedBlockSelection = useResumeStore((state) => state.setSelectedBlockSelection);
     const storeUpdateBlockData = useResumeStore((state) => state.updateBlockData);
     const storeUpdateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
     const storeReorderBlocks = useResumeStore((state) => state.reorderBlocks);
@@ -62,6 +63,7 @@ export default function ResumeCanvas({
     const globalStyle = resumeOverride?.globalStyle ?? storedGlobalStyle;
     const selectedBlockId = readOnly ? null : storedSelectedBlockId;
     const setSelectedBlockId = readOnly ? (() => undefined) : storeSetSelectedBlockId;
+    const setSelectedBlockSelection = readOnly ? (() => undefined) : storeSetSelectedBlockSelection;
     const updateBlockData = readOnly ? (() => undefined) : storeUpdateBlockData;
     const updateBlockTitle = readOnly ? (() => undefined) : storeUpdateBlockTitle;
     const reorderBlocks = readOnly ? (() => undefined) : storeReorderBlocks;
@@ -1046,7 +1048,12 @@ export default function ResumeCanvas({
                                     .map((exp: any, localIndex: number) => {
                                         const expIndex = (placement.itemStart ?? 0) + localIndex;
                                         return (
-                                            <div key={exp.id} data-pagination-item-index={expIndex} className="resume-experience-item space-y-1">
+                                            <div
+                                                key={exp.id}
+                                                data-pagination-item-index={expIndex}
+                                                data-resume-child-id={exp.id}
+                                                className="resume-experience-item space-y-1"
+                                            >
                                                 {!isDescriptionContinuation && !isExperienceProjectContinuation && <div className="resume-experience-company-header">
                                                     <div className="resume-experience-company-identity">
                                                         <EditableText
@@ -1169,6 +1176,7 @@ export default function ResumeCanvas({
                                                             return <div
                                                                 key={project.id}
                                                                 data-experience-project-index={projectIndex}
+                                                                data-resume-sub-child-id={project.id}
                                                                 className="resume-experience-project"
                                                             >
                                                                 <div className="resume-experience-project__header">
@@ -1887,9 +1895,26 @@ export default function ResumeCanvas({
                                         onDragOver={(e) => handleDragOver(e, globalIdx, fragmentKey)}
                                         onDrop={(e) => handleDrop(e, globalIdx)}
                                         onDragEnd={handleDragEnd}
-                                        onPointerDownCapture={() => setSelectedBlockId(block.id)}
-                                        onFocusCapture={() => setSelectedBlockId(block.id)}
-                                        onClick={() => setSelectedBlockId(block.id)}
+                                        onPointerDownCapture={(event) => {
+                                            const target = event.target as HTMLElement;
+                                            const child = target.closest<HTMLElement>("[data-resume-child-id]");
+                                            const subChild = target.closest<HTMLElement>("[data-resume-sub-child-id]");
+                                            setSelectedBlockSelection(
+                                                block.id,
+                                                child?.dataset.resumeChildId ?? null,
+                                                subChild?.dataset.resumeSubChildId ?? null,
+                                            );
+                                        }}
+                                        onFocusCapture={(event) => {
+                                            const target = event.target as HTMLElement;
+                                            const child = target.closest<HTMLElement>("[data-resume-child-id]");
+                                            const subChild = target.closest<HTMLElement>("[data-resume-sub-child-id]");
+                                            setSelectedBlockSelection(
+                                                block.id,
+                                                child?.dataset.resumeChildId ?? null,
+                                                subChild?.dataset.resumeSubChildId ?? null,
+                                            );
+                                        }}
                                         style={{
                                             ...(block.style.useCustomPadding
                                                 ? {

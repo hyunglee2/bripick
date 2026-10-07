@@ -13,6 +13,8 @@ interface ResumeState {
     resume: ResumeDocument;
     resumeList: ResumeDocument[]; // 저장된 전체 이력서 목록
     selectedBlockId: string | null;
+    selectedBlockItemId: string | null;
+    selectedBlockSubItemId: string | null;
 
     // Undo / Redo 스택
     past: ResumeDocument[];
@@ -20,6 +22,11 @@ interface ResumeState {
 
     // Actions
     setSelectedBlockId: (id: string | null) => void;
+    setSelectedBlockSelection: (blockId: string | null, itemId?: string | null, subItemId?: string | null) => void;
+    setSelectedBlockItemId: (id: string | null) => void;
+    setSelectedBlockSubItemId: (
+        value: string | null | ((current: string | null) => string | null)
+    ) => void;
     addBlock: (type: BlockType) => void;
     removeBlock: (blockId: string) => void;
     updateBlockTitle: (blockId: string, title: string) => void;
@@ -192,10 +199,30 @@ export const useResumeStore = create<ResumeState>()(
             resume: initialSampleResume,
             resumeList: [initialSampleResume],
             selectedBlockId: "block-p-1",
+            selectedBlockItemId: null,
+            selectedBlockSubItemId: null,
             past: [],
             future: [],
 
-            setSelectedBlockId: (id) => set({ selectedBlockId: id }),
+            setSelectedBlockId: (id) => set({
+                selectedBlockId: id,
+                selectedBlockItemId: null,
+                selectedBlockSubItemId: null,
+            }),
+            setSelectedBlockSelection: (blockId, itemId = null, subItemId = null) => set({
+                selectedBlockId: blockId,
+                selectedBlockItemId: itemId,
+                selectedBlockSubItemId: subItemId,
+            }),
+            setSelectedBlockItemId: (id) => set({
+                selectedBlockItemId: id,
+                selectedBlockSubItemId: null,
+            }),
+            setSelectedBlockSubItemId: (value) => set((state) => ({
+                selectedBlockSubItemId: typeof value === "function"
+                    ? value(state.selectedBlockSubItemId)
+                    : value,
+            })),
 
             addBlock: (type) =>
                 set((state) => {
@@ -322,6 +349,8 @@ export const useResumeStore = create<ResumeState>()(
                         resume: newResume,
                         resumeList: syncList(state.resumeList, newResume),
                         selectedBlockId: newBlockId,
+                        selectedBlockItemId: null,
+                        selectedBlockSubItemId: null,
                     };
                 }),
             removeBlock: (blockId) =>
@@ -339,6 +368,10 @@ export const useResumeStore = create<ResumeState>()(
                         resumeList: syncList(state.resumeList, newResume),
                         selectedBlockId:
                             state.selectedBlockId === blockId ? null : state.selectedBlockId,
+                        selectedBlockItemId:
+                            state.selectedBlockId === blockId ? null : state.selectedBlockItemId,
+                        selectedBlockSubItemId:
+                            state.selectedBlockId === blockId ? null : state.selectedBlockSubItemId,
                     };
                 }),
 
@@ -448,6 +481,8 @@ export const useResumeStore = create<ResumeState>()(
                     resume: migratedResume,
                     resumeList: syncList(state.resumeList, migratedResume),
                     selectedBlockId: null,
+                    selectedBlockItemId: null,
+                    selectedBlockSubItemId: null,
                     });
                 }),
 
@@ -494,6 +529,8 @@ export const useResumeStore = create<ResumeState>()(
                         past: [],
                         future: [],
                         selectedBlockId: null,
+                        selectedBlockItemId: null,
+                        selectedBlockSubItemId: null,
                     });
                 }
             },
@@ -513,6 +550,8 @@ export const useResumeStore = create<ResumeState>()(
                     past: [],
                     future: [],
                     selectedBlockId: null,
+                    selectedBlockItemId: null,
+                    selectedBlockSubItemId: null,
                 }));
             },
 
@@ -533,6 +572,8 @@ export const useResumeStore = create<ResumeState>()(
                     past: [],
                     future: [],
                     selectedBlockId: null,
+                    selectedBlockItemId: null,
+                    selectedBlockSubItemId: null,
                 }));
             },
 
@@ -563,6 +604,8 @@ export const useResumeStore = create<ResumeState>()(
                         past: deletingCurrentResume ? [] : state.past,
                         future: deletingCurrentResume ? [] : state.future,
                         selectedBlockId: deletingCurrentResume ? null : state.selectedBlockId,
+                        selectedBlockItemId: deletingCurrentResume ? null : state.selectedBlockItemId,
+                        selectedBlockSubItemId: deletingCurrentResume ? null : state.selectedBlockSubItemId,
                     };
                 });
             },
@@ -581,6 +624,8 @@ export const useResumeStore = create<ResumeState>()(
                     past: newPast,
                     future: [resume, ...future],
                     selectedBlockId: null,
+                    selectedBlockItemId: null,
+                    selectedBlockSubItemId: null,
                 });
             },
 
@@ -597,6 +642,8 @@ export const useResumeStore = create<ResumeState>()(
                     past: [...past, resume],
                     future: newFuture,
                     selectedBlockId: null,
+                    selectedBlockItemId: null,
+                    selectedBlockSubItemId: null,
                 });
             },
 
@@ -621,6 +668,8 @@ export const useResumeStore = create<ResumeState>()(
                 resume: state.resume,
                 resumeList: state.resumeList,
                 selectedBlockId: state.selectedBlockId,
+                selectedBlockItemId: state.selectedBlockItemId,
+                selectedBlockSubItemId: state.selectedBlockSubItemId,
             } as any),
         }
     )
