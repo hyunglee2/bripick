@@ -17,10 +17,38 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
-  keywords: ["개발자 이력서", "이력서 빌더", "개발자 포트폴리오", "경력기술서"],
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "technology",
+  keywords: [
+    "Bripick",
+    "브리픽",
+    "개발자 이력서",
+    "개발자 이력서 빌더",
+    "이력서 만들기",
+    "온라인 이력서",
+    "이력서 링크 공유",
+    "개발자 포트폴리오",
+    "경력기술서",
+  ],
   alternates: {
     canonical: "/",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
   openGraph: {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
