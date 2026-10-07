@@ -403,16 +403,31 @@ body,
   bottom: -8px;
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
+  background: #f8fafc;
+  backdrop-filter: none;
+  box-shadow:
+    -14px 0 24px -18px rgba(15, 23, 42, 0.18),
+    14px 0 24px -18px rgba(15, 23, 42, 0.18),
+    0 -14px 24px -18px rgba(15, 23, 42, 0.2);
 }
 
 .reference-template .resume-block-fragment--continues-previous::after {
   top: -8px;
   border-top-right-radius: 0;
   border-top-left-radius: 0;
+  background: #f8fafc;
+  backdrop-filter: none;
   box-shadow:
-    0 16px 36px rgba(15, 23, 42, 0.13),
-    0 4px 12px rgba(15, 23, 42, 0.07);
+    -14px 0 24px -18px rgba(15, 23, 42, 0.18),
+    14px 0 24px -18px rgba(15, 23, 42, 0.18),
+    0 14px 24px -18px rgba(15, 23, 42, 0.2);
+}
+
+/* 중간 조각은 위아래 모두 다른 조각과 연결되므로 좌우 그림자만 표시합니다. */
+.reference-template .resume-block-fragment--continues-previous.resume-block-fragment--continues-next::after {
+  box-shadow:
+    -14px 0 24px -18px rgba(15, 23, 42, 0.18),
+    14px 0 24px -18px rgba(15, 23, 42, 0.18);
 }
 
 .reference-template .resume-block-fragment--continues-next[data-custom-padding="false"] {
