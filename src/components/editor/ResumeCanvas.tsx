@@ -1887,6 +1887,8 @@ export default function ResumeCanvas({
                                         onDragOver={(e) => handleDragOver(e, globalIdx, fragmentKey)}
                                         onDrop={(e) => handleDrop(e, globalIdx)}
                                         onDragEnd={handleDragEnd}
+                                        onPointerDownCapture={() => setSelectedBlockId(block.id)}
+                                        onFocusCapture={() => setSelectedBlockId(block.id)}
                                         onClick={() => setSelectedBlockId(block.id)}
                                         style={{
                                             ...(block.style.useCustomPadding
