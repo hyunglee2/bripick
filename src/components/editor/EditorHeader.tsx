@@ -26,6 +26,7 @@ import {
     CheckCircle2,
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
+import AuthMenu from "@/components/auth/AuthMenu";
 
 type DialogState = {
     title: string;
@@ -784,41 +785,13 @@ export default function EditorHeader() {
                     </div>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="header-actions flex shrink-0 items-center gap-2">
                     <PublishResumeButton />
-                    {shouldShowSample && (
-                        <button
-                            type="button"
-                            onClick={handleLoadPreset}
-                            className="header-button header-button--secondary hidden h-8 items-center gap-1.5 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 text-xs font-medium text-blue-300 transition hover:border-blue-500/50 hover:bg-blue-500/20 sm:flex"
-                            data-tooltip="Bripick 샘플 이력서로 시작하기"
-                        >
-                            <Sparkles size={14} /> 샘플로 시작
-                        </button>
-                    )}
-                    <button
-                        onClick={() => setIsAtsModalOpen(true)}
-                        className="header-button header-button--ats flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition active:scale-[0.98]"
-                        data-tooltip="ATS 이력서 완성도 진단"
-                    >
-                        <ShieldCheck size={14} aria-hidden="true" />
-                        <span className="hidden sm:inline">ATS 검사</span>
-                    </button>
                     <button
                         onClick={handleExportPDF}
                         className="header-button header-button--primary flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500 active:scale-95"
                     >
                         <Download size={14} /> <span className="hidden sm:inline">PDF 저장</span>
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={toggleTheme}
-                        className="header-icon-button flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-700 text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
-                        data-tooltip={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
-                        aria-label={theme === "dark" ? "라이트 모드로 전환" : "다크 모드로 전환"}
-                    >
-                        {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
                     </button>
 
                     <div className="relative">
@@ -832,19 +805,41 @@ export default function EditorHeader() {
                             <MoreHorizontal size={17} />
                         </button>
                         {openMenu === "more" && (
-                            <div className="header-menu absolute right-0 top-10 w-48 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
-                                {!shouldShowSample && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setOpenMenu(null);
-                                            handleLoadPreset();
-                                        }}
-                                        className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
-                                    >
-                                        <Sparkles size={14} /> 샘플 불러오기
-                                    </button>
-                                )}
+                            <div className="header-menu absolute right-0 top-10 w-52 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                                <p className="px-2.5 pb-1.5 pt-1 text-[11px] font-medium text-neutral-500">도구</p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenMenu(null);
+                                        setIsAtsModalOpen(true);
+                                    }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                >
+                                    <ShieldCheck size={14} /> ATS 검사
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenMenu(null);
+                                        toggleTheme();
+                                    }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                >
+                                    {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
+                                    {theme === "dark" ? "라이트 모드" : "다크 모드"}
+                                </button>
+                                <div className="my-1 border-t border-neutral-800" />
+                                <p className="px-2.5 pb-1.5 pt-1 text-[11px] font-medium text-neutral-500">데이터</p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenMenu(null);
+                                        handleLoadPreset();
+                                    }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                >
+                                    <Sparkles size={14} /> {shouldShowSample ? "샘플로 시작" : "샘플 불러오기"}
+                                </button>
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -867,6 +862,10 @@ export default function EditorHeader() {
                                 </button>
                             </div>
                         )}
+                    </div>
+
+                    <div className="header-account ml-1 border-l border-neutral-800 pl-3">
+                        <AuthMenu />
                     </div>
 
                     <input

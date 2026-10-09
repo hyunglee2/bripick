@@ -3201,6 +3201,234 @@ summary[data-tooltip],
   background: #3a414d;
 }
 
+.auth-menu {
+  position: relative;
+}
+
+.auth-menu__backdrop {
+  position: fixed;
+  z-index: 70;
+  inset: 58px 0 0;
+  border: 0;
+  background: rgba(4, 7, 12, 0.48);
+  backdrop-filter: blur(2px);
+  cursor: default;
+  animation: auth-backdrop-enter 140ms ease-out;
+}
+
+@keyframes auth-backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.auth-menu__trigger {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid #3f4653;
+  border-radius: 8px;
+  color: #d4d4d8;
+  background: #191c23;
+  font-size: 12px;
+  font-weight: 600;
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.auth-menu__trigger:hover {
+  border-color: #525a68;
+  color: #fff;
+  background: #242832;
+}
+
+.auth-menu__trigger:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.auth-menu__trigger--signed-in {
+  width: 32px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 999px;
+}
+
+.auth-menu__trigger img,
+.auth-menu__initial {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.auth-menu__initial {
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: #2563eb;
+  font-size: 12px;
+}
+
+.auth-menu__popover {
+  position: absolute;
+  z-index: 81;
+  top: 40px;
+  right: 0;
+  width: min(340px, calc(100vw - 24px));
+  padding: 14px;
+  border: 1px solid #454d5c;
+  border-radius: 13px;
+  background: #17191f;
+  box-shadow: 0 24px 72px rgba(0, 0, 0, 0.58), 0 0 0 1px rgba(255, 255, 255, 0.035) inset;
+}
+
+.auth-menu__popover-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.auth-menu__popover-heading>div,
+.auth-menu__account>div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.auth-menu__popover-heading strong,
+.auth-menu__account strong {
+  color: #f4f4f5;
+  font-size: 13px;
+}
+
+.auth-menu__popover-heading span,
+.auth-menu__account span {
+  color: #8b93a1;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.auth-menu__popover-heading>button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  border-radius: 6px;
+  color: #8b93a1;
+}
+
+.auth-menu__popover-heading>button:hover {
+  color: #fff;
+  background: #292d36;
+}
+
+.auth-menu__providers {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.auth-provider {
+  display: flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: filter 140ms ease, transform 140ms ease;
+}
+
+.auth-provider:hover {
+  filter: brightness(0.96);
+}
+
+.auth-provider:active {
+  transform: scale(0.99);
+}
+
+.auth-provider>span {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.auth-provider--google {
+  border: 1px solid #d4d4d8;
+  color: #27272a;
+  background: #fff;
+}
+
+.auth-provider--google>span {
+  color: #4285f4;
+  background: #f4f4f5;
+}
+
+.auth-provider--kakao {
+  color: #191919;
+  background: #fee500;
+}
+
+.auth-provider--kakao>span {
+  color: #fee500;
+  background: #191919;
+}
+
+.auth-menu__providers>p {
+  margin-top: 2px;
+  color: #737b88;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.auth-menu__error {
+  margin-top: 10px;
+  padding: 8px 9px;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 7px;
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.2);
+  font-size: 11px;
+}
+
+.auth-menu__account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #111319;
+  color: #93c5fd;
+}
+
+.auth-menu__logout {
+  display: flex;
+  width: 100%;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 8px;
+  border-radius: 7px;
+  color: #a1a1aa;
+  font-size: 12px;
+}
+
+.auth-menu__logout:hover {
+  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.16);
+}
+
 .project-bullet-editor__content a,
 .resume-rich-bullet a,
 [data-project-bullet-editor] a {
