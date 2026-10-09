@@ -32,14 +32,17 @@ type PendingCookie = { name: string; value: string; options: CookieOptions };
  */
 export function createSupabaseRouteClient(request: NextRequest) {
     const { url, publishableKey } = env();
-    const pendingCookies: PendingCookie[] = [];
+    const pendingCookies = new Map<string, PendingCookie>();
     const supabase = createServerClient(url, publishableKey, {
         cookies: {
             getAll: () => request.cookies.getAll(),
             setAll: (values) => {
                 values.forEach(({ name, value, options }) => {
                     request.cookies.set(name, value);
-                    pendingCookies.push({ name, value, options });
+                    // exchangeCodeForSession/getUser 과정에서 같은 인증 쿠키가
+                    // 여러 번 갱신될 수 있다. 응답에는 최종 값 하나만 전달해
+                    // Set-Cookie 헤더가 불필요하게 커지는 것을 막는다.
+                    pendingCookies.set(name, { name, value, options });
                 });
             },
         },
@@ -55,10 +58,23 @@ export function createSupabaseRouteClient(request: NextRequest) {
             });
         });
         response.headers.set("Cache-Control", "private, no-store");
+        const cookieBytes = [...pendingCookies.values()].map(({ name, value }) => ({
+            name,
+            bytes: Buffer.byteLength(`${name}=${value}`, "utf8"),
+        }));
+        const responseHeaderBytes = [...response.headers.entries()].reduce(
+            (total, [name, value]) => total + Buffer.byteLength(`${name}: ${value}\r\n`, "utf8"),
+            0,
+        );
+        console.info("[auth:cookies:response]", {
+            cookies: cookieBytes,
+            cookieBytes: cookieBytes.reduce((total, cookie) => total + cookie.bytes, 0),
+            responseHeaderBytes,
+        });
         return response;
     };
 
-    const getPendingCookieNames = () => pendingCookies.map(({ name }) => name);
+    const getPendingCookieNames = () => [...pendingCookies.keys()];
 
     return { supabase, applyCookies, getPendingCookieNames };
 }

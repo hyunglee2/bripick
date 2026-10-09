@@ -2,17 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { LogIn, LogOut, UserRound, X } from "lucide-react";
-
-type AuthUser = {
-    id: string;
-    email: string | null;
-    name: string | null;
-    avatarUrl: string | null;
-    provider: string | null;
-    isAnonymous: boolean;
-};
-
-type SessionResponse = { user: AuthUser | null };
+import { clearAuthSessionCache, getAuthSession, type AuthUser } from "@/lib/authSession";
+import { useResumeStore } from "@/store/useResumeStore";
 
 const authErrorMessages: Record<string, string> = {
     unsupported_provider: "지원하지 않는 로그인 방식입니다.",
@@ -47,16 +38,14 @@ export default function AuthMenu() {
         }
 
         let isActive = true;
-        fetch("/api/auth/session", { cache: "no-store", credentials: "same-origin" })
-            .then(async (response) => {
-                if (!response.ok) throw new Error("세션을 확인하지 못했습니다.");
-                return response.json() as Promise<SessionResponse>;
-            })
-            .then((body) => {
-                if (isActive) setUser(body.user?.isAnonymous ? null : body.user);
+        getAuthSession()
+            .then((sessionUser) => {
+                if (isActive) setUser(sessionUser);
             })
             .catch(() => {
-                if (isActive) setErrorMessage("로그인 상태를 확인하지 못했습니다.");
+                // 세션 조회 실패는 로그인하지 않은 상태와 동일하게 취급한다.
+                // 게스트 편집은 인증 서버 상태와 무관하게 계속 사용할 수 있어야 한다.
+                if (isActive) setUser(null);
             })
             .finally(() => {
                 if (isActive) setIsLoading(false);
@@ -99,13 +88,27 @@ export default function AuthMenu() {
         setIsLoading(true);
         setErrorMessage(null);
         try {
+            if (user) {
+                const workspace = useResumeStore.getState();
+                await fetch("/api/resumes/drafts", {
+                    method: "PUT",
+                    credentials: "same-origin",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        resumes: workspace.resumeList,
+                        activeResumeId: workspace.resume.id,
+                    }),
+                }).catch(() => null);
+            }
             const response = await fetch("/api/auth/logout", {
                 method: "POST",
                 credentials: "same-origin",
             });
             if (!response.ok) throw new Error();
+            clearAuthSessionCache();
             setUser(null);
             setIsOpen(false);
+            window.dispatchEvent(new Event("bripick:auth-changed"));
         } catch {
             setErrorMessage("로그아웃하지 못했습니다. 다시 시도해 주세요.");
         } finally {
@@ -173,7 +176,7 @@ export default function AuthMenu() {
                             <button type="button" className="auth-provider auth-provider--kakao" onClick={() => startLogin("kakao")}>
                                 <span aria-hidden="true">K</span> 카카오로 계속하기
                             </button>
-                            <p>로그인하면 현재 익명 계정의 게시 이력서 소유권이 그대로 유지됩니다.</p>
+                            <p>로그인하면 이력서를 계정에 저장하고 다른 기기에서도 이어서 관리할 수 있어요.</p>
                         </div>
                     )}
                 </div>

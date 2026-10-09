@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { supabase, applyCookies, getPendingCookieNames } = createSupabaseRouteClient(request);
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
     if (error) {
         console.error("[auth:callback:exchange-failed]", {
             traceId,
@@ -46,13 +46,11 @@ export async function GET(request: NextRequest) {
         return applyCookies(NextResponse.redirect(new URL(`/?authError=callback_failed&authTrace=${traceId}`, origin)));
     }
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
     console.info("[auth:callback:success]", {
         traceId,
-        userId: userData.user?.id || null,
-        provider: userData.user?.app_metadata?.provider || null,
-        isAnonymous: Boolean(userData.user?.is_anonymous),
-        userLookupError: userError?.message || null,
+        userId: sessionData.user?.id || null,
+        provider: sessionData.user?.app_metadata?.provider || null,
+        isAnonymous: Boolean(sessionData.user?.is_anonymous),
         pendingCookies: getPendingCookieNames(),
     });
 

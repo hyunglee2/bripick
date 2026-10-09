@@ -1,6 +1,7 @@
 import EditorHeader from "@/components/editor/EditorHeader";
 import ResumeCanvas from "@/components/editor/ResumeCanvas";
 import InspectorPanel from "@/components/editor/InspectorPanel";
+import ResumeWorkspaceSync from "@/components/auth/ResumeWorkspaceSync";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const softwareApplicationJsonLd = {
@@ -37,6 +38,7 @@ export default function HomePage() {
           __html: JSON.stringify(softwareApplicationJsonLd).replace(/</g, "\\u003c"),
         }}
       />
+      <ResumeWorkspaceSync />
       <EditorHeader />
       <div className="flex flex-1 overflow-hidden">
         <ResumeCanvas />

@@ -23,30 +23,29 @@ export async function GET(request: NextRequest, context: RouteContext) {
     }
 
     const { supabase, applyCookies, getPendingCookieNames } = createSupabaseRouteClient(request);
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    const mode = userData.user?.is_anonymous ? "link" : "sign-in";
     console.info("[auth:oauth:start]", {
         traceId,
         provider,
-        mode,
-        hasUser: Boolean(userData.user),
-        isAnonymous: Boolean(userData.user?.is_anonymous),
-        userLookupError: userError?.message || null,
+        mode: "sign-in",
     });
     const options = {
         // Supabase Redirect URLs에 등록한 주소와 정확히 일치시킨다.
         // 로그인 후 이동 경로는 callback이 기본값(`/`)으로 처리한다.
         redirectTo: `${origin}/auth/callback`,
     };
-    const result = userData.user?.is_anonymous
-        ? await supabase.auth.linkIdentity({ provider: asSupabaseProvider(provider), options })
-        : await supabase.auth.signInWithOAuth({ provider: asSupabaseProvider(provider), options });
+    // 게스트 작업공간은 브라우저 로컬 저장소로 관리한다. 여기서 getUser()를
+    // 호출하면 만료된 기존 세션을 갱신하며 큰 Set-Cookie 헤더가 함께 생성될 수
+    // 있으므로 OAuth 시작에는 필요한 PKCE 검증 쿠키만 발급한다.
+    const result = await supabase.auth.signInWithOAuth({
+        provider: asSupabaseProvider(provider),
+        options,
+    });
 
     if (result.error || !result.data.url) {
         console.error("[auth:oauth:start:failed]", {
             traceId,
             provider,
-            mode,
+            mode: "sign-in",
             message: result.error?.message || "OAuth URL 없음",
             status: result.error?.status || null,
             code: result.error?.code || null,
@@ -58,7 +57,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     console.info("[auth:oauth:start:redirect]", {
         traceId,
         provider,
-        mode,
+        mode: "sign-in",
         next,
         destination: new URL(result.data.url).hostname,
         pendingCookies: getPendingCookieNames(),

@@ -3429,6 +3429,46 @@ summary[data-tooltip],
   background: rgba(127, 29, 29, 0.16);
 }
 
+.workspace-sync-state {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #aeb6c3;
+  background: rgba(12, 14, 20, 0.92);
+  backdrop-filter: blur(3px);
+  font-size: 13px;
+}
+
+.workspace-sync-error {
+  position: fixed;
+  z-index: 95;
+  top: 70px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  padding: 10px 12px;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 10px;
+  color: #fecaca;
+  background: #29191d;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%);
+  font-size: 12px;
+}
+
+.workspace-sync-error button {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: #fff;
+  background: #dc2626;
+  font-weight: 600;
+}
+
 .project-bullet-editor__content a,
 .resume-rich-bullet a,
 [data-project-bullet-editor] a {

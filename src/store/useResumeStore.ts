@@ -34,6 +34,7 @@ interface ResumeState {
     updateBlockData: (blockId: string, data: any) => void;
     reorderBlocks: (startIndex: number, endIndex: number) => void;
     loadResume: (newResume: ResumeDocument) => void;
+    replaceWorkspace: (resumes: ResumeDocument[], activeResumeId?: string | null) => void;
     updateGlobalStyle: (style: Partial<ResumeDocument["globalStyle"]>) => void;
 
     // Version Management Actions
@@ -521,6 +522,22 @@ export const useResumeStore = create<ResumeState>()(
                     };
                 }),
 
+            replaceWorkspace: (resumes, activeResumeId = null) => {
+                const migrated = resumes.length
+                    ? resumes.map(migrateResumeDocument)
+                    : [createSampleResume()];
+                const active = migrated.find((item) => item.id === activeResumeId) ?? migrated[0];
+                set({
+                    resume: active,
+                    resumeList: migrated,
+                    past: [],
+                    future: [],
+                    selectedBlockId: null,
+                    selectedBlockItemId: null,
+                    selectedBlockSubItemId: null,
+                });
+            },
+
             switchResume: (id) => {
                 const target = get().resumeList.find((r) => r.id === id);
                 if (target) {
@@ -651,7 +668,7 @@ export const useResumeStore = create<ResumeState>()(
             canRedo: () => get().future.length > 0,
         }),
         {
-            name: "bripick-resume-storage",
+            name: "bripick-resume-storage:guest",
             version: 7,
             migrate: (persistedState) => {
                 const state = persistedState as Partial<ResumeState>;

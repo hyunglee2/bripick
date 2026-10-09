@@ -1,17 +1,17 @@
-import { NextResponse } from "next/server";
-import { createAuthenticatedSupabaseClient } from "@/server/supabase/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseRouteClient } from "@/server/supabase/server";
 
 export const runtime = "nodejs";
 
-export async function GET() {
-    const supabase = await createAuthenticatedSupabaseClient();
+export async function GET(request: NextRequest) {
+    const { supabase, applyCookies } = createSupabaseRouteClient(request);
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) {
-        return NextResponse.json({ user: null }, { headers: { "Cache-Control": "no-store" } });
+        return applyCookies(NextResponse.json({ user: null }));
     }
 
     const metadata = data.user.user_metadata || {};
-    return NextResponse.json({
+    return applyCookies(NextResponse.json({
         user: {
             id: data.user.id,
             email: data.user.email || null,
@@ -20,5 +20,5 @@ export async function GET() {
             provider: data.user.app_metadata?.provider || null,
             isAnonymous: Boolean(data.user.is_anonymous),
         },
-    }, { headers: { "Cache-Control": "no-store" } });
+    }));
 }
