@@ -114,6 +114,12 @@ server {
 
   client_max_body_size 3m;
 
+  # Supabase SSR 로그인 콜백은 분할된 세션 쿠키를 Set-Cookie 헤더로 전달한다.
+  # Nginx 기본 헤더 버퍼(약 8KB)를 넘으면 OAuth 성공 후에도 502가 발생한다.
+  proxy_buffer_size 128k;
+  proxy_buffers 8 128k;
+  proxy_busy_buffers_size 256k;
+
   location / {
     proxy_pass http://127.0.0.1:3001;
     proxy_http_version 1.1;

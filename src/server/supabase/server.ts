@@ -58,19 +58,6 @@ export function createSupabaseRouteClient(request: NextRequest) {
             });
         });
         response.headers.set("Cache-Control", "private, no-store");
-        const cookieBytes = [...pendingCookies.values()].map(({ name, value }) => ({
-            name,
-            bytes: Buffer.byteLength(`${name}=${value}`, "utf8"),
-        }));
-        const responseHeaderBytes = [...response.headers.entries()].reduce(
-            (total, [name, value]) => total + Buffer.byteLength(`${name}: ${value}\r\n`, "utf8"),
-            0,
-        );
-        console.info("[auth:cookies:response]", {
-            cookies: cookieBytes,
-            cookieBytes: cookieBytes.reduce((total, cookie) => total + cookie.bytes, 0),
-            responseHeaderBytes,
-        });
         return response;
     };
 

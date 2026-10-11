@@ -10,10 +10,62 @@ import type { ResumeDocument } from "@/types/resume";
 type SessionUser = Pick<AuthUser, "id" | "email" | "isAnonymous">;
 type DraftResponse = { resumes: ResumeDocument[]; activeResumeId: string | null };
 type StoredWorkspace = { resumes: ResumeDocument[]; activeResumeId: string | null };
+type WorkspaceMigration = {
+    user: SessionUser;
+    sourceKey: string;
+    sourceLabel: "게스트" | "기존";
+    sourceSignature: string;
+    workspace: StoredWorkspace;
+    accountWorkspace: StoredWorkspace | null;
+};
 
 const LEGACY_STORAGE_KEY = "bripick-resume-storage";
 const GUEST_STORAGE_KEY = "bripick-resume-storage:guest";
+const GUEST_BASELINE_KEY = "bripick-resume-storage:guest-baseline";
 const accountStorageKey = (userId: string) => `bripick-resume-storage:user:${userId}`;
+
+function workspaceSignature(workspace: StoredWorkspace) {
+    const value = JSON.stringify(workspace);
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) {
+        hash ^= value.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+    }
+    return `${value.length}-${(hash >>> 0).toString(36)}`;
+}
+
+function mergeWorkspaces(account: StoredWorkspace | null, imported: StoredWorkspace): StoredWorkspace {
+    if (!account?.resumes.length) return imported;
+
+    const usedIds = new Set(account.resumes.map((resume) => resume.id));
+    const importedIdMap = new Map<string, string>();
+    const importedResumes = imported.resumes.map((resume) => {
+        if (!usedIds.has(resume.id)) {
+            usedIds.add(resume.id);
+            importedIdMap.set(resume.id, resume.id);
+            return resume;
+        }
+
+        let id = `resume-${crypto.randomUUID()}`;
+        while (usedIds.has(id)) id = `resume-${crypto.randomUUID()}`;
+        usedIds.add(id);
+        importedIdMap.set(resume.id, id);
+        return {
+            ...resume,
+            id,
+            versionName: `${resume.versionName} (가져옴)`,
+            updatedAt: new Date().toISOString(),
+            publication: undefined,
+        };
+    });
+
+    return {
+        resumes: [...account.resumes, ...importedResumes],
+        activeResumeId: imported.activeResumeId
+            ? importedIdMap.get(imported.activeResumeId) ?? account.activeResumeId
+            : account.activeResumeId,
+    };
+}
 
 function readWorkspace(key: string): StoredWorkspace | null {
     try {
@@ -42,10 +94,7 @@ export default function ResumeWorkspaceSync() {
     const replaceWorkspace = useResumeStore((state) => state.replaceWorkspace);
     const [isLoading, setIsLoading] = useState(true);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [migration, setMigration] = useState<{
-        user: SessionUser;
-        workspace: StoredWorkspace;
-    } | null>(null);
+    const [migration, setMigration] = useState<WorkspaceMigration | null>(null);
     const unsubscribeRef = useRef<(() => void) | null>(null);
     const saveTimerRef = useRef<number | null>(null);
     const activeUserIdRef = useRef<string | null>(null);
@@ -94,6 +143,7 @@ export default function ResumeWorkspaceSync() {
         useResumeStore.persist.setOptions({ name: GUEST_STORAGE_KEY });
         const guest = readWorkspace(GUEST_STORAGE_KEY);
         const workspace = guest ?? { resumes: [createSampleResume()], activeResumeId: "resume-sample" };
+        if (!guest) window.localStorage.setItem(GUEST_BASELINE_KEY, workspaceSignature(workspace));
         replaceWorkspace(workspace.resumes, workspace.activeResumeId);
         setMigration(null);
         setErrorMessage(null);
@@ -123,21 +173,30 @@ export default function ResumeWorkspaceSync() {
             const draftResponse = await fetch("/api/resumes/drafts", { cache: "no-store", credentials: "same-origin" });
             if (!draftResponse.ok) throw new Error();
             const drafts = await draftResponse.json() as DraftResponse;
-            if (drafts.resumes.length) {
-                await activateAccountWorkspace(user, drafts, false);
-                return;
+            const cached = drafts.resumes.length ? null : readWorkspace(accountStorageKey(user.id));
+            const accountWorkspace: StoredWorkspace | null = drafts.resumes.length ? drafts : cached;
+
+            const guest = readWorkspace(GUEST_STORAGE_KEY);
+            const legacy = guest ? null : readWorkspace(LEGACY_STORAGE_KEY);
+            const importCandidate = guest
+                ? { workspace: guest, sourceKey: GUEST_STORAGE_KEY, sourceLabel: "게스트" as const }
+                : legacy
+                    ? { workspace: legacy, sourceKey: LEGACY_STORAGE_KEY, sourceLabel: "기존" as const }
+                    : null;
+
+            if (importCandidate) {
+                const sourceSignature = workspaceSignature(importCandidate.workspace);
+                const migrationKey = `bripick-workspace-migration:${user.id}:${importCandidate.sourceLabel}`;
+                const isUntouchedGuest = importCandidate.sourceKey === GUEST_STORAGE_KEY
+                    && window.localStorage.getItem(GUEST_BASELINE_KEY) === sourceSignature;
+                if (!isUntouchedGuest && window.localStorage.getItem(migrationKey) !== sourceSignature) {
+                    setMigration({ user, accountWorkspace, sourceSignature, ...importCandidate });
+                    return;
+                }
             }
 
-            const cached = readWorkspace(accountStorageKey(user.id));
-            if (cached) {
-                await activateAccountWorkspace(user, cached, true);
-                return;
-            }
-
-            const legacy = readWorkspace(LEGACY_STORAGE_KEY);
-            const migrationKey = `bripick-legacy-migration:${user.id}`;
-            if (legacy && !window.localStorage.getItem(migrationKey)) {
-                setMigration({ user, workspace: legacy });
+            if (accountWorkspace) {
+                await activateAccountWorkspace(user, accountWorkspace, !drafts.resumes.length);
                 return;
             }
 
@@ -160,10 +219,15 @@ export default function ResumeWorkspaceSync() {
 
     const importLegacy = () => {
         if (!migration) return;
-        const migrationKey = `bripick-legacy-migration:${migration.user.id}`;
-        window.localStorage.setItem(migrationKey, "imported");
-        window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-        void activateAccountWorkspace(migration.user, migration.workspace, true).catch(() => {
+        const migrationKey = `bripick-workspace-migration:${migration.user.id}:${migration.sourceLabel}`;
+        const merged = mergeWorkspaces(migration.accountWorkspace, migration.workspace);
+        void activateAccountWorkspace(migration.user, merged, true).then(() => {
+            window.localStorage.setItem(migrationKey, migration.sourceSignature);
+            window.localStorage.removeItem(migration.sourceKey);
+            if (migration.sourceKey === GUEST_STORAGE_KEY) {
+                window.localStorage.removeItem(GUEST_BASELINE_KEY);
+            }
+        }).catch(() => {
             setErrorMessage("기존 이력서를 계정으로 가져오지 못했습니다.");
             setMigration(null);
         });
@@ -171,8 +235,15 @@ export default function ResumeWorkspaceSync() {
 
     const skipLegacy = () => {
         if (!migration) return;
-        const migrationKey = `bripick-legacy-migration:${migration.user.id}`;
-        window.localStorage.setItem(migrationKey, "skipped");
+        const migrationKey = `bripick-workspace-migration:${migration.user.id}:${migration.sourceLabel}`;
+        window.localStorage.setItem(migrationKey, migration.sourceSignature);
+        if (migration.accountWorkspace) {
+            void activateAccountWorkspace(migration.user, migration.accountWorkspace, true).catch(() => {
+                setErrorMessage("계정 이력서를 불러오지 못했습니다.");
+                setMigration(null);
+            });
+            return;
+        }
         const fresh = createSampleResume();
         void activateAccountWorkspace(
             migration.user,
@@ -199,10 +270,10 @@ export default function ResumeWorkspaceSync() {
             )}
             <ServiceDialog
                 isOpen={migration !== null}
-                title="기존 이력서를 가져올까요?"
-                message={`이 브라우저에 저장된 이력서 ${migration?.workspace.resumes.length ?? 0}개를 ${migration?.user.email || "현재 계정"}에 저장할 수 있어요.`}
+                title={`${migration?.sourceLabel ?? "비로그인"} 이력서를 가져올까요?`}
+                message={`이 브라우저에 저장된 이력서 ${migration?.workspace.resumes.length ?? 0}개를 ${migration?.user.email || "현재 계정"}에 ${migration?.accountWorkspace ? "추가" : "저장"}할 수 있어요.`}
                 confirmLabel="계정으로 가져오기"
-                cancelLabel="새로 시작"
+                cancelLabel={migration?.accountWorkspace ? "계정 이력서 사용" : "새로 시작"}
                 onConfirm={importLegacy}
                 onCancel={skipLegacy}
             />
