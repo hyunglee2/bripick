@@ -59,3 +59,13 @@ export async function findPublicResume(slug: string) {
     if (error) throw databaseError(error, "공개 이력서를 불러오지 못했습니다.");
     return (data?.document as ResumeDocument | undefined) ?? null;
 }
+
+export async function findPublicResumeSitemapEntries() {
+    const supabase = createPublicSupabaseClient();
+    const { data, error } = await supabase
+        .from("published_resumes")
+        .select("slug, updated_at")
+        .order("updated_at", { ascending: false });
+    if (error) throw databaseError(error, "공개 이력서 목록을 불러오지 못했습니다.");
+    return data ?? [];
+}

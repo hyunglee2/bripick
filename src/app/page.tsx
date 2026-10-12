@@ -28,22 +28,41 @@ const softwareApplicationJsonLd = {
   ],
 };
 
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  alternateName: ["브리픽", "bripick.coreluma.kr"],
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  inLanguage: "ko-KR",
+};
+
 export default function HomePage() {
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <>
       <h1 className="sr-only">Bripick 개발자 이력서 빌더</h1>
+      <p className="sr-only">{SITE_DESCRIPTION}</p>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(websiteJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(softwareApplicationJsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <ResumeWorkspaceSync />
-      <EditorHeader />
-      <div className="flex flex-1 overflow-hidden">
-        <ResumeCanvas />
-        <InspectorPanel />
+      <div className="flex flex-col h-screen overflow-hidden" data-nosnippet>
+        <ResumeWorkspaceSync />
+        <EditorHeader />
+        <div className="flex flex-1 overflow-hidden">
+          <ResumeCanvas />
+          <InspectorPanel />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
