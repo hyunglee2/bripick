@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
     const next = safeNextPath(request.nextUrl.searchParams.get("next"));
 
     if (!provider) {
-        return NextResponse.redirect(new URL("/?authError=unsupported_provider", origin));
+        return NextResponse.redirect(new URL("/login?authError=unsupported_provider", origin));
     }
 
     const { supabase, applyCookies, getPendingCookieNames } = createSupabaseRouteClient(request);
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
             code: result.error?.code || null,
             pendingCookies: getPendingCookieNames(),
         });
-        return applyCookies(NextResponse.redirect(new URL(`/?authError=oauth_start_failed&authTrace=${traceId}`, origin)));
+        return applyCookies(NextResponse.redirect(new URL(`/login?authError=oauth_start_failed&authTrace=${traceId}`, origin)));
     }
 
     console.info("[auth:oauth:start:redirect]", {

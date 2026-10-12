@@ -1,17 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { LogIn, LogOut, UserRound, X } from "lucide-react";
 import { clearAuthSessionCache, getAuthSession, type AuthUser } from "@/lib/authSession";
 import { useResumeStore } from "@/store/useResumeStore";
-
-const authErrorMessages: Record<string, string> = {
-    unsupported_provider: "지원하지 않는 로그인 방식입니다.",
-    oauth_start_failed: "로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.",
-    missing_code: "로그인 인증 코드가 전달되지 않았습니다.",
-    callback_failed: "로그인 정보를 확인하지 못했습니다. 다시 시도해 주세요.",
-    provider_callback_failed: "로그인 제공자 인증에 실패했습니다. 설정을 확인한 뒤 다시 시도해 주세요.",
-};
 
 export default function AuthMenu() {
     const [user, setUser] = useState<AuthUser | null>(null);
@@ -51,16 +44,8 @@ export default function AuthMenu() {
                 if (isActive) setIsLoading(false);
             });
 
-        const authError = params.get("authError");
-        const authTrace = params.get("authTrace");
-        if (authError) {
-            const message = authErrorMessages[authError] || "로그인 중 오류가 발생했습니다.";
-            setErrorMessage(authTrace ? `${message} 오류 ID: ${authTrace}` : message);
-            setIsOpen(true);
-        }
-        if (params.has("auth") || authError) {
+        if (params.has("auth")) {
             params.delete("auth");
-            params.delete("authError");
             params.delete("authTrace");
             const query = params.toString();
             window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
@@ -78,11 +63,6 @@ export default function AuthMenu() {
         window.addEventListener("pointerdown", close);
         return () => window.removeEventListener("pointerdown", close);
     }, []);
-
-    const startLogin = (provider: "google" | "kakao") => {
-        setErrorMessage(null);
-        window.location.assign(`/api/auth/oauth/${provider}?next=${encodeURIComponent(window.location.pathname)}`);
-    };
 
     const logout = async () => {
         setIsLoading(true);
@@ -120,33 +100,32 @@ export default function AuthMenu() {
 
     return (
         <div ref={containerRef} className="auth-menu">
-            <button
-                type="button"
-                className={`auth-menu__trigger${user ? " auth-menu__trigger--signed-in" : ""}`}
-                onClick={() => setIsOpen((current) => !current)}
-                disabled={isLoading}
-                aria-expanded={isOpen}
-                aria-label={user ? `${displayName} 계정 메뉴` : "로그인"}
-            >
-                {user?.avatarUrl ? (
+            {user ? (
+                <button
+                    type="button"
+                    className="auth-menu__trigger auth-menu__trigger--signed-in"
+                    onClick={() => setIsOpen((current) => !current)}
+                    disabled={isLoading}
+                    aria-expanded={isOpen}
+                    aria-label={`${displayName} 계정 메뉴`}
+                >
+                {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" />
-                ) : user ? (
-                    <span className="auth-menu__initial">{displayName.slice(0, 1).toUpperCase()}</span>
                 ) : (
-                    <><LogIn size={14} /><span>로그인</span></>
+                    <span className="auth-menu__initial">{displayName.slice(0, 1).toUpperCase()}</span>
                 )}
-            </button>
+                </button>
+            ) : isLoading ? (
+                <button type="button" className="auth-menu__trigger" disabled aria-label="로그인 상태 확인 중">
+                    <LogIn size={14} /><span>로그인</span>
+                </button>
+            ) : (
+                <Link className="auth-menu__trigger" href="/login" aria-label="로그인 페이지로 이동">
+                    <LogIn size={14} /><span>로그인</span>
+                </Link>
+            )}
 
-            {isOpen && (
-                <>
-                {!user && (
-                    <button
-                        type="button"
-                        className="auth-menu__backdrop"
-                        onClick={() => setIsOpen(false)}
-                        aria-label="로그인 창 닫기"
-                    />
-                )}
+            {isOpen && user && (
                 <div className="auth-menu__popover">
                     <div className="auth-menu__popover-heading">
                         <div>
@@ -158,29 +137,14 @@ export default function AuthMenu() {
 
                     {errorMessage && <p className="auth-menu__error">{errorMessage}</p>}
 
-                    {user ? (
-                        <>
-                            <div className="auth-menu__account">
-                                <UserRound size={16} />
-                                <div><strong>{user.name || "이름 없음"}</strong><span>{user.email}</span></div>
-                            </div>
-                            <button type="button" className="auth-menu__logout" onClick={logout} disabled={isLoading}>
-                                <LogOut size={15} /> 로그아웃
-                            </button>
-                        </>
-                    ) : (
-                        <div className="auth-menu__providers">
-                            <button type="button" className="auth-provider auth-provider--google" onClick={() => startLogin("google")}>
-                                <span aria-hidden="true">G</span> Google로 계속하기
-                            </button>
-                            <button type="button" className="auth-provider auth-provider--kakao" onClick={() => startLogin("kakao")}>
-                                <span aria-hidden="true">K</span> 카카오로 계속하기
-                            </button>
-                            <p>로그인하면 이력서를 계정에 저장하고 다른 기기에서도 이어서 관리할 수 있어요.</p>
-                        </div>
-                    )}
+                    <div className="auth-menu__account">
+                        <UserRound size={16} />
+                        <div><strong>{user.name || "이름 없음"}</strong><span>{user.email}</span></div>
+                    </div>
+                    <button type="button" className="auth-menu__logout" onClick={logout} disabled={isLoading}>
+                        <LogOut size={15} /> 로그아웃
+                    </button>
                 </div>
-                </>
             )}
         </div>
     );

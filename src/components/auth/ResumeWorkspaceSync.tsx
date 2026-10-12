@@ -270,10 +270,14 @@ export default function ResumeWorkspaceSync() {
             )}
             <ServiceDialog
                 isOpen={migration !== null}
-                title={`${migration?.sourceLabel ?? "비로그인"} 이력서를 가져올까요?`}
-                message={`이 브라우저에 저장된 이력서 ${migration?.workspace.resumes.length ?? 0}개를 ${migration?.user.email || "현재 계정"}에 ${migration?.accountWorkspace ? "추가" : "저장"}할 수 있어요.`}
-                confirmLabel="계정으로 가져오기"
-                cancelLabel={migration?.accountWorkspace ? "계정 이력서 사용" : "새로 시작"}
+                title="로그인 전 이력서를 계정에 추가할까요?"
+                message={migration?.accountWorkspace
+                    ? `이 브라우저에 저장된 이력서 ${migration.workspace.resumes.length}개를 ${migration.user.email || "현재 계정"}에 추가할 수 있어요. 추가하지 않으면 계정에 있던 이력서만 열립니다.`
+                    : `이 브라우저에 저장된 이력서 ${migration?.workspace.resumes.length ?? 0}개를 ${migration?.user.email || "현재 계정"}에 저장할 수 있어요.`}
+                confirmLabel={migration?.accountWorkspace
+                    ? `이력서 ${migration.workspace.resumes.length}개 추가하기`
+                    : `이력서 ${migration?.workspace.resumes.length ?? 0}개 저장하기`}
+                cancelLabel={migration?.accountWorkspace ? "추가하지 않고 계속" : "새 이력서로 시작"}
                 onConfirm={importLegacy}
                 onCancel={skipLegacy}
             />

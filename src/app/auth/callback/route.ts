@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
 
     if (providerError) {
         console.error("[auth:callback:provider-failed]", { traceId, providerError, providerErrorCode, providerErrorDescription });
-        return NextResponse.redirect(new URL(`/?authError=provider_callback_failed&authTrace=${traceId}`, origin));
+        return NextResponse.redirect(new URL(`/login?authError=provider_callback_failed&authTrace=${traceId}`, origin));
     }
 
     if (!code) {
         console.error("[auth:callback:missing-code]", { traceId });
-        return NextResponse.redirect(new URL(`/?authError=missing_code&authTrace=${traceId}`, origin));
+        return NextResponse.redirect(new URL(`/login?authError=missing_code&authTrace=${traceId}`, origin));
     }
 
     const { supabase, applyCookies, getPendingCookieNames } = createSupabaseRouteClient(request);
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
             code: error.code || null,
             pendingCookies: getPendingCookieNames(),
         });
-        return applyCookies(NextResponse.redirect(new URL(`/?authError=callback_failed&authTrace=${traceId}`, origin)));
+        return applyCookies(NextResponse.redirect(new URL(`/login?authError=callback_failed&authTrace=${traceId}`, origin)));
     }
 
     console.info("[auth:callback:success]", {
