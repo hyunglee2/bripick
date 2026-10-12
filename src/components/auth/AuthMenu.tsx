@@ -120,7 +120,7 @@ export default function AuthMenu() {
                     <LogIn size={14} /><span>로그인</span>
                 </button>
             ) : (
-                <Link className="auth-menu__trigger" href="/login" aria-label="로그인 페이지로 이동">
+                <Link className="auth-menu__trigger" href="/login?next=%2Feditor" aria-label="로그인 페이지로 이동">
                     <LogIn size={14} /><span>로그인</span>
                 </Link>
             )}

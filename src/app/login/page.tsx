@@ -19,10 +19,18 @@ const authErrorMessages: Record<string, string> = {
 type LoginSearchParams = Promise<{
     authError?: string | string[];
     authTrace?: string | string[];
+    next?: string | string[];
 }>;
+
+function safeNextPath(value: string | string[] | undefined) {
+    return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
+        ? value
+        : "/editor";
+}
 
 export default async function Page({ searchParams }: { searchParams: LoginSearchParams }) {
     const query = await searchParams;
+    const nextPath = safeNextPath(query.next);
     const authError = typeof query.authError === "string" ? query.authError : null;
     const authTrace = typeof query.authTrace === "string" ? query.authTrace : null;
     const message = authError
@@ -30,5 +38,5 @@ export default async function Page({ searchParams }: { searchParams: LoginSearch
         : null;
     const errorMessage = message && authTrace ? `${message} 오류 ID: ${authTrace}` : message;
 
-    return <LoginPage initialErrorMessage={errorMessage} />;
+    return <LoginPage initialErrorMessage={errorMessage} nextPath={nextPath} />;
 }

@@ -7,7 +7,13 @@ import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAuthSession } from "@/lib/authSession";
 
-export default function LoginPage({ initialErrorMessage }: { initialErrorMessage: string | null }) {
+export default function LoginPage({
+    initialErrorMessage,
+    nextPath,
+}: {
+    initialErrorMessage: string | null;
+    nextPath: string;
+}) {
     const router = useRouter();
     const [isChecking, setIsChecking] = useState(true);
 
@@ -15,23 +21,23 @@ export default function LoginPage({ initialErrorMessage }: { initialErrorMessage
         let active = true;
         getAuthSession()
             .then((user) => {
-                if (active && user) router.replace("/");
+                if (active && user) router.replace(nextPath);
             })
             .catch(() => null)
             .finally(() => {
                 if (active) setIsChecking(false);
             });
         return () => { active = false; };
-    }, [router]);
+    }, [nextPath, router]);
 
     return (
         <main className="login-page">
             <div className="login-page__glow login-page__glow--one" />
             <div className="login-page__glow login-page__glow--two" />
-            <Link href="/" className="login-page__back"><ArrowLeft size={17} /> 편집기로 돌아가기</Link>
+            <Link href="/" className="login-page__back"><ArrowLeft size={17} /> 홈으로 돌아가기</Link>
 
             <div className="login-page__content">
-                <Link href="/" className="login-page__brand" aria-label="Bripick 편집기로 이동">
+                <Link href="/" className="login-page__brand" aria-label="Bripick 홈으로 이동">
                     <Image src="/bripick_header_logo_dark.svg" width={142} height={40} alt="Bripick" priority />
                 </Link>
                 <section className="login-card" aria-labelledby="login-title">
@@ -46,7 +52,7 @@ export default function LoginPage({ initialErrorMessage }: { initialErrorMessage
 
                     <div className="login-card__providers">
                         <form action="/api/auth/oauth/google" method="get">
-                            <input type="hidden" name="next" value="/" />
+                            <input type="hidden" name="next" value={nextPath} />
                             <button type="submit" className="auth-provider auth-provider--google" disabled={isChecking}>
                                 <Image
                                     className="auth-provider__icon"
@@ -60,7 +66,7 @@ export default function LoginPage({ initialErrorMessage }: { initialErrorMessage
                             </button>
                         </form>
                         <form action="/api/auth/oauth/kakao" method="get">
-                            <input type="hidden" name="next" value="/" />
+                            <input type="hidden" name="next" value={nextPath} />
                             <button
                                 type="submit"
                                 className="auth-provider auth-provider--kakao"

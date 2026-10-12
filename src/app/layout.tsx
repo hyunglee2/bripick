@@ -93,7 +93,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="text-neutral-100 antialiased overflow-hidden selection:bg-blue-600 selection:text-white">
+      <body className="text-neutral-100 antialiased selection:bg-blue-600 selection:text-white">
         {children}
       </body>
     </html>
