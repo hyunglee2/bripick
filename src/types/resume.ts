@@ -30,6 +30,12 @@ export interface ProfileData {
     location?: string;
     bio: string;
     photo?: string;
+    photoSource?: string;
+    photoCrop?: {
+        focusX: number;
+        focusY: number;
+        zoom: number;
+    };
     showPhoto?: boolean;
     blog?: string;
     github?: string;

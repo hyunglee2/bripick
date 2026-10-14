@@ -7,8 +7,8 @@ import { ProfileData, SkillCategory, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
-import { createProfilePhotoDataUrl } from "@/lib/profilePhoto";
 import ProjectBulletDocumentEditor from "@/components/editor/ProjectBulletDocumentEditor";
+import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
 import { Kbd, KbdGroup } from "@/components/ui/Kbd";
 import {
     Trash2,
@@ -28,6 +28,7 @@ import {
     RotateCcw,
     GripVertical,
     ImagePlus,
+    Crop,
     Link2,
     MoreHorizontal,
 } from "lucide-react";
@@ -68,6 +69,12 @@ export default function InspectorPanel() {
     const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
     const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
     const [editingCertificationId, setEditingCertificationId] = useState<string | null>(null);
+    const [pendingProfilePhoto, setPendingProfilePhoto] = useState<{
+        blockId: string;
+        file?: File;
+        source?: string;
+        crop?: NonNullable<ProfileData["photoCrop"]>;
+    } | null>(null);
     const blockPanelRef = useRef<HTMLElement>(null);
 
     useEffect(() => {
@@ -345,14 +352,9 @@ export default function InspectorPanel() {
     }
 
     // --- 공통 블록 조작 ---
-    const handleProfilePhotoUpload = async (file?: File) => {
+    const handleProfilePhotoUpload = (file?: File) => {
         if (!file || currentBlock.type !== "profile") return;
-        const photo = await createProfilePhotoDataUrl(file);
-        updateBlockData(currentBlock.id, {
-            ...currentBlock.data,
-            photo,
-            showPhoto: true,
-        });
+        setPendingProfilePhoto({ file, blockId: currentBlock.id });
     };
 
     const handleMoveUp = () => {
@@ -1041,7 +1043,7 @@ export default function InspectorPanel() {
                                         accept="image/png,image/jpeg,image/webp"
                                         className="hidden"
                                         onChange={(event) => {
-                                            void handleProfilePhotoUpload(event.target.files?.[0]);
+                                            handleProfilePhotoUpload(event.target.files?.[0]);
                                             event.currentTarget.value = "";
                                         }}
                                     />
@@ -1055,7 +1057,7 @@ export default function InspectorPanel() {
                                             accept="image/png,image/jpeg,image/webp"
                                             className="hidden"
                                             onChange={(event) => {
-                                                void handleProfilePhotoUpload(event.target.files?.[0]);
+                                                handleProfilePhotoUpload(event.target.files?.[0]);
                                                 event.currentTarget.value = "";
                                             }}
                                         />
@@ -1063,8 +1065,29 @@ export default function InspectorPanel() {
                                     {currentBlock.data.photo && (
                                         <button
                                             type="button"
+                                            className="inspector-photo-action inspector-photo-action--edit"
+                                            onClick={() => setPendingProfilePhoto({
+                                                blockId: currentBlock.id,
+                                                source: currentBlock.data.photoSource || currentBlock.data.photo,
+                                                crop: currentBlock.data.photoSource
+                                                    ? currentBlock.data.photoCrop
+                                                    : { focusX: 0.5, focusY: 0.5, zoom: 1 },
+                                            })}
+                                        >
+                                            <Crop size={14} aria-hidden="true" />
+                                            사진 편집
+                                        </button>
+                                    )}
+                                    {currentBlock.data.photo && (
+                                        <button
+                                            type="button"
                                             className="inspector-photo-action inspector-photo-action--remove"
-                                            onClick={() => updateBlockData(currentBlock.id, { ...currentBlock.data, photo: "" })}
+                                            onClick={() => updateBlockData(currentBlock.id, {
+                                                ...currentBlock.data,
+                                                photo: "",
+                                                photoSource: "",
+                                                photoCrop: undefined,
+                                            })}
                                             data-tooltip="사진 제거"
                                             aria-label="프로필 사진 제거"
                                         >
@@ -2358,6 +2381,25 @@ export default function InspectorPanel() {
                 )}
 
             </div>
+            <ProfilePhotoCropDialog
+                file={pendingProfilePhoto?.file ?? null}
+                source={pendingProfilePhoto?.source}
+                initialCrop={pendingProfilePhoto?.crop}
+                onCancel={() => setPendingProfilePhoto(null)}
+                onApply={({ photo, source, crop }) => {
+                    const block = blocks.find((item) => item.id === pendingProfilePhoto?.blockId);
+                    if (block?.type === "profile") {
+                        updateBlockData(block.id, {
+                            ...block.data,
+                            photo,
+                            photoSource: source,
+                            photoCrop: crop,
+                            showPhoto: true,
+                        });
+                    }
+                    setPendingProfilePhoto(null);
+                }}
+            />
         </aside>
     );
 }

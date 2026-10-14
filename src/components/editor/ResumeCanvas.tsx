@@ -4,14 +4,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
-import { FileText, GripVertical, ImagePlus, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { Crop, FileText, GripVertical, ImagePlus, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { ProfileData, ResumeBlock, ResumeDocument, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
-import { createProfilePhotoDataUrl } from "@/lib/profilePhoto";
 import RichTextEditable from "@/components/editor/RichTextEditable";
 import ServiceDialog from "@/components/ui/ServiceDialog";
+import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
 
 const A4_PAPER_HEIGHT = 1130;
 const PROJECT_ITEM_GAP = 26;
@@ -76,6 +76,12 @@ export default function ResumeCanvas({
     const [zoomLevel, setZoomLevel] = useState<number>(100);
     const [fitToWidth, setFitToWidth] = useState(readOnly);
     const [pendingDeleteBlockId, setPendingDeleteBlockId] = useState<string | null>(null);
+    const [pendingProfilePhoto, setPendingProfilePhoto] = useState<{
+        blockId: string;
+        file?: File;
+        source?: string;
+        crop?: NonNullable<ProfileData["photoCrop"]>;
+    } | null>(null);
     const [profilePhotoMenu, setProfilePhotoMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
     const [pagePlacements, setPagePlacements] = useState<BlockPlacement[][]>(() => getInitialPlacements(blocks));
     const scrollContainerRef = useRef<HTMLElement>(null);
@@ -327,10 +333,9 @@ export default function ResumeCanvas({
         setZoomLevel(100);
     };
 
-    const handleProfilePhotoUpload = async (block: ResumeBlock | undefined, file?: File) => {
+    const handleProfilePhotoUpload = (block: ResumeBlock | undefined, file?: File) => {
         if (!file || !block || block.type !== "profile") return;
-        const photo = await createProfilePhotoDataUrl(file);
-        updateBlockData(block.id, { ...block.data, photo, showPhoto: true });
+        setPendingProfilePhoto({ file, blockId: block.id });
     };
 
     useEffect(() => {
@@ -879,7 +884,7 @@ export default function ResumeCanvas({
                                             className="sr-only"
                                             aria-label="프로필 사진 선택"
                                             onChange={(event) => {
-                                                void handleProfilePhotoUpload(block, event.target.files?.[0]);
+                                                handleProfilePhotoUpload(block, event.target.files?.[0]);
                                                 event.currentTarget.value = "";
                                             }}
                                         />
@@ -1991,12 +1996,37 @@ export default function ResumeCanvas({
                     <button
                         type="button"
                         role="menuitem"
+                        disabled={!blocks.find((block) => block.id === profilePhotoMenu.blockId && block.type === "profile")?.data.photo}
+                        onClick={() => {
+                            const block = blocks.find((item) => item.id === profilePhotoMenu.blockId);
+                            if (block?.type === "profile" && block.data.photo) {
+                                setPendingProfilePhoto({
+                                    blockId: block.id,
+                                    source: block.data.photoSource || block.data.photo,
+                                    crop: block.data.photoSource
+                                        ? block.data.photoCrop
+                                        : { focusX: 0.5, focusY: 0.5, zoom: 1 },
+                                });
+                            }
+                            setProfilePhotoMenu(null);
+                        }}
+                    >
+                        <Crop size={14} /> 사진 편집
+                    </button>
+                    <button
+                        type="button"
+                        role="menuitem"
                         className="is-danger"
                         disabled={!blocks.find((block) => block.id === profilePhotoMenu.blockId && block.type === "profile")?.data.photo}
                         onClick={() => {
                             const block = blocks.find((item) => item.id === profilePhotoMenu.blockId);
                             if (block?.type === "profile") {
-                                updateBlockData(block.id, { ...block.data, photo: "" });
+                                updateBlockData(block.id, {
+                                    ...block.data,
+                                    photo: "",
+                                    photoSource: "",
+                                    photoCrop: undefined,
+                                });
                             }
                             setProfilePhotoMenu(null);
                         }}
@@ -2016,7 +2046,7 @@ export default function ResumeCanvas({
                 onClick={(event) => event.stopPropagation()}
                 onChange={(event) => {
                     const block = blocks.find((item) => item.id === profilePhotoMenuBlockIdRef.current);
-                    void handleProfilePhotoUpload(block, event.target.files?.[0]);
+                    handleProfilePhotoUpload(block, event.target.files?.[0]);
                     event.currentTarget.value = "";
                 }}
             />
@@ -2070,6 +2100,25 @@ export default function ResumeCanvas({
                 setPendingDeleteBlockId(null);
             }}
             onCancel={() => setPendingDeleteBlockId(null)}
+        />
+        <ProfilePhotoCropDialog
+            file={pendingProfilePhoto?.file ?? null}
+            source={pendingProfilePhoto?.source}
+            initialCrop={pendingProfilePhoto?.crop}
+            onCancel={() => setPendingProfilePhoto(null)}
+            onApply={({ photo, source, crop }) => {
+                const block = blocks.find((item) => item.id === pendingProfilePhoto?.blockId);
+                if (block?.type === "profile") {
+                    updateBlockData(block.id, {
+                        ...block.data,
+                        photo,
+                        photoSource: source,
+                        photoCrop: crop,
+                        showPhoto: true,
+                    });
+                }
+                setPendingProfilePhoto(null);
+            }}
         />
         </>
     );

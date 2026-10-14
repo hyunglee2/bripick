@@ -680,7 +680,8 @@ body,
 
 .resume-profile-photo {
   width: 132px;
-  height: 166px;
+  height: auto;
+  aspect-ratio: 7 / 9;
   box-sizing: border-box;
   overflow: hidden;
   display: flex;
@@ -698,7 +699,7 @@ body,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;
+  object-position: center;
 }
 
 .resume-profile-photo-picker {
@@ -769,6 +770,185 @@ body,
 
 .resume-profile-photo-menu button:disabled {
   opacity: 0.4;
+}
+
+.profile-crop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 160;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgb(3 5 10 / 78%);
+  backdrop-filter: blur(5px);
+}
+
+.profile-crop-dialog {
+  width: min(440px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  border: 1px solid #343946;
+  border-radius: 16px;
+  background: #151820;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 52%);
+  color: #f4f4f5;
+}
+
+.profile-crop-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 22px 18px;
+}
+
+.profile-crop-header h2 {
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.profile-crop-header p {
+  margin-top: 5px;
+  color: #9298a6;
+  font-size: 13px;
+}
+
+.profile-crop-icon-button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  color: #9ca3af;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.profile-crop-icon-button:hover,
+.profile-crop-icon-button:focus-visible {
+  background: #242832;
+  color: #fff;
+  outline: none;
+}
+
+.profile-crop-viewport {
+  position: relative;
+  width: min(280px, calc(100vw - 88px));
+  aspect-ratio: 7 / 9;
+  margin: 0 auto;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background: #090b10;
+  box-shadow: 0 0 0 1px #4b5563, 0 10px 34px rgb(0 0 0 / 28%);
+}
+
+.profile-crop-viewport:active {
+  cursor: grabbing;
+}
+
+.profile-crop-viewport > img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.profile-crop-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to right, transparent 33.1%, rgb(255 255 255 / 32%) 33.2%, rgb(255 255 255 / 32%) 33.5%, transparent 33.6%, transparent 66.4%, rgb(255 255 255 / 32%) 66.5%, rgb(255 255 255 / 32%) 66.8%, transparent 66.9%),
+    linear-gradient(to bottom, transparent 33.1%, rgb(255 255 255 / 32%) 33.2%, rgb(255 255 255 / 32%) 33.5%, transparent 33.6%, transparent 66.4%, rgb(255 255 255 / 32%) 66.5%, rgb(255 255 255 / 32%) 66.8%, transparent 66.9%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 48%);
+}
+
+.profile-crop-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 22px 18px;
+  color: #8f96a3;
+}
+
+.profile-crop-controls input[type="range"] {
+  min-width: 0;
+  flex: 1;
+  accent-color: #2f80c3;
+}
+
+.profile-crop-reset {
+  display: inline-flex;
+  height: 32px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid #343946;
+  border-radius: 7px;
+  color: #c6cad2;
+  font-size: 12px;
+}
+
+.profile-crop-reset:hover,
+.profile-crop-reset:focus-visible {
+  border-color: #4b5563;
+  background: #20242d;
+  outline: none;
+}
+
+.profile-crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 22px 20px;
+  border-top: 1px solid #2b303a;
+}
+
+.profile-crop-actions button {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-crop-cancel {
+  border: 1px solid #3b414d;
+  color: #d1d5db;
+}
+
+.profile-crop-cancel:hover,
+.profile-crop-cancel:focus-visible {
+  background: #242832;
+  outline: none;
+}
+
+.profile-crop-apply {
+  background: #2f80c3;
+  color: #fff;
+}
+
+.profile-crop-apply:hover:not(:disabled),
+.profile-crop-apply:focus-visible:not(:disabled) {
+  background: #3691d7;
+  outline: none;
+}
+
+.profile-crop-apply:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (max-height: 660px) {
+  .profile-crop-viewport {
+    width: min(224px, calc((100dvh - 260px) * 7 / 9));
+  }
 }
 
 .resume-profile-copy {
@@ -1369,8 +1549,9 @@ body,
 
 .inspector-panel .inspector-photo-thumbnail {
   display: flex;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: auto;
+  aspect-ratio: 7 / 9;
   flex: 0 0 auto;
   cursor: pointer;
   align-items: center;
