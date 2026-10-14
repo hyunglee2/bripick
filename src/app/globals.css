@@ -518,6 +518,13 @@ body,
     height: 297mm !important;
     min-height: 297mm !important;
     box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .resume-paper * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* 개별 블록/카드가 다음 페이지로 어색하게 쪼개지는 것 방지 */
