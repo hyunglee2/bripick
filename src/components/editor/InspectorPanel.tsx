@@ -1,7 +1,7 @@
 // src/components/editor/InspectorPanel.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { ProfileData, SkillCategory, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
@@ -63,6 +63,9 @@ export default function InspectorPanel() {
     const removeBlock = useResumeStore((state) => state.removeBlock);
     const reorderBlocks = useResumeStore((state) => state.reorderBlocks);
     const toggleBlockVisibility = useResumeStore((state) => state.toggleBlockVisibility);
+    const inspectorAccentStyle = {
+        "--inspector-accent": globalStyle?.primaryColor || DEFAULT_GLOBAL_STYLE.primaryColor,
+    } as CSSProperties;
 
     const [newSkillInputs, setNewSkillInputs] = useState<Record<string, string>>({});
     const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
@@ -150,7 +153,7 @@ export default function InspectorPanel() {
     // 1. 블록 미선택 시: 문서 전역 설정 패널
     if (!currentBlock) {
         return (
-            <aside className="inspector-panel inspector-panel--global w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
+            <aside style={inspectorAccentStyle} className="inspector-panel inspector-panel--global w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
                 <div className="inspector-panel-stack">
                     <div className="inspector-heading flex items-center justify-between gap-3 border-b border-neutral-800">
                         <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
@@ -797,7 +800,7 @@ export default function InspectorPanel() {
     };
 
     return (
-        <aside ref={blockPanelRef} className="inspector-panel inspector-panel--block w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
+        <aside ref={blockPanelRef} style={inspectorAccentStyle} className="inspector-panel inspector-panel--block w-[clamp(380px,30vw,480px)] shrink-0 border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
             <div className="inspector-panel-stack">
                 {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
                 {editingExperience || editingEducation || editingCertification ? (

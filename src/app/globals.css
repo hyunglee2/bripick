@@ -3050,6 +3050,14 @@ summary[data-tooltip],
   box-shadow: none;
 }
 
+.resume-paper [data-resume-accent="true"] {
+  color: var(--resume-blue) !important;
+}
+
+.inspector-panel [data-resume-accent="true"] {
+  color: var(--inspector-accent, var(--brand-primary)) !important;
+}
+
 .header-menu .tooltip-anchor[data-tooltip]::after {
   right: 0;
   left: auto;
@@ -3347,10 +3355,17 @@ summary[data-tooltip],
 }
 
 .project-bullet-editor__content a {
-  color: inherit;
+  color: var(--inspector-accent, var(--resume-blue, #2f80c3));
   font-weight: inherit;
   text-decoration: underline;
+  text-decoration-thickness: 1px;
   text-underline-offset: 2px;
+}
+
+/* 밑줄과 링크가 중첩돼도 장식선을 한 번만 그립니다. */
+:is(.resume-paper, .project-bullet-editor__content, .inspector-rich-text-editor) u a,
+:is(.resume-paper, .project-bullet-editor__content, .inspector-rich-text-editor) a:has(u) {
+  text-decoration: none;
 }
 
 .rich-text-bubble-toolbar {
@@ -3386,6 +3401,25 @@ summary[data-tooltip],
   color: #fff;
   background: #2b3039;
   outline: none;
+}
+
+.rich-text-bubble-toolbar>button.is-active {
+  color: #fff;
+  background: #3a414d;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.rich-text-bubble-toolbar__accent-letter {
+  color: currentColor;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.rich-text-bubble-toolbar__bold-letter {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .rich-text-bubble-toolbar__link-form {
@@ -3932,25 +3966,14 @@ summary[data-tooltip],
 }
 
 .project-bullet-editor__content a,
+.resume-rich-text-editor a,
+.inspector-rich-text-editor a,
 .resume-rich-bullet a,
 [data-project-bullet-editor] a {
-  color: inherit;
+  color: var(--inspector-accent, var(--resume-blue, #2f80c3));
   text-decoration: underline;
+  text-decoration-thickness: 1px;
   text-underline-offset: 2px;
-}
-
-.project-bullet-editor__content a::after,
-.resume-rich-bullet a::after,
-[data-project-bullet-editor] a::after {
-  content: " 링크 ↗";
-  display: inline-block;
-  margin-left: 3px;
-  color: var(--resume-blue, #60a5fa);
-  font-size: 0.78em;
-  font-weight: 600;
-  line-height: 1;
-  text-decoration: none;
-  white-space: nowrap;
 }
 
 /* Landing page */

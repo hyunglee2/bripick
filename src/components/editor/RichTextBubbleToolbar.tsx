@@ -2,39 +2,83 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bold, Link2, Underline } from "lucide-react";
+import { Link2 } from "lucide-react";
 
 type RichTextBubbleToolbarProps = {
     editorRef: React.RefObject<HTMLElement | null>;
     onFormat: () => void;
     allowBold?: boolean;
-    allowUnderline?: boolean;
     allowLink?: boolean;
 };
 
 type ToolbarPosition = { left: number; top: number };
+type ActiveFormats = { bold: boolean; accent: boolean; link: boolean };
+type SelectionOffsets = { start: number; end: number };
 
 export default function RichTextBubbleToolbar({
     editorRef,
     onFormat,
     allowBold = true,
-    allowUnderline = true,
     allowLink = true,
 }: RichTextBubbleToolbarProps) {
     const toolbarRef = useRef<HTMLDivElement>(null);
     const linkInputRef = useRef<HTMLInputElement>(null);
     const savedRangeRef = useRef<Range | null>(null);
+    const selectionOffsetsRef = useRef<SelectionOffsets | null>(null);
+    const originalLinkTitleRef = useRef("");
     const [position, setPosition] = useState<ToolbarPosition | null>(null);
     const [isLinkEditorOpen, setIsLinkEditorOpen] = useState(false);
     const [linkValue, setLinkValue] = useState("");
     const [linkTitle, setLinkTitle] = useState("");
+    const [accentColor, setAccentColor] = useState("#2f80c3");
+    const [activeFormats, setActiveFormats] = useState<ActiveFormats>({
+        bold: false,
+        accent: false,
+        link: false,
+    });
+
+    const getSelectionOffsets = (editor: HTMLElement, range: Range): SelectionOffsets => {
+        const beforeStart = document.createRange();
+        beforeStart.selectNodeContents(editor);
+        beforeStart.setEnd(range.startContainer, range.startOffset);
+        const beforeEnd = document.createRange();
+        beforeEnd.selectNodeContents(editor);
+        beforeEnd.setEnd(range.endContainer, range.endOffset);
+        return { start: beforeStart.toString().length, end: beforeEnd.toString().length };
+    };
+
+    const createRangeFromOffsets = (editor: HTMLElement, offsets: SelectionOffsets) => {
+        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+        const range = document.createRange();
+        let consumed = 0;
+        let startSet = false;
+        let node = walker.nextNode();
+
+        while (node) {
+            const next = consumed + (node.textContent?.length || 0);
+            if (!startSet && offsets.start <= next) {
+                range.setStart(node, Math.max(0, offsets.start - consumed));
+                startSet = true;
+            }
+            if (startSet && offsets.end <= next) {
+                range.setEnd(node, Math.max(0, offsets.end - consumed));
+                return range;
+            }
+            consumed = next;
+            node = walker.nextNode();
+        }
+        return null;
+    };
 
     const restoreSelection = () => {
-        const range = savedRangeRef.current;
+        const editor = editorRef.current;
+        const offsets = selectionOffsetsRef.current;
+        const range = editor && offsets ? createRangeFromOffsets(editor, offsets) : savedRangeRef.current;
         if (!range) return false;
         const selection = window.getSelection();
         selection?.removeAllRanges();
         selection?.addRange(range);
+        savedRangeRef.current = range.cloneRange();
         return true;
     };
 
@@ -55,7 +99,21 @@ export default function RichTextBubbleToolbar({
 
         const rect = range.getBoundingClientRect();
         if (rect.width === 0 && rect.height === 0) return;
+        const selectionElement = range.startContainer instanceof HTMLElement
+            ? range.startContainer
+            : range.startContainer.parentElement;
+        setActiveFormats({
+            bold: document.queryCommandState("bold"),
+            accent: Boolean(selectionElement?.closest('[data-resume-accent="true"]')),
+            link: Boolean(selectionElement?.closest("a")),
+        });
+        const resumePaper = editor.closest<HTMLElement>(".resume-paper");
+        if (resumePaper) {
+            const currentAccent = getComputedStyle(resumePaper).getPropertyValue("--resume-blue").trim();
+            if (currentAccent) setAccentColor(currentAccent);
+        }
         savedRangeRef.current = range.cloneRange();
+        selectionOffsetsRef.current = getSelectionOffsets(editor, range);
         setPosition({
             left: Math.min(window.innerWidth - 16, Math.max(16, rect.left + rect.width / 2)),
             top: Math.max(12, rect.top - 10),
@@ -81,9 +139,9 @@ export default function RichTextBubbleToolbar({
         if (isLinkEditorOpen) linkInputRef.current?.focus();
     }, [isLinkEditorOpen]);
 
-    const applyCommand = (command: "bold" | "underline") => {
+    const applyBold = () => {
         if (!restoreSelection()) return;
-        document.execCommand(command);
+        document.execCommand("bold");
         savedRangeRef.current = window.getSelection()?.rangeCount
             ? window.getSelection()!.getRangeAt(0).cloneRange()
             : savedRangeRef.current;
@@ -91,16 +149,38 @@ export default function RichTextBubbleToolbar({
         updateFromSelection();
     };
 
-    const openLinkEditor = () => {
+    const applyAccentColor = () => {
+        if (!restoreSelection()) return;
+        const selection = window.getSelection();
+        const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+        if (!range || range.collapsed) return;
+
+        const accent = document.createElement("span");
+        accent.dataset.resumeAccent = "true";
+        accent.append(range.extractContents());
+        range.insertNode(accent);
+
+        const nextRange = document.createRange();
+        nextRange.selectNodeContents(accent);
+        selection?.removeAllRanges();
+        selection?.addRange(nextRange);
+        savedRangeRef.current = nextRange.cloneRange();
+        onFormat();
+        updateFromSelection();
+    };
+
+    function openLinkEditor() {
         restoreSelection();
         const selection = window.getSelection();
         const anchorNode = selection?.anchorNode;
         const anchorElement = anchorNode instanceof HTMLElement ? anchorNode : anchorNode?.parentElement;
         const anchor = anchorElement?.closest("a");
         setLinkValue(anchor?.getAttribute("href") || "");
-        setLinkTitle(anchor?.textContent || selection?.toString() || "");
+        const selectedTitle = anchor?.textContent || selection?.toString() || "";
+        originalLinkTitleRef.current = selectedTitle;
+        setLinkTitle(selectedTitle);
         setIsLinkEditorOpen(true);
-    };
+    }
 
     const applyLink = () => {
         if (!restoreSelection()) return;
@@ -123,15 +203,16 @@ export default function RichTextBubbleToolbar({
                 anchor.href = href;
                 anchor.target = "_blank";
                 anchor.rel = "noopener noreferrer";
-                if (linkTitle.trim()) anchor.textContent = linkTitle.trim();
+                if (linkTitle.trim() && linkTitle.trim() !== originalLinkTitleRef.current.trim()) {
+                    anchor.textContent = linkTitle.trim();
+                }
             } else {
-                const selectedText = range.toString();
                 const selectedContents = range.extractContents();
                 anchor = document.createElement("a");
                 anchor.href = href;
                 anchor.target = "_blank";
                 anchor.rel = "noopener noreferrer";
-                if (linkTitle.trim() && linkTitle.trim() !== selectedText) {
+                if (linkTitle.trim() && linkTitle.trim() !== originalLinkTitleRef.current.trim()) {
                     anchor.textContent = linkTitle.trim();
                 } else {
                     anchor.append(selectedContents);
@@ -183,29 +264,34 @@ export default function RichTextBubbleToolbar({
                     {allowBold && (
                         <button
                             type="button"
+                            className={activeFormats.bold ? "is-active" : undefined}
                             aria-label="볼드"
+                            aria-pressed={activeFormats.bold}
                             data-tooltip="볼드 (Ctrl/⌘ + B)"
                             onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => applyCommand("bold")}
+                            onClick={applyBold}
                         >
-                            <Bold size={15} />
+                            <span className="rich-text-bubble-toolbar__bold-letter" aria-hidden="true">B</span>
                         </button>
                     )}
-                    {allowUnderline && (
-                        <button
-                            type="button"
-                            aria-label="밑줄"
-                            data-tooltip="밑줄 (Ctrl/⌘ + U)"
-                            onMouseDown={(event) => event.preventDefault()}
-                            onClick={() => applyCommand("underline")}
-                        >
-                            <Underline size={15} />
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        className={`rich-text-bubble-toolbar__accent${activeFormats.accent ? " is-active" : ""}`}
+                        style={{ color: accentColor }}
+                        aria-label="포인트 색상"
+                        aria-pressed={activeFormats.accent}
+                        data-tooltip="포인트 색상"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={applyAccentColor}
+                    >
+                        <span className="rich-text-bubble-toolbar__accent-letter" aria-hidden="true">A</span>
+                    </button>
                     {allowLink && (
                         <button
                             type="button"
+                            className={activeFormats.link ? "is-active" : undefined}
                             aria-label="링크"
+                            aria-pressed={activeFormats.link}
                             data-tooltip="링크 (Ctrl/⌘ + K)"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={openLinkEditor}
