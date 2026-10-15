@@ -338,6 +338,16 @@ export default function ResumeCanvas({
         setPendingProfilePhoto({ file, blockId: block.id });
     };
 
+    const openProfilePhotoMenu = (blockId: string, clientX: number, clientY: number) => {
+        setSelectedBlockId(blockId);
+        profilePhotoMenuBlockIdRef.current = blockId;
+        setProfilePhotoMenu({
+            blockId,
+            x: Math.max(8, Math.min(clientX, window.innerWidth - 176)),
+            y: Math.max(8, Math.min(clientY, window.innerHeight - 128)),
+        });
+    };
+
     useEffect(() => {
         const handleSelectedBlockDelete = (event: KeyboardEvent) => {
             if (event.key !== "Backspace" || !selectedBlockId || pendingDeleteBlockId) return;
@@ -854,19 +864,21 @@ export default function ResumeCanvas({
                         <div className="resume-profile-hero">
                             <div className={`resume-profile-main${showProfilePhoto ? "" : " resume-profile-main--no-photo"}`}>
                                 {showProfilePhoto && (
-                                    <label
+                                    <button
+                                        type="button"
                                         className="resume-profile-photo resume-profile-photo-picker"
-                                        onClick={(event) => event.stopPropagation()}
+                                        aria-label="프로필 사진 관리"
+                                        aria-haspopup="menu"
+                                        aria-expanded={profilePhotoMenu?.blockId === block.id}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            const rect = event.currentTarget.getBoundingClientRect();
+                                            openProfilePhotoMenu(block.id, rect.left, rect.bottom + 6);
+                                        }}
                                         onContextMenu={(event) => {
                                             event.preventDefault();
                                             event.stopPropagation();
-                                            setSelectedBlockId(block.id);
-                                            profilePhotoMenuBlockIdRef.current = block.id;
-                                            setProfilePhotoMenu({
-                                                blockId: block.id,
-                                                x: Math.max(8, Math.min(event.clientX, window.innerWidth - 176)),
-                                                y: Math.max(8, Math.min(event.clientY, window.innerHeight - 92)),
-                                            });
+                                            openProfilePhotoMenu(block.id, event.clientX, event.clientY);
                                         }}
                                         onDragStart={(event) => event.preventDefault()}
                                     >
@@ -876,19 +888,9 @@ export default function ResumeCanvas({
                                             <span>{String(block.data.name || "?").slice(0, 1)}</span>
                                         )}
                                         <span className="resume-profile-photo-picker__overlay no-print" aria-hidden="true">
-                                            사진 변경
+                                            사진 관리
                                         </span>
-                                        <input
-                                            type="file"
-                                            accept="image/png,image/jpeg,image/webp"
-                                            className="sr-only"
-                                            aria-label="프로필 사진 선택"
-                                            onChange={(event) => {
-                                                handleProfilePhotoUpload(block, event.target.files?.[0]);
-                                                event.currentTarget.value = "";
-                                            }}
-                                        />
-                                    </label>
+                                    </button>
                                 )}
                                 <div className="resume-profile-copy">
                                     <EditableText
