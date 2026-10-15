@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
-import { Crop, FileText, GripVertical, ImagePlus, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { ChevronDown, Columns2, Crop, FileText, GripVertical, ImagePlus, Maximize2, Monitor, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { ProfileData, ResumeBlock, ResumeDocument, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
@@ -32,6 +32,8 @@ type BlockPlacement = {
     experienceProjectStart?: number;
     experienceProjectEnd?: number;
 };
+
+type CanvasViewMode = "custom" | "page" | "width" | "two-page";
 
 function getFlowItemCount(block: ResumeBlock) {
     if (Array.isArray(block.data)) return block.data.length;
@@ -74,7 +76,8 @@ export default function ResumeCanvas({
     const [dragOverFragmentKey, setDragOverFragmentKey] = useState<string | null>(null);
     const [dragOverPosition, setDragOverPosition] = useState<"before" | "after" | null>(null);
     const [zoomLevel, setZoomLevel] = useState<number>(100);
-    const [fitToWidth, setFitToWidth] = useState(readOnly);
+    const [viewMode, setViewMode] = useState<CanvasViewMode>(readOnly ? "width" : "custom");
+    const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
     const [pendingDeleteBlockId, setPendingDeleteBlockId] = useState<string | null>(null);
     const [pendingProfilePhoto, setPendingProfilePhoto] = useState<{
         blockId: string;
@@ -88,6 +91,7 @@ export default function ResumeCanvas({
     const canvasRef = useRef<HTMLDivElement>(null);
     const zoomLevelRef = useRef(zoomLevel);
     const zoomLabelRef = useRef<HTMLSpanElement>(null);
+    const viewMenuRef = useRef<HTMLDivElement>(null);
     const publicTouchGestureRef = useRef<
         | { mode: "pan"; lastX: number; lastY: number }
         | {
@@ -114,6 +118,22 @@ export default function ResumeCanvas({
     useEffect(() => () => {
         if (dragScrollFrameRef.current !== null) cancelAnimationFrame(dragScrollFrameRef.current);
     }, []);
+
+    useEffect(() => {
+        if (!isViewMenuOpen) return;
+        const closeViewMenu = (event: PointerEvent) => {
+            if (!viewMenuRef.current?.contains(event.target as Node)) setIsViewMenuOpen(false);
+        };
+        const closeViewMenuWithKeyboard = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setIsViewMenuOpen(false);
+        };
+        window.addEventListener("pointerdown", closeViewMenu);
+        window.addEventListener("keydown", closeViewMenuWithKeyboard);
+        return () => {
+            window.removeEventListener("pointerdown", closeViewMenu);
+            window.removeEventListener("keydown", closeViewMenuWithKeyboard);
+        };
+    }, [isViewMenuOpen]);
 
     useEffect(() => {
         if (!profilePhotoMenu) return;
@@ -151,30 +171,40 @@ export default function ResumeCanvas({
         "--resume-block-gap": `${globalStyle?.blockGap ?? 18}px`,
     } as React.CSSProperties;
 
-    const fitCanvasToWidth = useCallback(() => {
+    const fitCanvasToView = useCallback((mode: Exclude<CanvasViewMode, "custom">) => {
         const container = scrollContainerRef.current;
         if (!container) return;
 
         const paperWidth = globalStyle?.contentWidth || 800;
         const horizontalPadding = container.clientWidth < 768 ? 16 : 64;
-        const nextZoom = Math.floor(((container.clientWidth - horizontalPadding) / paperWidth) * 100);
-        setZoomLevel(Math.max(25, Math.min(nextZoom, 100)));
+        const availableWidth = Math.max(container.clientWidth - horizontalPadding, 1);
+        const availableHeight = Math.max(container.clientHeight - 64, 1);
+        const pageChromeHeight = A4_PAPER_HEIGHT + 34;
+        const widthScale = availableWidth / paperWidth;
+        const nextScale = mode === "page"
+            ? Math.min(widthScale, availableHeight / pageChromeHeight)
+            : mode === "two-page"
+                ? availableWidth / ((paperWidth * 2) + 40)
+                : widthScale;
+        setZoomLevel(Math.max(25, Math.min(Math.floor(nextScale * 100), 100)));
         container.scrollLeft = 0;
+        container.scrollTop = 0;
     }, [globalStyle?.contentWidth]);
 
     useLayoutEffect(() => {
-        if (!readOnly || !fitToWidth) return;
+        if (viewMode === "custom") return;
 
         const container = scrollContainerRef.current;
         if (!container) return;
 
-        fitCanvasToWidth();
-        const resizeObserver = new ResizeObserver(fitCanvasToWidth);
+        const updateView = () => fitCanvasToView(viewMode);
+        updateView();
+        const resizeObserver = new ResizeObserver(updateView);
         resizeObserver.observe(container);
         return () => resizeObserver.disconnect();
-    }, [fitCanvasToWidth, fitToWidth, readOnly]);
+    }, [fitCanvasToView, viewMode]);
 
-    const minimumZoom = readOnly ? 25 : 50;
+    const minimumZoom = 25;
     useEffect(() => {
         zoomLevelRef.current = zoomLevel;
     }, [zoomLevel]);
@@ -217,7 +247,7 @@ export default function ResumeCanvas({
                 currentCenterX: center.x,
                 currentCenterY: center.y,
             };
-            setFitToWidth(false);
+            setViewMode("custom");
         };
 
         const handleTouchStart = (event: TouchEvent) => {
@@ -317,20 +347,27 @@ export default function ResumeCanvas({
     }, [minimumZoom, readOnly]);
 
     const handleZoomIn = () => {
-        setFitToWidth(false);
+        setViewMode("custom");
         setZoomLevel((prev) => Math.min(prev + 10, 150));
     };
     const handleZoomOut = () => {
-        setFitToWidth(false);
+        setViewMode("custom");
         setZoomLevel((prev) => Math.max(prev - 10, minimumZoom));
     };
     const handleZoomReset = () => {
         if (readOnly) {
-            setFitToWidth(true);
-            fitCanvasToWidth();
+            setViewMode("width");
+            fitCanvasToView("width");
             return;
         }
+        setViewMode("custom");
         setZoomLevel(100);
+    };
+
+    const handleViewMode = (mode: Exclude<CanvasViewMode, "custom">) => {
+        setViewMode(mode);
+        setIsViewMenuOpen(false);
+        fitCanvasToView(mode);
     };
 
     const handleProfilePhotoUpload = (block: ResumeBlock | undefined, file?: File) => {
@@ -1876,19 +1913,14 @@ export default function ResumeCanvas({
         >
             <div
                 ref={canvasRef}
-                style={readOnly ? {
+                style={{
                     width: `${globalStyle?.contentWidth || 800}px`,
                     zoom: zoomLevel / 100,
                     marginInline: "auto",
                     transformOrigin: "top center",
                     backfaceVisibility: "hidden",
-                } : {
-                    width: "100%",
-                    transform: `scale(${zoomLevel / 100})`,
-                    transformOrigin: "top center",
-                    transition: "transform 0.15s ease-out",
                 }}
-                className="resume-canvas-pages flex flex-col items-center gap-10 pb-36"
+                className={`resume-canvas-pages items-center gap-10 pb-36${viewMode === "two-page" ? " resume-canvas-pages--two-page" : " flex flex-col"}`}
             >
                 {/* 실제 A4 시트 단위 분할 렌더링 */}
                 {pages.map((page) => (
@@ -2125,6 +2157,37 @@ export default function ResumeCanvas({
                 >
                     <RotateCcw size={12} />
                 </button>
+                {!readOnly && (
+                    <div ref={viewMenuRef} className="editor-view-menu">
+                        <button
+                            type="button"
+                            className={`editor-view-menu__trigger${viewMode !== "custom" ? " is-active" : ""}`}
+                            aria-label="화면 맞춤 및 페이지 배열"
+                            aria-haspopup="menu"
+                            aria-expanded={isViewMenuOpen}
+                            onClick={() => setIsViewMenuOpen((open) => !open)}
+                        >
+                            <Maximize2 size={13} />
+                            <ChevronDown size={10} />
+                        </button>
+                        {isViewMenuOpen && (
+                            <div className="editor-view-menu__popover" role="menu" aria-label="화면 보기 방식">
+                                <button type="button" role="menuitemradio" aria-checked={viewMode === "page"} onClick={() => handleViewMode("page")}>
+                                    <Maximize2 size={15} />
+                                    <span><strong>쪽 맞춤</strong><small>한 페이지 전체 보기</small></span>
+                                </button>
+                                <button type="button" role="menuitemradio" aria-checked={viewMode === "width"} onClick={() => handleViewMode("width")}>
+                                    <Monitor size={15} />
+                                    <span><strong>너비 맞춤</strong><small>화면 가로폭에 맞추기</small></span>
+                                </button>
+                                <button type="button" role="menuitemradio" aria-checked={viewMode === "two-page"} onClick={() => handleViewMode("two-page")}>
+                                    <Columns2 size={15} />
+                                    <span><strong>두 쪽 보기</strong><small>페이지를 두 장씩 정렬</small></span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </main>
         <ServiceDialog

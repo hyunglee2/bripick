@@ -106,9 +106,9 @@ export default function EditableText({
                 e.stopPropagation();
                 setIsEditing(true);
             }}
-            className={`cursor-text transition duration-150 ${appearance === "plain"
+            className={`resume-editable-text cursor-text border-b border-dashed border-transparent transition duration-150 ${appearance === "plain"
                 ? "hover:opacity-75"
-                : "hover:bg-neutral-100/80 rounded px-1 -mx-1 group-hover:border-dashed group-hover:border-b group-hover:border-neutral-300"
+                : "rounded px-1 -mx-1"
                 } ${className}`}
         >
             {value ? value : <span className="editable-placeholder no-print text-neutral-400 italic font-normal">{placeholder}</span>}
