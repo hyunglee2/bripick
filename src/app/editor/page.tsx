@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import EditorHeader from "@/components/editor/EditorHeader";
-import ResumeCanvas from "@/components/editor/ResumeCanvas";
-import InspectorPanel from "@/components/editor/InspectorPanel";
+import EditorWorkspace from "@/components/editor/EditorWorkspace";
 import ResumeWorkspaceSync from "@/components/auth/ResumeWorkspaceSync";
 
 export const metadata: Metadata = {
@@ -12,5 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default function EditorPage() {
-  return <main className="flex flex-col h-screen overflow-hidden" data-nosnippet><ResumeWorkspaceSync /><EditorHeader /><div className="flex flex-1 overflow-hidden"><ResumeCanvas /><InspectorPanel /></div></main>;
+  return <main className="flex flex-col h-screen overflow-hidden" data-nosnippet><ResumeWorkspaceSync /><EditorHeader /><EditorWorkspace /></main>;
 }

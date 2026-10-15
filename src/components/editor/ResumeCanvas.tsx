@@ -896,6 +896,7 @@ export default function ResumeCanvas({
                 }, []);
                 if (templateType === "modern") {
                     const highlights = Array.isArray(block.data.highlights) ? block.data.highlights : [];
+                    const displayedHighlights = highlights.length > 0 ? highlights : [""];
                     const introductionStyle = block.data.introductionStyle || "bullets";
                     return (
                         <div className="resume-profile-hero">
@@ -933,7 +934,7 @@ export default function ResumeCanvas({
                                     <RichTextEditable
                                         html={block.data.bioHtml || escapeHtml(block.data.bio || "")}
                                         readOnly={readOnly}
-                                        placeholder="예: 사용자 중심의 서비스를 만드는"
+                                        placeholder="강점, 태도, 역할 중심의 한 줄 수식어"
                                         onChange={(bioHtml) => updateBlockData(block.id, {
                                             ...block.data,
                                             bio: richTextToPlainText(bioHtml),
@@ -959,8 +960,8 @@ export default function ResumeCanvas({
                                         <span className="resume-profile-suffix">입니다.</span>
                                     </div>
                                     <div className="resume-profile-contacts">
-                                            <strong>CONTACTS</strong>
-                                            <div className="resume-contact-list">
+                                        <strong>CONTACTS</strong>
+                                        <div className="resume-contact-list">
                                             {profileContactRows.map((row) => (
                                                 <div key={row.map((contact) => contact.id).join("-")} className="resume-contact-line">
                                                     {row.map((contact) => (
@@ -984,21 +985,21 @@ export default function ResumeCanvas({
                                                     ))}
                                                 </div>
                                             ))}
-                                            </div>
                                         </div>
+                                    </div>
                                 </div>
                             </div>
-                            {highlights.length > 0 && introductionStyle === "bullets" && (
+                            {(!readOnly || highlights.length > 0) && introductionStyle === "bullets" && (
                                 <ul className="resume-profile-highlights">
-                                    {highlights.map((highlight: string, index: number) => (
+                                    {displayedHighlights.map((highlight: string, index: number) => (
                                         <li key={index}>
                                             <RichTextEditable
                                                 html={block.data.highlightsHtml?.[index] || escapeHtml(highlight)}
                                                 readOnly={readOnly}
-                                                placeholder="자기소개를 입력하세요"
+                                                placeholder="핵심 경험이나 강점을 입력하세요"
                                                 className="resume-rich-bullet"
                                                 onChange={(highlightHtml) => {
-                                                    const updated = [...highlights];
+                                                    const updated = [...displayedHighlights];
                                                     const highlightsHtml = [...(block.data.highlightsHtml || [])];
                                                     updated[index] = richTextToPlainText(highlightHtml);
                                                     highlightsHtml[index] = highlightHtml;
@@ -1009,7 +1010,7 @@ export default function ResumeCanvas({
                                     ))}
                                 </ul>
                             )}
-                            {highlights.length > 0 && introductionStyle === "paragraph" && (
+                            {(!readOnly || highlights.length > 0) && introductionStyle === "paragraph" && (
                                 <RichTextEditable
                                     html={(block.data.highlightsHtml || highlights.map(escapeHtml)).join("<br>")}
                                     readOnly={readOnly}
@@ -1246,102 +1247,102 @@ export default function ResumeCanvas({
                                                                 placement.experienceProjectEnd ?? exp.projects.length,
                                                             )
                                                             .map((project: any, localProjectIndex: number) => {
-                                                            const projectIndex = (placement.experienceProjectStart ?? 0) + localProjectIndex;
-                                                            return <div
-                                                                key={project.id}
-                                                                data-experience-project-index={projectIndex}
-                                                                data-resume-sub-child-id={project.id}
-                                                                className="resume-experience-project"
-                                                            >
-                                                                <div className="resume-experience-project__header">
-                                                                    <div className="flex min-w-0 items-baseline gap-2">
-                                                                        <span style={{ backgroundColor: primaryColor }} className="h-1.5 w-1.5 shrink-0" />
-                                                                        <EditableText
-                                                                            tag="span"
-                                                                            value={project.title}
-                                                                            placeholder="프로젝트명"
-                                                                            onChange={(title) => {
-                                                                                const updated = [...block.data];
-                                                                                const projects = [...exp.projects];
-                                                                                projects[projectIndex] = { ...project, title };
-                                                                                updated[expIndex] = { ...exp, projects };
-                                                                                updateBlockData(block.id, updated);
-                                                                            }}
-                                                                            className="resume-item-title font-bold text-neutral-900"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="flex shrink-0 items-center gap-1 text-xs text-neutral-500">
-                                                                        <EditableText
-                                                                            value={project.startDate || ""}
-                                                                            width="short"
-                                                                            placeholder="시작일"
-                                                                            onChange={(startDate) => {
-                                                                                const updated = [...block.data];
-                                                                                const projects = [...exp.projects];
-                                                                                projects[projectIndex] = { ...project, startDate };
-                                                                                updated[expIndex] = { ...exp, projects };
-                                                                                updateBlockData(block.id, updated);
-                                                                            }}
-                                                                        />
-                                                                        <span>~</span>
-                                                                        <EditableText
-                                                                            value={project.endDate || ""}
-                                                                            width="short"
-                                                                            placeholder="종료일"
-                                                                            onChange={(endDate) => {
-                                                                                const updated = [...block.data];
-                                                                                const projects = [...exp.projects];
-                                                                                projects[projectIndex] = { ...project, endDate };
-                                                                                updated[expIndex] = { ...exp, projects };
-                                                                                updateBlockData(block.id, updated);
-                                                                            }}
-                                                                        />
-                                                                    </div>
-                                                                </div>
-                                                                <EditableText
-                                                                    tag="div"
-                                                                    value={project.role}
-                                                                    placeholder="프로젝트 소개 및 역할"
-                                                                    onChange={(role) => {
-                                                                        const updated = [...block.data];
-                                                                        const projects = [...exp.projects];
-                                                                        projects[projectIndex] = { ...project, role };
-                                                                        updated[expIndex] = { ...exp, projects };
-                                                                        updateBlockData(block.id, updated);
-                                                                    }}
-                                                                    className="resume-experience-project__summary"
-                                                                />
-                                                                <ul className="resume-project-bullets">
-                                                                    {(project.description || []).map((description: string, descriptionIndex: number) => (
-                                                                        <li
-                                                                            key={descriptionIndex}
-                                                                            data-bullet-level={project.descriptionLevels?.[descriptionIndex] || 1}
-                                                                        >
-                                                                            <RichTextEditable
-                                                                                html={project.descriptionHtml?.[descriptionIndex] || escapeHtml(description)}
-                                                                                readOnly={readOnly}
-                                                                                ariaLabel="프로젝트 기여와 성과"
-                                                                                className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
-                                                                                onKeyDown={(event) => {
-                                                                                    if (event.key === "Enter") event.preventDefault();
-                                                                                }}
-                                                                                onChange={(descriptionHtml) => {
+                                                                const projectIndex = (placement.experienceProjectStart ?? 0) + localProjectIndex;
+                                                                return <div
+                                                                    key={project.id}
+                                                                    data-experience-project-index={projectIndex}
+                                                                    data-resume-sub-child-id={project.id}
+                                                                    className="resume-experience-project"
+                                                                >
+                                                                    <div className="resume-experience-project__header">
+                                                                        <div className="flex min-w-0 items-baseline gap-2">
+                                                                            <span style={{ backgroundColor: primaryColor }} className="h-1.5 w-1.5 shrink-0" />
+                                                                            <EditableText
+                                                                                tag="span"
+                                                                                value={project.title}
+                                                                                placeholder="프로젝트명"
+                                                                                onChange={(title) => {
                                                                                     const updated = [...block.data];
                                                                                     const projects = [...exp.projects];
-                                                                                    const descriptions = [...(project.description || [])];
-                                                                                    const html = [...(project.descriptionHtml || [])];
-                                                                                    descriptions[descriptionIndex] = richTextToPlainText(descriptionHtml);
-                                                                                    html[descriptionIndex] = descriptionHtml;
-                                                                                    projects[projectIndex] = { ...project, description: descriptions, descriptionHtml: html };
+                                                                                    projects[projectIndex] = { ...project, title };
+                                                                                    updated[expIndex] = { ...exp, projects };
+                                                                                    updateBlockData(block.id, updated);
+                                                                                }}
+                                                                                className="resume-item-title font-bold text-neutral-900"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="flex shrink-0 items-center gap-1 text-xs text-neutral-500">
+                                                                            <EditableText
+                                                                                value={project.startDate || ""}
+                                                                                width="short"
+                                                                                placeholder="시작일"
+                                                                                onChange={(startDate) => {
+                                                                                    const updated = [...block.data];
+                                                                                    const projects = [...exp.projects];
+                                                                                    projects[projectIndex] = { ...project, startDate };
                                                                                     updated[expIndex] = { ...exp, projects };
                                                                                     updateBlockData(block.id, updated);
                                                                                 }}
                                                                             />
-                                                                        </li>
-                                                                    ))}
-                                                                </ul>
-                                                            </div>;
-                                                        })}
+                                                                            <span>~</span>
+                                                                            <EditableText
+                                                                                value={project.endDate || ""}
+                                                                                width="short"
+                                                                                placeholder="종료일"
+                                                                                onChange={(endDate) => {
+                                                                                    const updated = [...block.data];
+                                                                                    const projects = [...exp.projects];
+                                                                                    projects[projectIndex] = { ...project, endDate };
+                                                                                    updated[expIndex] = { ...exp, projects };
+                                                                                    updateBlockData(block.id, updated);
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                    <EditableText
+                                                                        tag="div"
+                                                                        value={project.role}
+                                                                        placeholder="프로젝트 소개 및 역할"
+                                                                        onChange={(role) => {
+                                                                            const updated = [...block.data];
+                                                                            const projects = [...exp.projects];
+                                                                            projects[projectIndex] = { ...project, role };
+                                                                            updated[expIndex] = { ...exp, projects };
+                                                                            updateBlockData(block.id, updated);
+                                                                        }}
+                                                                        className="resume-experience-project__summary"
+                                                                    />
+                                                                    <ul className="resume-project-bullets">
+                                                                        {(project.description || []).map((description: string, descriptionIndex: number) => (
+                                                                            <li
+                                                                                key={descriptionIndex}
+                                                                                data-bullet-level={project.descriptionLevels?.[descriptionIndex] || 1}
+                                                                            >
+                                                                                <RichTextEditable
+                                                                                    html={project.descriptionHtml?.[descriptionIndex] || escapeHtml(description)}
+                                                                                    readOnly={readOnly}
+                                                                                    ariaLabel="프로젝트 기여와 성과"
+                                                                                    className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
+                                                                                    onKeyDown={(event) => {
+                                                                                        if (event.key === "Enter") event.preventDefault();
+                                                                                    }}
+                                                                                    onChange={(descriptionHtml) => {
+                                                                                        const updated = [...block.data];
+                                                                                        const projects = [...exp.projects];
+                                                                                        const descriptions = [...(project.description || [])];
+                                                                                        const html = [...(project.descriptionHtml || [])];
+                                                                                        descriptions[descriptionIndex] = richTextToPlainText(descriptionHtml);
+                                                                                        html[descriptionIndex] = descriptionHtml;
+                                                                                        projects[projectIndex] = { ...project, description: descriptions, descriptionHtml: html };
+                                                                                        updated[expIndex] = { ...exp, projects };
+                                                                                        updateBlockData(block.id, updated);
+                                                                                    }}
+                                                                                />
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>;
+                                                            })}
                                                     </div>
                                                 )}
                                             </div>
@@ -1549,16 +1550,16 @@ export default function ResumeCanvas({
                                     className={`resume-skill-category ${category.name ? "" : "resume-skill-category--unnamed"}`}
                                 >
                                     <strong>
-                                            <EditableText
-                                                value={category.name}
-                                                appearance="plain"
-                                                placeholder="카테고리명"
-                                                onChange={(name) => updateCanvasSkillCategories(
-                                                    skillCategories.map((item, index) => (
-                                                        index === categoryIndex ? { ...item, name } : item
-                                                    )),
-                                                )}
-                                            />
+                                        <EditableText
+                                            value={category.name}
+                                            appearance="plain"
+                                            placeholder="카테고리명"
+                                            onChange={(name) => updateCanvasSkillCategories(
+                                                skillCategories.map((item, index) => (
+                                                    index === categoryIndex ? { ...item, name } : item
+                                                )),
+                                            )}
+                                        />
                                     </strong>
                                     <div className="flex flex-wrap gap-1.5">
                                         {category.skills.length === 0 && (
@@ -1766,27 +1767,27 @@ export default function ResumeCanvas({
                                                         )}
                                                     </div>
                                                     <div className="resume-other-experience__date flex items-center gap-1 text-xs font-medium text-neutral-500">
-                                                                <EditableText
-                                                                    value={startDate}
-                                                                    width="short"
-                                                                    placeholder="시작일"
-                                                                    onChange={(newDate) => {
-                                                                        const updated = [...block.data];
-                                                                        updated[certIdx] = { ...cert, startDate: newDate };
-                                                                        updateBlockData(block.id, updated);
-                                                                    }}
-                                                                />
-                                                            <span>~</span>
-                                                                <EditableText
-                                                                    value={endDate}
-                                                                    width="short"
-                                                                    placeholder="종료일"
-                                                                    onChange={(newDate) => {
-                                                                        const updated = [...block.data];
-                                                                        updated[certIdx] = { ...cert, endDate: newDate };
-                                                                        updateBlockData(block.id, updated);
-                                                                    }}
-                                                                />
+                                                        <EditableText
+                                                            value={startDate}
+                                                            width="short"
+                                                            placeholder="시작일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[certIdx] = { ...cert, startDate: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                        />
+                                                        <span>~</span>
+                                                        <EditableText
+                                                            value={endDate}
+                                                            width="short"
+                                                            placeholder="종료일"
+                                                            onChange={(newDate) => {
+                                                                const updated = [...block.data];
+                                                                updated[certIdx] = { ...cert, endDate: newDate };
+                                                                updateBlockData(block.id, updated);
+                                                            }}
+                                                        />
                                                     </div>
                                                 </div>}
                                                 <ul className="resume-other-experience__details">
@@ -1905,323 +1906,323 @@ export default function ResumeCanvas({
 
     return (
         <>
-        <main
-            ref={scrollContainerRef}
-            onClick={() => setSelectedBlockId(null)}
-            onDragOver={handleCanvasDragOver}
-            className={`editor-canvas flex-1 bg-[#444444] overflow-auto p-8 flex ${readOnly ? "items-start" : "justify-center"} cursor-default relative${readOnly ? " resume-canvas--readonly" : ""}`}
-        >
-            <div
-                ref={canvasRef}
-                style={{
-                    width: `${globalStyle?.contentWidth || 800}px`,
-                    zoom: zoomLevel / 100,
-                    marginInline: "auto",
-                    transformOrigin: "top center",
-                    backfaceVisibility: "hidden",
-                }}
-                className={`resume-canvas-pages items-center gap-10 pb-36${viewMode === "two-page" ? " resume-canvas-pages--two-page" : " flex flex-col"}`}
+            <main
+                ref={scrollContainerRef}
+                onClick={() => setSelectedBlockId(null)}
+                onDragOver={handleCanvasDragOver}
+                className={`editor-canvas flex-1 bg-[#444444] overflow-auto p-8 flex ${readOnly ? "items-start" : "justify-center"} cursor-default relative${readOnly ? " resume-canvas--readonly" : ""}`}
             >
-                {/* 실제 A4 시트 단위 분할 렌더링 */}
-                {pages.map((page) => (
-                    <div key={page.pageIndex} className="resume-page relative flex flex-col items-center">
-                        {/* 페이지 상단 번호 표시기 (인쇄 시 제외) */}
-                        <div className="no-print w-full flex justify-between items-center mb-2 text-xs text-neutral-400 font-medium">
-                            <span className="resume-page-indicator">
-                                <FileText aria-hidden="true" />
-                                <span>A4</span>
-                                <span className="resume-page-indicator__divider" aria-hidden="true" />
-                                <span>Page {page.pageIndex}</span>
-                            </span>
-                            <span className="resume-page-size">210 × 297 mm</span>
-                        </div>
-
-                        {/* 실제 A4 단일 시트 */}
-                        <div
-                            onClick={(e) => e.stopPropagation()}
-                            style={{
-                                width: `${globalStyle?.contentWidth || 800}px`,
-                                minHeight: `${A4_PAPER_HEIGHT}px`,
-                                padding: `${paperPadding}px`,
-                                fontFamily: fontFamily,
-                                ...typographyStyle,
-                            }}
-                            className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : ""}`}
-                        >
-                            {page.blocks.map(({ block, globalIdx, placement }, fragmentIndex) => {
-                                const fragmentKey = `${page.pageIndex}-${block.id}-${placement.itemStart ?? "all"}-${placement.descriptionStart ?? "all"}-${fragmentIndex}`;
-                                const isSelected = selectedBlockId === block.id;
-                                const isBeingDragged = draggedIndex === globalIdx;
-                                const isTargeted = dragOverIndex === globalIdx
-                                    && dragOverFragmentKey === fragmentKey
-                                    && draggedIndex !== globalIdx;
-                                const isHidden = block.isVisible === false;
-                                const continuesPreviousFragment = page.blocks[fragmentIndex - 1]?.globalIdx === globalIdx;
-                                const continuesNextFragment = page.blocks[fragmentIndex + 1]?.globalIdx === globalIdx;
-
-                                return (
-                                    <div
-                                        key={fragmentKey}
-                                        data-resume-block-index={globalIdx}
-                                        data-block-type={block.type}
-                                        data-description-start={placement.descriptionStart ?? 0}
-                                        data-experience-project-start={placement.experienceProjectStart ?? 0}
-                                        data-custom-padding={block.style.useCustomPadding === true}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, globalIdx)}
-                                        onDragOver={(e) => handleDragOver(e, globalIdx, fragmentKey)}
-                                        onDrop={(e) => handleDrop(e, globalIdx)}
-                                        onDragEnd={handleDragEnd}
-                                        onPointerDownCapture={(event) => {
-                                            const target = event.target as HTMLElement;
-                                            if (target.closest(".rich-text-bubble-toolbar")) return;
-                                            const child = target.closest<HTMLElement>("[data-resume-child-id]");
-                                            const subChild = target.closest<HTMLElement>("[data-resume-sub-child-id]");
-                                            setSelectedBlockSelection(
-                                                block.id,
-                                                child?.dataset.resumeChildId ?? null,
-                                                subChild?.dataset.resumeSubChildId ?? null,
-                                            );
-                                        }}
-                                        onFocusCapture={(event) => {
-                                            const target = event.target as HTMLElement;
-                                            if (target.closest(".rich-text-bubble-toolbar")) return;
-                                            const child = target.closest<HTMLElement>("[data-resume-child-id]");
-                                            const subChild = target.closest<HTMLElement>("[data-resume-sub-child-id]");
-                                            setSelectedBlockSelection(
-                                                block.id,
-                                                child?.dataset.resumeChildId ?? null,
-                                                subChild?.dataset.resumeSubChildId ?? null,
-                                            );
-                                        }}
-                                        style={{
-                                            ...(block.style.useCustomPadding
-                                                ? {
-                                                    paddingTop: `${block.style.paddingY}px`,
-                                                    paddingBottom: `${block.style.paddingY}px`,
-                                                }
-                                                : {}),
-                                            marginBottom: continuesNextFragment ? 0 : "var(--resume-block-gap)",
-                                        }}
-                                        className={`resume-block-item relative cursor-pointer transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${templateType === "modern"
-                                            ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
-                                            : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
-                                            } ${isSelected ? "resume-block-selected" : ""
-                                            } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
-                                            } ${isHidden ? "opacity-40 grayscale border-dashed border-neutral-300 block-hidden" : ""
-                                            } ${continuesPreviousFragment ? "resume-block-fragment--continues-previous" : ""
-                                            } ${continuesNextFragment ? "resume-block-fragment--continues-next" : ""
-                                            } group`}
-                                    >
-                                        {isTargeted && dragOverPosition && (
-                                            <div
-                                                className={`resume-drop-indicator resume-drop-indicator--${dragOverPosition}`}
-                                                aria-hidden="true"
-                                            />
-                                        )}
-                                        {isHidden && (
-                                            <div className="no-print absolute top-2 right-3 flex items-center gap-1 text-[10px] font-semibold text-neutral-500 bg-neutral-200/80 px-2 py-0.5 rounded-full select-none">
-                                                숨김 블록
-                                            </div>
-                                        )}
-
-                                        <div
-                                            className="no-print absolute -left-7 top-1/2 -translate-y-1/2 text-neutral-400 opacity-0 group-hover:opacity-100 hover:text-neutral-700 cursor-grab active:cursor-grabbing p-1 transition"
-                                            data-tooltip="끌어서 순서 변경"
-                                        >
-                                            <GripVertical size={16} />
-                                        </div>
-
-                                        {renderBlockContent(block, placement)}
-
-                                        {templateType === "minimal" && block.style.showDivider && (
-                                            <hr className="mt-4 border-neutral-200" />
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {profilePhotoMenu && (
                 <div
-                    ref={profilePhotoMenuRef}
-                    className="resume-profile-photo-menu no-print"
-                    style={{ left: profilePhotoMenu.x, top: profilePhotoMenu.y }}
-                    role="menu"
-                    aria-label="프로필 사진 메뉴"
-                    onClick={(event) => event.stopPropagation()}
+                    ref={canvasRef}
+                    style={{
+                        width: `${globalStyle?.contentWidth || 800}px`,
+                        zoom: zoomLevel / 100,
+                        marginInline: "auto",
+                        transformOrigin: "top center",
+                        backfaceVisibility: "hidden",
+                    }}
+                    className={`resume-canvas-pages items-center gap-10 pb-36${viewMode === "two-page" ? " resume-canvas-pages--two-page" : " flex flex-col"}`}
                 >
-                    <button
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                            profilePhotoMenuInputRef.current?.click();
-                            setProfilePhotoMenu(null);
-                        }}
-                    >
-                        <ImagePlus size={14} /> 사진 변경
-                    </button>
-                    <button
-                        type="button"
-                        role="menuitem"
-                        disabled={!blocks.find((block) => block.id === profilePhotoMenu.blockId && block.type === "profile")?.data.photo}
-                        onClick={() => {
-                            const block = blocks.find((item) => item.id === profilePhotoMenu.blockId);
-                            if (block?.type === "profile" && block.data.photo) {
-                                setPendingProfilePhoto({
-                                    blockId: block.id,
-                                    source: block.data.photoSource || block.data.photo,
-                                    crop: block.data.photoSource
-                                        ? block.data.photoCrop
-                                        : { focusX: 0.5, focusY: 0.5, zoom: 1 },
-                                });
-                            }
-                            setProfilePhotoMenu(null);
-                        }}
-                    >
-                        <Crop size={14} /> 사진 편집
-                    </button>
-                    <button
-                        type="button"
-                        role="menuitem"
-                        className="is-danger"
-                        disabled={!blocks.find((block) => block.id === profilePhotoMenu.blockId && block.type === "profile")?.data.photo}
-                        onClick={() => {
-                            const block = blocks.find((item) => item.id === profilePhotoMenu.blockId);
-                            if (block?.type === "profile") {
-                                updateBlockData(block.id, {
-                                    ...block.data,
-                                    photo: "",
-                                    photoSource: "",
-                                    photoCrop: undefined,
-                                });
-                            }
-                            setProfilePhotoMenu(null);
-                        }}
-                    >
-                        <Trash2 size={14} /> 사진 제거
-                    </button>
+                    {/* 실제 A4 시트 단위 분할 렌더링 */}
+                    {pages.map((page) => (
+                        <div key={page.pageIndex} className="resume-page relative flex flex-col items-center">
+                            {/* 페이지 상단 번호 표시기 (인쇄 시 제외) */}
+                            <div className="no-print w-full flex justify-between items-center mb-2 text-xs text-neutral-400 font-medium">
+                                <span className="resume-page-indicator">
+                                    <FileText aria-hidden="true" />
+                                    <span>A4</span>
+                                    <span className="resume-page-indicator__divider" aria-hidden="true" />
+                                    <span>Page {page.pageIndex}</span>
+                                </span>
+                                <span className="resume-page-size">210 × 297 mm</span>
+                            </div>
+
+                            {/* 실제 A4 단일 시트 */}
+                            <div
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                    width: `${globalStyle?.contentWidth || 800}px`,
+                                    minHeight: `${A4_PAPER_HEIGHT}px`,
+                                    padding: `${paperPadding}px`,
+                                    fontFamily: fontFamily,
+                                    ...typographyStyle,
+                                }}
+                                className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : ""}`}
+                            >
+                                {page.blocks.map(({ block, globalIdx, placement }, fragmentIndex) => {
+                                    const fragmentKey = `${page.pageIndex}-${block.id}-${placement.itemStart ?? "all"}-${placement.descriptionStart ?? "all"}-${fragmentIndex}`;
+                                    const isSelected = selectedBlockId === block.id;
+                                    const isBeingDragged = draggedIndex === globalIdx;
+                                    const isTargeted = dragOverIndex === globalIdx
+                                        && dragOverFragmentKey === fragmentKey
+                                        && draggedIndex !== globalIdx;
+                                    const isHidden = block.isVisible === false;
+                                    const continuesPreviousFragment = page.blocks[fragmentIndex - 1]?.globalIdx === globalIdx;
+                                    const continuesNextFragment = page.blocks[fragmentIndex + 1]?.globalIdx === globalIdx;
+
+                                    return (
+                                        <div
+                                            key={fragmentKey}
+                                            data-resume-block-index={globalIdx}
+                                            data-block-type={block.type}
+                                            data-description-start={placement.descriptionStart ?? 0}
+                                            data-experience-project-start={placement.experienceProjectStart ?? 0}
+                                            data-custom-padding={block.style.useCustomPadding === true}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, globalIdx)}
+                                            onDragOver={(e) => handleDragOver(e, globalIdx, fragmentKey)}
+                                            onDrop={(e) => handleDrop(e, globalIdx)}
+                                            onDragEnd={handleDragEnd}
+                                            onPointerDownCapture={(event) => {
+                                                const target = event.target as HTMLElement;
+                                                if (target.closest(".rich-text-bubble-toolbar")) return;
+                                                const child = target.closest<HTMLElement>("[data-resume-child-id]");
+                                                const subChild = target.closest<HTMLElement>("[data-resume-sub-child-id]");
+                                                setSelectedBlockSelection(
+                                                    block.id,
+                                                    child?.dataset.resumeChildId ?? null,
+                                                    subChild?.dataset.resumeSubChildId ?? null,
+                                                );
+                                            }}
+                                            onFocusCapture={(event) => {
+                                                const target = event.target as HTMLElement;
+                                                if (target.closest(".rich-text-bubble-toolbar")) return;
+                                                const child = target.closest<HTMLElement>("[data-resume-child-id]");
+                                                const subChild = target.closest<HTMLElement>("[data-resume-sub-child-id]");
+                                                setSelectedBlockSelection(
+                                                    block.id,
+                                                    child?.dataset.resumeChildId ?? null,
+                                                    subChild?.dataset.resumeSubChildId ?? null,
+                                                );
+                                            }}
+                                            style={{
+                                                ...(block.style.useCustomPadding
+                                                    ? {
+                                                        paddingTop: `${block.style.paddingY}px`,
+                                                        paddingBottom: `${block.style.paddingY}px`,
+                                                    }
+                                                    : {}),
+                                                marginBottom: continuesNextFragment ? 0 : "var(--resume-block-gap)",
+                                            }}
+                                            className={`resume-block-item relative cursor-pointer transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 ${templateType === "modern"
+                                                ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
+                                                : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
+                                                } ${isSelected ? "resume-block-selected" : ""
+                                                } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
+                                                } ${isHidden ? "opacity-40 grayscale border-dashed border-neutral-300 block-hidden" : ""
+                                                } ${continuesPreviousFragment ? "resume-block-fragment--continues-previous" : ""
+                                                } ${continuesNextFragment ? "resume-block-fragment--continues-next" : ""
+                                                } group`}
+                                        >
+                                            {isTargeted && dragOverPosition && (
+                                                <div
+                                                    className={`resume-drop-indicator resume-drop-indicator--${dragOverPosition}`}
+                                                    aria-hidden="true"
+                                                />
+                                            )}
+                                            {isHidden && (
+                                                <div className="no-print absolute top-2 right-3 flex items-center gap-1 text-[10px] font-semibold text-neutral-500 bg-neutral-200/80 px-2 py-0.5 rounded-full select-none">
+                                                    숨김 블록
+                                                </div>
+                                            )}
+
+                                            <div
+                                                className="no-print absolute -left-7 top-1/2 -translate-y-1/2 text-neutral-400 opacity-0 group-hover:opacity-100 hover:text-neutral-700 cursor-grab active:cursor-grabbing p-1 transition"
+                                                data-tooltip="끌어서 순서 변경"
+                                            >
+                                                <GripVertical size={16} />
+                                            </div>
+
+                                            {renderBlockContent(block, placement)}
+
+                                            {templateType === "minimal" && block.style.showDivider && (
+                                                <hr className="mt-4 border-neutral-200" />
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
                 </div>
-            )}
 
-            <input
-                ref={profilePhotoMenuInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="sr-only"
-                tabIndex={-1}
-                aria-hidden="true"
-                onClick={(event) => event.stopPropagation()}
-                onChange={(event) => {
-                    const block = blocks.find((item) => item.id === profilePhotoMenuBlockIdRef.current);
-                    handleProfilePhotoUpload(block, event.target.files?.[0]);
-                    event.currentTarget.value = "";
-                }}
-            />
-
-            {/* 캔버스 우측 하단 줌 컨트롤 바 */}
-            <div
-                className={`editor-zoom-controls no-print fixed bottom-6 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40${readOnly ? " public-resume-zoom-controls" : ""}`}
-                style={readOnly ? undefined : { right: 'calc(clamp(380px, 30vw, 480px) + 1.5rem)' }}
-            >
-                <button
-                    onClick={handleZoomOut}
-                    disabled={zoomLevel <= minimumZoom}
-                    className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                    data-tooltip={readOnly ? undefined : "축소"}
-                    aria-label="축소"
-                >
-                    <ZoomOut size={14} />
-                </button>
-                <span ref={zoomLabelRef} className="text-[11px] font-mono font-medium text-neutral-300 min-w-[36px] text-center select-none">
-                    {zoomLevel}%
-                </span>
-                <button
-                    onClick={handleZoomIn}
-                    disabled={zoomLevel >= 150}
-                    className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                    data-tooltip={readOnly ? undefined : "확대"}
-                    aria-label="확대"
-                >
-                    <ZoomIn size={14} />
-                </button>
-                <div className="w-[1px] h-3 bg-neutral-700 mx-0.5" />
-                <button
-                    onClick={handleZoomReset}
-                    className="p-1 text-neutral-400 hover:text-white transition"
-                    data-tooltip={readOnly ? undefined : "100%로 리셋"}
-                    aria-label={readOnly ? "화면 너비에 맞춤" : "100%로 리셋"}
-                >
-                    <RotateCcw size={12} />
-                </button>
-                {!readOnly && (
-                    <div ref={viewMenuRef} className="editor-view-menu">
+                {profilePhotoMenu && (
+                    <div
+                        ref={profilePhotoMenuRef}
+                        className="resume-profile-photo-menu no-print"
+                        style={{ left: profilePhotoMenu.x, top: profilePhotoMenu.y }}
+                        role="menu"
+                        aria-label="프로필 사진 메뉴"
+                        onClick={(event) => event.stopPropagation()}
+                    >
                         <button
                             type="button"
-                            className={`editor-view-menu__trigger${viewMode !== "custom" ? " is-active" : ""}`}
-                            aria-label="화면 맞춤 및 페이지 배열"
-                            aria-haspopup="menu"
-                            aria-expanded={isViewMenuOpen}
-                            onClick={() => setIsViewMenuOpen((open) => !open)}
+                            role="menuitem"
+                            onClick={() => {
+                                profilePhotoMenuInputRef.current?.click();
+                                setProfilePhotoMenu(null);
+                            }}
                         >
-                            <Maximize2 size={13} />
-                            <ChevronDown size={10} />
+                            <ImagePlus size={14} /> 사진 변경
                         </button>
-                        {isViewMenuOpen && (
-                            <div className="editor-view-menu__popover" role="menu" aria-label="화면 보기 방식">
-                                <button type="button" role="menuitemradio" aria-checked={viewMode === "page"} onClick={() => handleViewMode("page")}>
-                                    <Maximize2 size={15} />
-                                    <span><strong>쪽 맞춤</strong><small>한 페이지 전체 보기</small></span>
-                                </button>
-                                <button type="button" role="menuitemradio" aria-checked={viewMode === "width"} onClick={() => handleViewMode("width")}>
-                                    <Monitor size={15} />
-                                    <span><strong>너비 맞춤</strong><small>화면 가로폭에 맞추기</small></span>
-                                </button>
-                                <button type="button" role="menuitemradio" aria-checked={viewMode === "two-page"} onClick={() => handleViewMode("two-page")}>
-                                    <Columns2 size={15} />
-                                    <span><strong>두 쪽 보기</strong><small>페이지를 두 장씩 정렬</small></span>
-                                </button>
-                            </div>
-                        )}
+                        <button
+                            type="button"
+                            role="menuitem"
+                            disabled={!blocks.find((block) => block.id === profilePhotoMenu.blockId && block.type === "profile")?.data.photo}
+                            onClick={() => {
+                                const block = blocks.find((item) => item.id === profilePhotoMenu.blockId);
+                                if (block?.type === "profile" && block.data.photo) {
+                                    setPendingProfilePhoto({
+                                        blockId: block.id,
+                                        source: block.data.photoSource || block.data.photo,
+                                        crop: block.data.photoSource
+                                            ? block.data.photoCrop
+                                            : { focusX: 0.5, focusY: 0.5, zoom: 1 },
+                                    });
+                                }
+                                setProfilePhotoMenu(null);
+                            }}
+                        >
+                            <Crop size={14} /> 사진 편집
+                        </button>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            className="is-danger"
+                            disabled={!blocks.find((block) => block.id === profilePhotoMenu.blockId && block.type === "profile")?.data.photo}
+                            onClick={() => {
+                                const block = blocks.find((item) => item.id === profilePhotoMenu.blockId);
+                                if (block?.type === "profile") {
+                                    updateBlockData(block.id, {
+                                        ...block.data,
+                                        photo: "",
+                                        photoSource: "",
+                                        photoCrop: undefined,
+                                    });
+                                }
+                                setProfilePhotoMenu(null);
+                            }}
+                        >
+                            <Trash2 size={14} /> 사진 제거
+                        </button>
                     </div>
                 )}
-            </div>
-        </main>
-        <ServiceDialog
-            isOpen={pendingDeleteBlockId !== null}
-            title="블록을 삭제할까요?"
-            message={`'${pendingDeleteBlock?.title?.trim() || "선택한 블록"}' 블록은 삭제 후 실행 취소로 복구할 수 있습니다.`}
-            variant="danger"
-            confirmLabel="삭제"
-            cancelLabel="취소"
-            onConfirm={() => {
-                if (pendingDeleteBlockId) removeBlock(pendingDeleteBlockId);
-                setPendingDeleteBlockId(null);
-            }}
-            onCancel={() => setPendingDeleteBlockId(null)}
-        />
-        <ProfilePhotoCropDialog
-            file={pendingProfilePhoto?.file ?? null}
-            source={pendingProfilePhoto?.source}
-            initialCrop={pendingProfilePhoto?.crop}
-            onCancel={() => setPendingProfilePhoto(null)}
-            onApply={({ photo, source, crop }) => {
-                const block = blocks.find((item) => item.id === pendingProfilePhoto?.blockId);
-                if (block?.type === "profile") {
-                    updateBlockData(block.id, {
-                        ...block.data,
-                        photo,
-                        photoSource: source,
-                        photoCrop: crop,
-                        showPhoto: true,
-                    });
-                }
-                setPendingProfilePhoto(null);
-            }}
-        />
+
+                <input
+                    ref={profilePhotoMenuInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="sr-only"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    onClick={(event) => event.stopPropagation()}
+                    onChange={(event) => {
+                        const block = blocks.find((item) => item.id === profilePhotoMenuBlockIdRef.current);
+                        handleProfilePhotoUpload(block, event.target.files?.[0]);
+                        event.currentTarget.value = "";
+                    }}
+                />
+
+                {/* 캔버스 우측 하단 줌 컨트롤 바 */}
+                <div
+                    className={`editor-zoom-controls no-print fixed bottom-6 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40${readOnly ? " public-resume-zoom-controls" : ""}`}
+                    style={readOnly ? undefined : { right: 'calc(clamp(380px, 30vw, 480px) + 1.5rem)' }}
+                >
+                    <button
+                        onClick={handleZoomOut}
+                        disabled={zoomLevel <= minimumZoom}
+                        className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
+                        data-tooltip={readOnly ? undefined : "축소"}
+                        aria-label="축소"
+                    >
+                        <ZoomOut size={14} />
+                    </button>
+                    <span ref={zoomLabelRef} className="text-[11px] font-mono font-medium text-neutral-300 min-w-[36px] text-center select-none">
+                        {zoomLevel}%
+                    </span>
+                    <button
+                        onClick={handleZoomIn}
+                        disabled={zoomLevel >= 150}
+                        className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
+                        data-tooltip={readOnly ? undefined : "확대"}
+                        aria-label="확대"
+                    >
+                        <ZoomIn size={14} />
+                    </button>
+                    <div className="w-[1px] h-3 bg-neutral-700 mx-0.5" />
+                    <button
+                        onClick={handleZoomReset}
+                        className="p-1 text-neutral-400 hover:text-white transition"
+                        data-tooltip={readOnly ? undefined : "100%로 리셋"}
+                        aria-label={readOnly ? "화면 너비에 맞춤" : "100%로 리셋"}
+                    >
+                        <RotateCcw size={12} />
+                    </button>
+                    {!readOnly && (
+                        <div ref={viewMenuRef} className="editor-view-menu">
+                            <button
+                                type="button"
+                                className={`editor-view-menu__trigger${viewMode !== "custom" ? " is-active" : ""}`}
+                                aria-label="화면 맞춤 및 페이지 배열"
+                                aria-haspopup="menu"
+                                aria-expanded={isViewMenuOpen}
+                                onClick={() => setIsViewMenuOpen((open) => !open)}
+                            >
+                                <Maximize2 size={13} />
+                                <ChevronDown size={10} />
+                            </button>
+                            {isViewMenuOpen && (
+                                <div className="editor-view-menu__popover" role="menu" aria-label="화면 보기 방식">
+                                    <button type="button" role="menuitemradio" aria-checked={viewMode === "page"} onClick={() => handleViewMode("page")}>
+                                        <Maximize2 size={15} />
+                                        <span><strong>쪽 맞춤</strong><small>한 페이지 전체 보기</small></span>
+                                    </button>
+                                    <button type="button" role="menuitemradio" aria-checked={viewMode === "width"} onClick={() => handleViewMode("width")}>
+                                        <Monitor size={15} />
+                                        <span><strong>너비 맞춤</strong><small>화면 가로폭에 맞추기</small></span>
+                                    </button>
+                                    <button type="button" role="menuitemradio" aria-checked={viewMode === "two-page"} onClick={() => handleViewMode("two-page")}>
+                                        <Columns2 size={15} />
+                                        <span><strong>두 쪽 보기</strong><small>페이지를 두 장씩 정렬</small></span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </main>
+            <ServiceDialog
+                isOpen={pendingDeleteBlockId !== null}
+                title="블록을 삭제할까요?"
+                message={`'${pendingDeleteBlock?.title?.trim() || "선택한 블록"}' 블록은 삭제 후 실행 취소로 복구할 수 있습니다.`}
+                variant="danger"
+                confirmLabel="삭제"
+                cancelLabel="취소"
+                onConfirm={() => {
+                    if (pendingDeleteBlockId) removeBlock(pendingDeleteBlockId);
+                    setPendingDeleteBlockId(null);
+                }}
+                onCancel={() => setPendingDeleteBlockId(null)}
+            />
+            <ProfilePhotoCropDialog
+                file={pendingProfilePhoto?.file ?? null}
+                source={pendingProfilePhoto?.source}
+                initialCrop={pendingProfilePhoto?.crop}
+                onCancel={() => setPendingProfilePhoto(null)}
+                onApply={({ photo, source, crop }) => {
+                    const block = blocks.find((item) => item.id === pendingProfilePhoto?.blockId);
+                    if (block?.type === "profile") {
+                        updateBlockData(block.id, {
+                            ...block.data,
+                            photo,
+                            photoSource: source,
+                            photoCrop: crop,
+                            showPhoto: true,
+                        });
+                    }
+                    setPendingProfilePhoto(null);
+                }}
+            />
         </>
     );
 }

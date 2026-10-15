@@ -226,6 +226,82 @@ body,
   color: #191f28 !important;
 }
 
+/* Editor split view: shadcn-style resize handle between canvas and inspector. */
+.editor-inspector-shell {
+  position: relative;
+  height: 100%;
+}
+
+.editor-panel-resizer {
+  position: relative;
+  z-index: 30;
+  width: 1px;
+  flex: 0 0 1px;
+  background: #262934;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+
+.editor-panel-resizer::before {
+  content: "";
+  position: absolute;
+  inset: 0 -5px;
+}
+
+.editor-panel-resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0 -1px;
+  background: var(--brand-primary);
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.editor-panel-resizer:hover::after,
+.editor-panel-resizer:focus-visible::after,
+.editor-workspace.is-resizing .editor-panel-resizer::after {
+  opacity: 1;
+}
+
+.editor-panel-resizer__grip {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  display: grid;
+  width: 18px;
+  height: 32px;
+  place-items: center;
+  translate: -50% -50%;
+  border: 1px solid #343845;
+  border-radius: 6px;
+  background: #181a22;
+  color: #8b95a1;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 28%);
+  opacity: 0;
+  transition: border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+
+.editor-panel-resizer:hover .editor-panel-resizer__grip,
+.editor-panel-resizer:focus-visible .editor-panel-resizer__grip,
+.editor-workspace.is-resizing .editor-panel-resizer__grip {
+  border-color: color-mix(in srgb, var(--brand-primary) 62%, #343845);
+  color: var(--brand-primary);
+  opacity: 1;
+}
+
+[data-theme="light"] .editor-panel-resizer {
+  background: #e5e8eb;
+}
+
+[data-theme="light"] .editor-panel-resizer__grip {
+  border-color: #d1d6dc;
+  background: #ffffff;
+  color: #8b95a1;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
+}
+
 [data-theme="light"] .editor-header .bg-emerald-600\/20 {
   background-color: #e8f8f2 !important;
   border-color: #78d5b5 !important;
@@ -3138,6 +3214,15 @@ summary[data-tooltip],
   box-shadow: none;
 }
 
+.resume-paper .resume-rich-text-editor:empty::before,
+.resume-paper .resume-rich-text-editor:has(> br:only-child)::before {
+  content: attr(data-placeholder);
+  color: #a3a3a3;
+  font-style: italic;
+  font-weight: 400;
+  pointer-events: none;
+}
+
 .resume-block-item:hover .resume-editable-text:not(.resume-contact-link),
 .resume-block-item:hover .resume-rich-text-editor:not(:focus) {
   border-bottom-color: #a3a3a3;
@@ -4097,6 +4182,11 @@ summary[data-tooltip],
 }
 
 @media print {
+  .resume-paper .resume-rich-text-editor:empty::before,
+  .resume-paper .resume-rich-text-editor:has(> br:only-child)::before {
+    content: none !important;
+  }
+
   .resume-paper a {
     color: inherit !important;
   }
