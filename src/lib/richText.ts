@@ -43,3 +43,9 @@ export function richTextToPlainText(value: string) {
     }
     return value.replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, "");
 }
+
+export function splitInlineRichTextLines(value: string) {
+    return sanitizeInlineRichText(value)
+        .split(/<br>/i)
+        .map((line) => sanitizeInlineRichText(line));
+}

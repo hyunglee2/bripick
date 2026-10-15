@@ -8,7 +8,7 @@ import { Crop, FileText, GripVertical, ImagePlus, Trash2, ZoomIn, ZoomOut, Rotat
 import { ProfileData, ResumeBlock, ResumeDocument, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
-import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
+import { escapeHtml, richTextToPlainText, sanitizeInlineRichText, splitInlineRichTextLines } from "@/lib/richText";
 import RichTextEditable from "@/components/editor/RichTextEditable";
 import ServiceDialog from "@/components/ui/ServiceDialog";
 import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
@@ -893,11 +893,15 @@ export default function ResumeCanvas({
                                     </button>
                                 )}
                                 <div className="resume-profile-copy">
-                                    <EditableText
-                                        tag="p"
-                                        value={block.data.bio || ""}
+                                    <RichTextEditable
+                                        html={block.data.bioHtml || escapeHtml(block.data.bio || "")}
+                                        readOnly={readOnly}
                                         placeholder="예: 사용자 중심의 서비스를 만드는"
-                                        onChange={(bio) => updateBlockData(block.id, { ...block.data, bio })}
+                                        onChange={(bioHtml) => updateBlockData(block.id, {
+                                            ...block.data,
+                                            bio: richTextToPlainText(bioHtml),
+                                            bioHtml,
+                                        })}
                                         className="resume-profile-tagline"
                                     />
                                     <div className="resume-profile-headline">
@@ -951,14 +955,17 @@ export default function ResumeCanvas({
                                 <ul className="resume-profile-highlights">
                                     {highlights.map((highlight: string, index: number) => (
                                         <li key={index}>
-                                            <EditableText
-                                                value={highlight}
-                                                width="full"
+                                            <RichTextEditable
+                                                html={block.data.highlightsHtml?.[index] || escapeHtml(highlight)}
+                                                readOnly={readOnly}
                                                 placeholder="자기소개를 입력하세요"
-                                                onChange={(value) => {
+                                                className="resume-rich-bullet"
+                                                onChange={(highlightHtml) => {
                                                     const updated = [...highlights];
-                                                    updated[index] = value;
-                                                    updateBlockData(block.id, { ...block.data, highlights: updated });
+                                                    const highlightsHtml = [...(block.data.highlightsHtml || [])];
+                                                    updated[index] = richTextToPlainText(highlightHtml);
+                                                    highlightsHtml[index] = highlightHtml;
+                                                    updateBlockData(block.id, { ...block.data, highlights: updated, highlightsHtml });
                                                 }}
                                             />
                                         </li>
@@ -966,16 +973,19 @@ export default function ResumeCanvas({
                                 </ul>
                             )}
                             {highlights.length > 0 && introductionStyle === "paragraph" && (
-                                <EditableText
-                                    tag="p"
-                                    multiline
-                                    value={highlights.join("\n")}
+                                <RichTextEditable
+                                    html={(block.data.highlightsHtml || highlights.map(escapeHtml)).join("<br>")}
+                                    readOnly={readOnly}
                                     placeholder="자기소개를 입력하세요"
                                     className="resume-profile-introduction"
-                                    onChange={(value) => updateBlockData(block.id, {
-                                        ...block.data,
-                                        highlights: value.split(/\r?\n/).filter((line) => line.trim()),
-                                    })}
+                                    onChange={(html) => {
+                                        const highlightsHtml = splitInlineRichTextLines(html);
+                                        updateBlockData(block.id, {
+                                            ...block.data,
+                                            highlights: highlightsHtml.map(richTextToPlainText),
+                                            highlightsHtml,
+                                        });
+                                    }}
                                 />
                             )}
                         </div>
@@ -1019,12 +1029,15 @@ export default function ResumeCanvas({
                             ))}
                         </div>
                         <div className="pt-2 border-t border-neutral-200/50 mt-2">
-                            <EditableText
-                                tag="p"
-                                multiline
-                                value={block.data.bio || ""}
+                            <RichTextEditable
+                                html={block.data.bioHtml || escapeHtml(block.data.bio || "")}
+                                readOnly={readOnly}
                                 placeholder="자신을 소개하는 간단한 한 줄 소개를 적어보세요."
-                                onChange={(newBio) => updateBlockData(block.id, { ...block.data, bio: newBio })}
+                                onChange={(bioHtml) => updateBlockData(block.id, {
+                                    ...block.data,
+                                    bio: richTextToPlainText(bioHtml),
+                                    bioHtml,
+                                })}
                                 className="text-sm text-neutral-700 leading-relaxed block"
                             />
                         </div>
@@ -1124,23 +1137,33 @@ export default function ResumeCanvas({
 
                                                     if ((exp.descriptionStyle || "bullets") === "paragraph") {
                                                         return (
-                                                            <EditableText
-                                                                tag="p"
-                                                                multiline
-                                                                value={visibleDescriptions.join("\n")}
-                                                                width="full"
+                                                            <RichTextEditable
+                                                                html={visibleDescriptions.map((description: string, localIndex: number) => (
+                                                                    exp.descriptionHtml?.[descriptionStart + localIndex] || escapeHtml(description)
+                                                                )).join("<br>")}
+                                                                readOnly={readOnly}
                                                                 placeholder="회사 소개 및 주요 성과"
                                                                 className="resume-experience-company-description resume-experience-company-description--paragraph"
-                                                                data-pagination-description-index={descriptionStart}
-                                                                onChange={(value) => {
+                                                                onChange={(html) => {
+                                                                    const changedHtml = splitInlineRichTextLines(html);
                                                                     const updated = [...block.data];
                                                                     const newDescriptions = [...(exp.description || [])];
+                                                                    const newDescriptionHtml = [...(exp.descriptionHtml || [])];
                                                                     newDescriptions.splice(
                                                                         descriptionStart,
                                                                         visibleDescriptions.length,
-                                                                        ...value.split(/\r?\n/).filter((line) => line.trim()),
+                                                                        ...changedHtml.map(richTextToPlainText),
                                                                     );
-                                                                    updated[expIndex] = { ...exp, description: newDescriptions };
+                                                                    newDescriptionHtml.splice(
+                                                                        descriptionStart,
+                                                                        visibleDescriptions.length,
+                                                                        ...changedHtml,
+                                                                    );
+                                                                    updated[expIndex] = {
+                                                                        ...exp,
+                                                                        description: newDescriptions,
+                                                                        descriptionHtml: newDescriptionHtml,
+                                                                    };
                                                                     updateBlockData(block.id, updated);
                                                                 }}
                                                             />
@@ -1153,15 +1176,22 @@ export default function ResumeCanvas({
                                                                 const i = descriptionStart + localDescriptionIndex;
                                                                 return (
                                                                     <li key={i} data-pagination-description-index={i}>
-                                                                        <EditableText
-                                                                            value={desc}
-                                                                            width="full"
+                                                                        <RichTextEditable
+                                                                            html={exp.descriptionHtml?.[i] || escapeHtml(desc)}
+                                                                            readOnly={readOnly}
                                                                             placeholder="성과 및 업무 내용"
-                                                                            onChange={(newDesc) => {
+                                                                            className="resume-rich-bullet"
+                                                                            onChange={(descriptionHtml) => {
                                                                                 const updated = [...block.data];
                                                                                 const newDescriptions = [...exp.description];
-                                                                                newDescriptions[i] = newDesc;
-                                                                                updated[expIndex] = { ...exp, description: newDescriptions };
+                                                                                const nextDescriptionHtml = [...(exp.descriptionHtml || [])];
+                                                                                newDescriptions[i] = richTextToPlainText(descriptionHtml);
+                                                                                nextDescriptionHtml[i] = descriptionHtml;
+                                                                                updated[expIndex] = {
+                                                                                    ...exp,
+                                                                                    description: newDescriptions,
+                                                                                    descriptionHtml: nextDescriptionHtml,
+                                                                                };
                                                                                 updateBlockData(block.id, updated);
                                                                             }}
                                                                         />
@@ -1807,17 +1837,22 @@ export default function ResumeCanvas({
                                             className={`resume-additional-information__item${contentStyle === "bullets" ? " flex items-start gap-2" : " resume-additional-information__item--paragraph"}`}
                                         >
                                             {contentStyle === "bullets" && <span aria-hidden="true">▪</span>}
-                                            <EditableText
-                                                tag="p"
-                                                multiline
-                                                value={paragraph}
+                                            <RichTextEditable
+                                                html={block.data?.contentHtml?.[paragraphIndex] || escapeHtml(paragraph)}
+                                                readOnly={readOnly}
                                                 placeholder="내용을 입력하세요..."
-                                                onChange={(newContent) => {
+                                                onChange={(paragraphHtml) => {
                                                     const updated = [...paragraphs];
-                                                    updated[paragraphIndex] = newContent;
-                                                    updateBlockData(block.id, { ...block.data, content: updated.join("\n") });
+                                                    const contentHtml = [...(block.data?.contentHtml || [])];
+                                                    updated[paragraphIndex] = richTextToPlainText(paragraphHtml);
+                                                    contentHtml[paragraphIndex] = paragraphHtml;
+                                                    updateBlockData(block.id, {
+                                                        ...block.data,
+                                                        content: updated.join("\n"),
+                                                        contentHtml,
+                                                    });
                                                 }}
-                                                className="block min-w-0 flex-1 whitespace-pre-line text-xs leading-relaxed text-neutral-700"
+                                                className="resume-rich-bullet block min-w-0 flex-1 whitespace-pre-line text-xs leading-relaxed text-neutral-700"
                                             />
                                         </div>
                                     );
@@ -1907,6 +1942,7 @@ export default function ResumeCanvas({
                                         onDragEnd={handleDragEnd}
                                         onPointerDownCapture={(event) => {
                                             const target = event.target as HTMLElement;
+                                            if (target.closest(".rich-text-bubble-toolbar")) return;
                                             const child = target.closest<HTMLElement>("[data-resume-child-id]");
                                             const subChild = target.closest<HTMLElement>("[data-resume-sub-child-id]");
                                             setSelectedBlockSelection(
@@ -1917,6 +1953,7 @@ export default function ResumeCanvas({
                                         }}
                                         onFocusCapture={(event) => {
                                             const target = event.target as HTMLElement;
+                                            if (target.closest(".rich-text-bubble-toolbar")) return;
                                             const child = target.closest<HTMLElement>("[data-resume-child-id]");
                                             const subChild = target.closest<HTMLElement>("[data-resume-sub-child-id]");
                                             setSelectedBlockSelection(

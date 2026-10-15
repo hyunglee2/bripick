@@ -6,9 +6,10 @@ import { useResumeStore } from "@/store/useResumeStore";
 import { ProfileData, SkillCategory, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
-import { escapeHtml, richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
+import { escapeHtml, richTextToPlainText, sanitizeInlineRichText, splitInlineRichTextLines } from "@/lib/richText";
 import ProjectBulletDocumentEditor from "@/components/editor/ProjectBulletDocumentEditor";
 import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
+import RichTextEditable from "@/components/editor/RichTextEditable";
 import { Kbd, KbdGroup } from "@/components/ui/Kbd";
 import {
     Trash2,
@@ -1102,14 +1103,15 @@ export default function InspectorPanel() {
                                 <label className="text-xs text-neutral-400">한 줄 소개</label>
                                 <span className="text-[10px] text-neutral-500">이름·직무 앞에 표시</span>
                             </div>
-                            <textarea
-                                rows={2}
-                                value={currentBlock.data.bio || ""}
+                            <RichTextEditable
+                                html={currentBlock.data.bioHtml || escapeHtml(currentBlock.data.bio || "")}
                                 placeholder="예: 사용자 중심의 서비스를 만드는"
-                                onChange={(e) =>
-                                    updateBlockData(currentBlock.id, { ...currentBlock.data, bio: e.target.value })
-                                }
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
+                                onChange={(bioHtml) => updateBlockData(currentBlock.id, {
+                                    ...currentBlock.data,
+                                    bio: richTextToPlainText(bioHtml),
+                                    bioHtml,
+                                })}
+                                className="inspector-rich-text-editor min-h-14"
                             />
                         </div>
                         <div className="inspector-field">
@@ -1320,9 +1322,11 @@ export default function InspectorPanel() {
                                     <ProjectBulletDocumentEditor
                                         descriptions={currentBlock.data.highlights || []}
                                         levels={(currentBlock.data.highlights || []).map(() => 1)}
-                                        onChange={(highlights) => updateBlockData(currentBlock.id, {
+                                        html={currentBlock.data.highlightsHtml || []}
+                                        onChange={(highlights, _levels, highlightsHtml) => updateBlockData(currentBlock.id, {
                                             ...currentBlock.data,
                                             highlights,
+                                            highlightsHtml,
                                         })}
                                         maxLevel={1}
                                         placeholder="핵심 경험이나 강점을 입력하세요"
@@ -1331,14 +1335,18 @@ export default function InspectorPanel() {
                                 </>
                             ) : (
                                 <>
-                                    <textarea
-                                        rows={5}
-                                        value={(currentBlock.data.highlights || []).join("\n")}
-                                        onChange={(e) => updateBlockData(currentBlock.id, {
+                                    <RichTextEditable
+                                        html={(currentBlock.data.highlightsHtml || currentBlock.data.highlights?.map(escapeHtml) || []).join("<br>")}
+                                        placeholder="자기소개를 입력하세요"
+                                        onChange={(html) => {
+                                            const highlightsHtml = splitInlineRichTextLines(html);
+                                            updateBlockData(currentBlock.id, {
                                             ...currentBlock.data,
-                                            highlights: e.target.value.split("\n"),
-                                        })}
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
+                                                highlights: highlightsHtml.map(richTextToPlainText),
+                                                highlightsHtml,
+                                            });
+                                        }}
+                                        className="inspector-rich-text-editor"
                                     />
                                     <p className="text-[10px] text-neutral-500">
                                         문장별로 줄을 나눠 입력하면 미리보기에서는 자연스럽게 이어서 표시됩니다.
@@ -1557,26 +1565,35 @@ export default function InspectorPanel() {
                                                         <ProjectBulletDocumentEditor
                                                             descriptions={exp.description || []}
                                                             levels={(exp.description || []).map(() => 1)}
-                                                            onChange={(description) => handleUpdateExpField(
-                                                                exp.id,
-                                                                "description",
-                                                                description,
+                                                            html={exp.descriptionHtml || []}
+                                                            onChange={(description, _levels, descriptionHtml) => updateBlockData(
+                                                                currentBlock.id,
+                                                                currentBlock.data.map((item: any) => item.id === exp.id
+                                                                    ? { ...item, description, descriptionHtml }
+                                                                    : item),
                                                             )}
                                                             maxLevel={1}
                                                             placeholder="주요 업무와 성과를 입력하세요"
                                                             ariaLabel="회사 소개 및 주요 성과 불렛 목록"
                                                         />
                                                     ) : (
-                                                        <textarea
-                                                            rows={5}
+                                                        <RichTextEditable
                                                             placeholder="주요 업무와 성과를 문장별로 입력하세요"
-                                                            value={(exp.description || []).join("\n")}
-                                                            onChange={(event) => handleUpdateExpField(
-                                                                exp.id,
-                                                                "description",
-                                                                event.target.value.split("\n"),
-                                                            )}
-                                                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-y"
+                                                            html={(exp.descriptionHtml || exp.description?.map(escapeHtml) || []).join("<br>")}
+                                                            onChange={(html) => {
+                                                                const descriptionHtml = splitInlineRichTextLines(html);
+                                                                updateBlockData(
+                                                                    currentBlock.id,
+                                                                    currentBlock.data.map((item: any) => item.id === exp.id
+                                                                        ? {
+                                                                            ...item,
+                                                                            description: descriptionHtml.map(richTextToPlainText),
+                                                                            descriptionHtml,
+                                                                        }
+                                                                        : item),
+                                                                );
+                                                            }}
+                                                            className="inspector-rich-text-editor"
                                                         />
                                                     )}
                                                 </div>
@@ -2356,23 +2373,28 @@ export default function InspectorPanel() {
                                         .split("\n")
                                         .filter((line) => line.trim())
                                         .map(() => 1)}
-                                    onChange={(content) => updateBlockData(currentBlock.id, {
+                                    html={currentBlock.data?.contentHtml || []}
+                                    onChange={(content, _levels, contentHtml) => updateBlockData(currentBlock.id, {
                                         ...currentBlock.data,
                                         content: content.join("\n"),
+                                        contentHtml,
                                     })}
                                     maxLevel={1}
                                     placeholder="추가 정보를 입력하세요"
                                     ariaLabel="추가 정보 불렛 목록"
                                 />
                             ) : (
-                                <textarea
-                                    rows={6}
-                                    value={currentBlock.data?.content || ""}
-                                    onChange={(event) => updateBlockData(currentBlock.id, {
-                                        ...currentBlock.data,
-                                        content: event.target.value,
-                                    })}
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 resize-none"
+                                <RichTextEditable
+                                    html={(currentBlock.data?.contentHtml || String(currentBlock.data?.content || "").split("\n").map(escapeHtml)).join("<br>")}
+                                    onChange={(html) => {
+                                        const contentHtml = splitInlineRichTextLines(html);
+                                        updateBlockData(currentBlock.id, {
+                                            ...currentBlock.data,
+                                            content: contentHtml.map(richTextToPlainText).join("\n"),
+                                            contentHtml,
+                                        });
+                                    }}
+                                    className="inspector-rich-text-editor"
                                     placeholder="내용을 입력하세요."
                                 />
                             )}

@@ -362,24 +362,26 @@ body,
 .resume-block-item::after {
   content: "";
   position: absolute;
-  inset: -2px -16px;
+  inset: -3px -16px;
   z-index: -1;
   pointer-events: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(241, 245, 249, 0.48));
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 62%);
   box-shadow:
-    0 16px 36px rgba(15, 23, 42, 0.13),
-    0 4px 12px rgba(15, 23, 42, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(12px) saturate(1.15);
+    0 18px 44px rgb(15 23 42 / 12%),
+    0 3px 10px rgb(15 23 42 / 6%),
+    inset 0 1px 0 rgb(255 255 255 / 90%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   opacity: 0;
-  transform: translateY(-2px) scale(1.01);
+  transform: translateY(-1px) scale(1.006);
   transition: opacity 150ms ease, transform 150ms ease;
 }
 
 .resume-block-item.resume-block-selected::after {
   opacity: 1;
-  transform: translateY(-2px) scale(1);
+  transform: translateY(-1px) scale(1);
 }
 
 /* 같은 페이지에 연속 배치된 동일 블록 조각은 하나의 카드처럼 연결합니다. */
@@ -403,7 +405,7 @@ body,
   bottom: -8px;
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 0;
-  background: #f8fafc;
+  background: rgb(255 255 255 / 62%);
   backdrop-filter: none;
   box-shadow:
     -14px 0 24px -18px rgba(15, 23, 42, 0.18),
@@ -415,7 +417,7 @@ body,
   top: -8px;
   border-top-right-radius: 0;
   border-top-left-radius: 0;
-  background: #f8fafc;
+  background: rgb(255 255 255 / 62%);
   backdrop-filter: none;
   box-shadow:
     -14px 0 24px -18px rgba(15, 23, 42, 0.18),
@@ -533,7 +535,13 @@ body,
     page-break-inside: avoid !important;
   }
 
+  .resume-block-item::after {
+    display: none !important;
+  }
+
   .resume-block-selected {
+    border-color: transparent !important;
+    outline: none !important;
     background: transparent !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
@@ -631,6 +639,7 @@ body,
 }
 
 .reference-template .resume-block-item.resume-block-selected {
+  border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
 }
@@ -1383,6 +1392,32 @@ body,
   content: attr(data-placeholder);
   color: var(--inspector-muted);
   pointer-events: none;
+}
+
+[data-project-bullet-editor]:empty::before,
+[data-project-bullet-editor]:has(>br:only-child)::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.inspector-rich-text-editor {
+  min-height: 96px;
+  width: 100%;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  background: #171717;
+  padding: 8px 10px;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.6;
+  outline: none;
+}
+
+.inspector-rich-text-editor:focus {
+  border-color: #3b82f6;
 }
 
 .project-bullet-editor:focus .project-bullet-editor__content::before,
@@ -2900,11 +2935,8 @@ summary[data-tooltip],
 }
 
 @media print {
-  .resume-block-item::after {
-    display: none !important;
-  }
-
   .reference-template .resume-block-item.resume-block-selected {
+    outline: none !important;
     background: transparent !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
@@ -3001,6 +3033,21 @@ summary[data-tooltip],
   letter-spacing: inherit;
   line-height: inherit;
   vertical-align: baseline;
+}
+
+.resume-paper .resume-rich-text-editor {
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.resume-paper .resume-rich-text-editor:focus {
+  border: 0;
+  outline: none;
+  background: #eff6ff;
+  box-shadow: none;
 }
 
 .header-menu .tooltip-anchor[data-tooltip]::after {
@@ -3286,7 +3333,12 @@ summary[data-tooltip],
 
 .project-bullet-editor__content strong {
   color: inherit;
-  font-weight: 800;
+  font-weight: 800 !important;
+}
+
+.inspector-rich-text-editor strong {
+  color: inherit;
+  font-weight: 800 !important;
 }
 
 .project-bullet-editor__content u {

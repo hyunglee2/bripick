@@ -12,6 +12,7 @@ type RichTextEditableProps = {
     ariaLabel?: string;
     editorId?: string;
     readOnly?: boolean;
+    placeholder?: string;
 };
 
 export default function RichTextEditable({
@@ -22,6 +23,7 @@ export default function RichTextEditable({
     ariaLabel,
     editorId,
     readOnly = false,
+    placeholder = "내용을 입력하세요",
 }: RichTextEditableProps) {
     const editorRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +58,8 @@ export default function RichTextEditable({
             role="textbox"
             aria-label={ariaLabel}
             data-project-bullet-editor={editorId}
-            className={className}
+            data-placeholder={placeholder}
+            className={`resume-rich-text-editor ${className}`}
             onInput={(event) => onChange(sanitizeInlineRichText(event.currentTarget.innerHTML))}
             onBlur={(event) => {
                 const sanitizedHtml = sanitizeInlineRichText(event.currentTarget.innerHTML);

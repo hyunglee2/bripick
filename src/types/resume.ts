@@ -29,6 +29,7 @@ export interface ProfileData {
     phone: string;
     location?: string;
     bio: string;
+    bioHtml?: string;
     photo?: string;
     photoSource?: string;
     photoCrop?: {
@@ -40,6 +41,7 @@ export interface ProfileData {
     blog?: string;
     github?: string;
     highlights?: string[];
+    highlightsHtml?: string[];
     introductionStyle?: "bullets" | "paragraph";
     contacts?: ProfileContact[];
 }
@@ -58,6 +60,8 @@ export interface ExperienceItem {
     startDate: string;
     endDate: string;
     description: string[];
+    descriptionHtml?: string[];
+    descriptionStyle?: "bullets" | "paragraph";
     techStack?: string[];
     projects?: ExperienceProject[];
 }
