@@ -13,6 +13,7 @@ export const createSampleResume = (
         contentWidth: 800,
         basePadding: 36,
         blockGap: 18,
+        projectDividerGap: 100,
         displayTitleFontSize: 24,
         sectionTitleFontSize: 24,
         itemTitleFontSize: 19,
@@ -24,7 +25,7 @@ export const createSampleResume = (
         {
             id: "block-p-1",
             type: "profile",
-            title: "PROFILE",
+            title: "Profile",
             isVisible: true,
             order: 0,
             style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
@@ -55,7 +56,7 @@ export const createSampleResume = (
         {
             id: "block-s-1",
             type: "skills",
-            title: "CORE SKILLS",
+            title: "Core Skills",
             isVisible: true,
             order: 1,
             style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
@@ -70,7 +71,7 @@ export const createSampleResume = (
         {
             id: "block-e-1",
             type: "experience",
-            title: "WORK EXPERIENCE",
+            title: "Work Experience",
             isVisible: true,
             order: 2,
             style: { paddingY: 18, paddingX: 0, columns: 1, showDivider: true },
@@ -174,7 +175,7 @@ export const createSampleResume = (
         {
             id: "block-pr-1",
             type: "project",
-            title: "NOTABLE PROJECTS",
+            title: "Notable Projects",
             isVisible: true,
             order: 3,
             style: { paddingY: 18, paddingX: 0, columns: 1, showDivider: true },
@@ -255,7 +256,7 @@ export const createSampleResume = (
         {
             id: "block-edu-1",
             type: "education",
-            title: "EDUCATION",
+            title: "Education",
             isVisible: true,
             order: 4,
             style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },
@@ -333,7 +334,7 @@ export const createSampleResume = (
         {
             id: "block-custom-1",
             type: "custom_text",
-            title: "ADDITIONAL INFORMATION",
+            title: "Additional Information",
             isVisible: true,
             order: 6,
             style: { paddingY: 16, paddingX: 0, columns: 1, showDivider: true },

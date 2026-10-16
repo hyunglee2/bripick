@@ -129,6 +129,7 @@ export interface GlobalStyle {
     contentWidth: number;
     basePadding: number;
     blockGap?: number;
+    projectDividerGap?: number;
     displayTitleFontSize?: number;
     sectionTitleFontSize?: number;
     itemTitleFontSize?: number;

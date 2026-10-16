@@ -8,6 +8,7 @@ import {
     BlockType,
 } from "@/types/resume";
 import { createSampleResume } from "@/lib/sampleResume";
+import { formatBlockTitle } from "@/lib/blockTitles";
 
 interface ResumeState {
     resume: ResumeDocument;
@@ -66,6 +67,7 @@ const defaultResume: ResumeDocument = {
         contentWidth: 800,
         basePadding: 36,
         blockGap: 18,
+        projectDividerGap: 100,
         displayTitleFontSize: 24,
         sectionTitleFontSize: 24,
         itemTitleFontSize: 19,
@@ -148,6 +150,14 @@ const migrateTypographyDefaults = (document: ResumeDocument): ResumeDocument => 
     },
 });
 
+const migrateBlockTitleCase = (document: ResumeDocument): ResumeDocument => ({
+    ...document,
+    blocks: document.blocks.map((block) => ({
+        ...block,
+        title: formatBlockTitle(block.title),
+    })),
+});
+
 const migrateOtherExperience = (document: ResumeDocument): ResumeDocument => ({
     ...document,
     blocks: document.blocks.map((block) => {
@@ -191,7 +201,7 @@ const migrateOtherExperience = (document: ResumeDocument): ResumeDocument => ({
 });
 
 const migrateResumeDocument = (document: ResumeDocument) => (
-    migrateOtherExperience(migrateTypographyDefaults(document))
+    migrateBlockTitleCase(migrateOtherExperience(migrateTypographyDefaults(document)))
 );
 
 export const useResumeStore = create<ResumeState>()(
@@ -317,16 +327,16 @@ export const useResumeStore = create<ResumeState>()(
                         id: newBlockId,
                         type,
                         // [추가된 부분 2] 타이틀 분기
-                        title:
-                            type === "page_break"
-                                ? "PAGE BREAK"
-                                : type === "profile"
-                                    ? "기본 정보"
-                                : type === "education"
-                                    ? "EDUCATION"
-                                    : type === "certification"
-                                        ? "Other Experience"
-                                        : type.toUpperCase(),
+                        title: {
+                            page_break: "Page Break",
+                            profile: "기본 정보",
+                            experience: "Work Experience",
+                            project: "Projects",
+                            skills: "Skills",
+                            education: "Education",
+                            certification: "Other Experience",
+                            custom_text: "Additional Information",
+                        }[type],
                         isVisible: true,
                         order: state.resume.blocks.length,
                         style: {
@@ -669,7 +679,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
         {
             name: "bripick-resume-storage:guest",
-            version: 7,
+            version: 8,
             migrate: (persistedState) => {
                 const state = persistedState as Partial<ResumeState>;
                 return {

@@ -108,15 +108,16 @@ export default function EditorHeader() {
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
+            const isProjectBulletEditor = Boolean(target.closest(".project-bullet-document-editor"));
             if (e.key === "Escape") {
                 setOpenMenu(null);
                 return;
             }
-            if (
+            if (!isProjectBulletEditor && (
                 target.tagName === "INPUT" ||
                 target.tagName === "TEXTAREA" ||
                 target.isContentEditable
-            ) {
+            )) {
                 return;
             }
 
@@ -252,6 +253,7 @@ export default function EditorHeader() {
                 contentWidth: 800,
                 basePadding: 36,
                 blockGap: 18,
+                projectDividerGap: 25,
                 displayTitleFontSize: 24,
                 sectionTitleFontSize: 24,
                 itemTitleFontSize: 19,

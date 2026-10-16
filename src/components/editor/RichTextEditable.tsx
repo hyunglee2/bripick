@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
-import { sanitizeInlineRichText } from "@/lib/richText";
+import { richTextToPlainText, sanitizeInlineRichText } from "@/lib/richText";
 import RichTextBubbleToolbar from "@/components/editor/RichTextBubbleToolbar";
 
 type RichTextEditableProps = {
@@ -26,6 +26,7 @@ export default function RichTextEditable({
     placeholder = "내용을 입력하세요",
 }: RichTextEditableProps) {
     const editorRef = useRef<HTMLDivElement>(null);
+    const isEmpty = richTextToPlainText(sanitizeInlineRichText(html)).trim().length === 0;
 
     useLayoutEffect(() => {
         const editor = editorRef.current;
@@ -59,6 +60,7 @@ export default function RichTextEditable({
             aria-label={ariaLabel}
             data-project-bullet-editor={editorId}
             data-placeholder={placeholder}
+            data-empty={isEmpty ? "true" : "false"}
             className={`resume-rich-text-editor ${className}`}
             onInput={(event) => onChange(sanitizeInlineRichText(event.currentTarget.innerHTML))}
             onBlur={(event) => {

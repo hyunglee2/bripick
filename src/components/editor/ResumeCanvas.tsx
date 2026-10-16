@@ -8,8 +8,10 @@ import { ChevronDown, Columns2, Crop, FileText, GripVertical, ImagePlus, Maximiz
 import { ProfileData, ResumeBlock, ResumeDocument, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
+import { formatBlockTitle } from "@/lib/blockTitles";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText, splitInlineRichTextLines } from "@/lib/richText";
 import RichTextEditable from "@/components/editor/RichTextEditable";
+import ProjectBulletDocumentEditor from "@/components/editor/ProjectBulletDocumentEditor";
 import ServiceDialog from "@/components/ui/ServiceDialog";
 import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
 
@@ -78,6 +80,7 @@ export default function ResumeCanvas({
     const [zoomLevel, setZoomLevel] = useState<number>(100);
     const [viewMode, setViewMode] = useState<CanvasViewMode>(readOnly ? "width" : "custom");
     const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
+    const [activeSkillDraftCategoryId, setActiveSkillDraftCategoryId] = useState<string | null>(null);
     const [pendingDeleteBlockId, setPendingDeleteBlockId] = useState<string | null>(null);
     const [pendingProfilePhoto, setPendingProfilePhoto] = useState<{
         blockId: string;
@@ -169,6 +172,7 @@ export default function ResumeCanvas({
         "--resume-body-size": `${Math.max(14, globalStyle?.bodyFontSize ?? 14)}px`,
         "--resume-caption-size": `${Math.max(14, globalStyle?.captionFontSize ?? 14)}px`,
         "--resume-block-gap": `${globalStyle?.blockGap ?? 18}px`,
+        "--resume-project-divider-gap": `${globalStyle?.projectDividerGap ?? 100}px`,
     } as React.CSSProperties;
 
     const fitCanvasToView = useCallback((mode: Exclude<CanvasViewMode, "custom">) => {
@@ -846,6 +850,7 @@ export default function ResumeCanvas({
         globalStyle?.bodyFontSize,
         globalStyle?.captionFontSize,
         globalStyle?.blockGap,
+        globalStyle?.projectDividerGap,
         // Fast Refresh 중에도 dependency 배열 길이를 유지하되,
         // pagePlacements 변경으로 측정 effect가 재실행되지는 않게 한다.
         canvasRef,
@@ -960,7 +965,7 @@ export default function ResumeCanvas({
                                         <span className="resume-profile-suffix">입니다.</span>
                                     </div>
                                     <div className="resume-profile-contacts">
-                                        <strong>CONTACTS</strong>
+                                        <strong>Contacts</strong>
                                         <div className="resume-contact-list">
                                             {profileContactRows.map((row) => (
                                                 <div key={row.map((contact) => contact.id).join("-")} className="resume-contact-line">
@@ -1090,12 +1095,12 @@ export default function ResumeCanvas({
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
-                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                            <h2 className="text-sm font-bold text-neutral-900 tracking-wider">
                                 <EditableText
-                                    value={block.title}
+                                    value={formatBlockTitle(block.title)}
                                     appearance="plain"
                                     placeholder="경력"
-                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                    onChange={(title) => updateBlockTitle(block.id, formatBlockTitle(title))}
                                 />
                             </h2>
                         </div>}
@@ -1105,6 +1110,47 @@ export default function ResumeCanvas({
                                     .slice(placement.itemStart ?? 0, placement.itemEnd ?? block.data.length)
                                     .map((exp: any, localIndex: number) => {
                                         const expIndex = (placement.itemStart ?? 0) + localIndex;
+                                        const experienceProjects = Array.isArray(exp.projects) ? exp.projects : [];
+                                        const placeholderProjectId = `experience-project-placeholder-${exp.id}`;
+                                        const visibleExperienceProjects = experienceProjects.length > 0
+                                            ? experienceProjects
+                                            : readOnly
+                                                ? []
+                                                : [{
+                                                    id: placeholderProjectId,
+                                                    title: "",
+                                                    role: "",
+                                                    startDate: "",
+                                                    endDate: "",
+                                                    description: [""],
+                                                    descriptionLevels: [1],
+                                                    descriptionHtml: [""],
+                                                }];
+                                        const updateExperienceProject = (
+                                            project: any,
+                                            projectIndex: number,
+                                            patch: Record<string, unknown>,
+                                        ) => {
+                                            const updated = [...block.data];
+                                            const projects = [...experienceProjects];
+                                            if (project.id === placeholderProjectId) {
+                                                projects.push({
+                                                    id: `exp-project-${Date.now()}`,
+                                                    title: "",
+                                                    role: "",
+                                                    startDate: "",
+                                                    endDate: "",
+                                                    description: [""],
+                                                    descriptionLevels: [1],
+                                                    descriptionHtml: [""],
+                                                    ...patch,
+                                                });
+                                            } else {
+                                                projects[projectIndex] = { ...project, ...patch };
+                                            }
+                                            updated[expIndex] = { ...exp, projects };
+                                            updateBlockData(block.id, updated);
+                                        };
                                         return (
                                             <div
                                                 key={exp.id}
@@ -1239,108 +1285,96 @@ export default function ResumeCanvas({
                                                         </ul>
                                                     );
                                                 })()}
-                                                {!isDescriptionContinuation && Array.isArray(exp.projects) && exp.projects.length > 0 && (
+                                                {!isDescriptionContinuation && visibleExperienceProjects.length > 0 && (
                                                     <div className="resume-experience-projects">
-                                                        {exp.projects
+                                                        {visibleExperienceProjects
                                                             .slice(
                                                                 placement.experienceProjectStart ?? 0,
-                                                                placement.experienceProjectEnd ?? exp.projects.length,
+                                                                placement.experienceProjectEnd ?? visibleExperienceProjects.length,
                                                             )
                                                             .map((project: any, localProjectIndex: number) => {
                                                                 const projectIndex = (placement.experienceProjectStart ?? 0) + localProjectIndex;
+                                                                const projectDescriptions = Array.isArray(project.description)
+                                                                    ? project.description
+                                                                    : [];
+                                                                const visibleProjectDescriptions = projectDescriptions.length > 0
+                                                                    ? projectDescriptions
+                                                                    : readOnly
+                                                                        ? []
+                                                                        : [""];
                                                                 return <div
                                                                     key={project.id}
                                                                     data-experience-project-index={projectIndex}
-                                                                    data-resume-sub-child-id={project.id}
+                                                                    data-resume-sub-child-id={project.id === placeholderProjectId ? undefined : project.id}
                                                                     className="resume-experience-project"
                                                                 >
                                                                     <div className="resume-experience-project__header">
-                                                                        <div className="flex min-w-0 items-baseline gap-2">
+                                                                        <div className="flex min-w-0 items-center gap-2">
                                                                             <span style={{ backgroundColor: primaryColor }} className="h-1.5 w-1.5 shrink-0" />
                                                                             <EditableText
                                                                                 tag="span"
                                                                                 value={project.title}
                                                                                 placeholder="프로젝트명"
                                                                                 onChange={(title) => {
-                                                                                    const updated = [...block.data];
-                                                                                    const projects = [...exp.projects];
-                                                                                    projects[projectIndex] = { ...project, title };
-                                                                                    updated[expIndex] = { ...exp, projects };
-                                                                                    updateBlockData(block.id, updated);
+                                                                                    updateExperienceProject(project, projectIndex, { title });
                                                                                 }}
                                                                                 className="resume-item-title font-bold text-neutral-900"
                                                                             />
                                                                         </div>
-                                                                        <div className="flex shrink-0 items-center gap-1 text-xs text-neutral-500">
-                                                                            <EditableText
-                                                                                value={project.startDate || ""}
-                                                                                width="short"
-                                                                                placeholder="시작일"
-                                                                                onChange={(startDate) => {
-                                                                                    const updated = [...block.data];
-                                                                                    const projects = [...exp.projects];
-                                                                                    projects[projectIndex] = { ...project, startDate };
-                                                                                    updated[expIndex] = { ...exp, projects };
-                                                                                    updateBlockData(block.id, updated);
-                                                                                }}
-                                                                            />
-                                                                            <span>~</span>
-                                                                            <EditableText
-                                                                                value={project.endDate || ""}
-                                                                                width="short"
-                                                                                placeholder="종료일"
-                                                                                onChange={(endDate) => {
-                                                                                    const updated = [...block.data];
-                                                                                    const projects = [...exp.projects];
-                                                                                    projects[projectIndex] = { ...project, endDate };
-                                                                                    updated[expIndex] = { ...exp, projects };
-                                                                                    updateBlockData(block.id, updated);
-                                                                                }}
-                                                                            />
-                                                                        </div>
+                                                                        {(project.startDate || project.endDate) && (
+                                                                            <div className="flex shrink-0 items-center gap-1 text-xs text-neutral-500">
+                                                                                {project.startDate && <EditableText
+                                                                                    value={project.startDate}
+                                                                                    width="short"
+                                                                                    onChange={(startDate) => {
+                                                                                        const updated = [...block.data];
+                                                                                        const projects = [...exp.projects];
+                                                                                        projects[projectIndex] = { ...project, startDate };
+                                                                                        updated[expIndex] = { ...exp, projects };
+                                                                                        updateBlockData(block.id, updated);
+                                                                                    }}
+                                                                                />}
+                                                                                {project.startDate && project.endDate && <span>~</span>}
+                                                                                {project.endDate && <EditableText
+                                                                                    value={project.endDate}
+                                                                                    width="short"
+                                                                                    onChange={(endDate) => {
+                                                                                        const updated = [...block.data];
+                                                                                        const projects = [...exp.projects];
+                                                                                        projects[projectIndex] = { ...project, endDate };
+                                                                                        updated[expIndex] = { ...exp, projects };
+                                                                                        updateBlockData(block.id, updated);
+                                                                                    }}
+                                                                                />}
+                                                                            </div>
+                                                                        )}
                                                                     </div>
                                                                     <EditableText
                                                                         tag="div"
                                                                         value={project.role}
+                                                                        width="full"
                                                                         placeholder="프로젝트 소개 및 역할"
                                                                         onChange={(role) => {
-                                                                            const updated = [...block.data];
-                                                                            const projects = [...exp.projects];
-                                                                            projects[projectIndex] = { ...project, role };
-                                                                            updated[expIndex] = { ...exp, projects };
-                                                                            updateBlockData(block.id, updated);
+                                                                            updateExperienceProject(project, projectIndex, { role });
                                                                         }}
                                                                         className="resume-experience-project__summary"
                                                                     />
-                                                                    <ul className="resume-project-bullets">
-                                                                        {(project.description || []).map((description: string, descriptionIndex: number) => (
-                                                                            <li
-                                                                                key={descriptionIndex}
-                                                                                data-bullet-level={project.descriptionLevels?.[descriptionIndex] || 1}
-                                                                            >
-                                                                                <RichTextEditable
-                                                                                    html={project.descriptionHtml?.[descriptionIndex] || escapeHtml(description)}
-                                                                                    readOnly={readOnly}
-                                                                                    ariaLabel="프로젝트 기여와 성과"
-                                                                                    className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
-                                                                                    onKeyDown={(event) => {
-                                                                                        if (event.key === "Enter") event.preventDefault();
-                                                                                    }}
-                                                                                    onChange={(descriptionHtml) => {
-                                                                                        const updated = [...block.data];
-                                                                                        const projects = [...exp.projects];
-                                                                                        const descriptions = [...(project.description || [])];
-                                                                                        const html = [...(project.descriptionHtml || [])];
-                                                                                        descriptions[descriptionIndex] = richTextToPlainText(descriptionHtml);
-                                                                                        html[descriptionIndex] = descriptionHtml;
-                                                                                        projects[projectIndex] = { ...project, description: descriptions, descriptionHtml: html };
-                                                                                        updated[expIndex] = { ...exp, projects };
-                                                                                        updateBlockData(block.id, updated);
-                                                                                    }}
-                                                                                />
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
+                                                                    <ProjectBulletDocumentEditor
+                                                                        variant="resume"
+                                                                        readOnly={readOnly}
+                                                                        descriptions={visibleProjectDescriptions}
+                                                                        levels={project.descriptionLevels || []}
+                                                                        html={project.descriptionHtml || []}
+                                                                        placeholder="프로젝트 기여와 성과"
+                                                                        ariaLabel="프로젝트 기여와 성과"
+                                                                        onChange={(descriptions, descriptionLevels, descriptionHtml) => {
+                                                                            updateExperienceProject(project, projectIndex, {
+                                                                                description: descriptions,
+                                                                                descriptionLevels,
+                                                                                descriptionHtml,
+                                                                            });
+                                                                        }}
+                                                                    />
                                                                 </div>;
                                                             })}
                                                     </div>
@@ -1362,12 +1396,12 @@ export default function ResumeCanvas({
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
-                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                            <h2 className="text-sm font-bold text-neutral-900 tracking-wider">
                                 <EditableText
-                                    value={block.title || "PROJECTS"}
+                                    value={formatBlockTitle(block.title || "Projects")}
                                     appearance="plain"
                                     placeholder="프로젝트"
-                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                    onChange={(title) => updateBlockTitle(block.id, formatBlockTitle(title))}
                                 />
                             </h2>
                         </div>}
@@ -1384,7 +1418,7 @@ export default function ResumeCanvas({
                                                 className={`resume-project-item space-y-1 ${localIndex > 0 ? "resume-project-item--separated" : ""}`}
                                             >
                                                 {!isDescriptionContinuation && <div className="resume-project-header flex justify-between items-baseline gap-2">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex min-w-0 flex-1 items-center gap-2">
                                                         <EditableText
                                                             tag="span"
                                                             value={proj.title}
@@ -1402,33 +1436,34 @@ export default function ResumeCanvas({
                                                             </a>
                                                         )}
                                                     </div>
-                                                    <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
-                                                        <EditableText
-                                                            value={proj.startDate}
-                                                            width="short"
-                                                            placeholder="시작일"
-                                                            onChange={(newDate) => {
-                                                                const updated = [...block.data];
-                                                                updated[projIndex] = { ...proj, startDate: newDate };
-                                                                updateBlockData(block.id, updated);
-                                                            }}
-                                                        />
-                                                        <span>~</span>
-                                                        <EditableText
-                                                            value={proj.endDate}
-                                                            width="short"
-                                                            placeholder="종료일"
-                                                            onChange={(newDate) => {
-                                                                const updated = [...block.data];
-                                                                updated[projIndex] = { ...proj, endDate: newDate };
-                                                                updateBlockData(block.id, updated);
-                                                            }}
-                                                        />
-                                                    </div>
+                                                    {(proj.startDate || proj.endDate) && (
+                                                        <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">
+                                                            {proj.startDate && <EditableText
+                                                                value={proj.startDate}
+                                                                width="short"
+                                                                onChange={(newDate) => {
+                                                                    const updated = [...block.data];
+                                                                    updated[projIndex] = { ...proj, startDate: newDate };
+                                                                    updateBlockData(block.id, updated);
+                                                                }}
+                                                            />}
+                                                            {proj.startDate && proj.endDate && <span>~</span>}
+                                                            {proj.endDate && <EditableText
+                                                                value={proj.endDate}
+                                                                width="short"
+                                                                onChange={(newDate) => {
+                                                                    const updated = [...block.data];
+                                                                    updated[projIndex] = { ...proj, endDate: newDate };
+                                                                    updateBlockData(block.id, updated);
+                                                                }}
+                                                            />}
+                                                        </div>
+                                                    )}
                                                 </div>}
                                                 {!isDescriptionContinuation && <EditableText
                                                     tag="div"
                                                     value={proj.role}
+                                                    width="full"
                                                     placeholder="프로젝트 역할"
                                                     onChange={(newRole) => {
                                                         const updated = [...block.data];
@@ -1437,79 +1472,58 @@ export default function ResumeCanvas({
                                                     }}
                                                     className="resume-project-summary text-xs text-neutral-500"
                                                 />}
-                                                <ul className="resume-project-bullets list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1">
-                                                    {proj.description
-                                                        ?.slice(
-                                                            placement.descriptionStart ?? 0,
+                                                <ProjectBulletDocumentEditor
+                                                    variant="resume"
+                                                    readOnly={readOnly}
+                                                    descriptions={(proj.description || []).slice(
+                                                        placement.descriptionStart ?? 0,
+                                                        placement.descriptionEnd ?? proj.description.length,
+                                                    )}
+                                                    levels={(proj.descriptionLevels || []).slice(
+                                                        placement.descriptionStart ?? 0,
+                                                        placement.descriptionEnd ?? proj.description.length,
+                                                    )}
+                                                    html={(proj.descriptionHtml || []).slice(
+                                                        placement.descriptionStart ?? 0,
+                                                        placement.descriptionEnd ?? proj.description.length,
+                                                    )}
+                                                    descriptionStart={placement.descriptionStart ?? 0}
+                                                    placeholder="프로젝트 기여와 성과"
+                                                    ariaLabel="프로젝트 성과"
+                                                    className="list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1"
+                                                    onChange={(descriptions, descriptionLevels, descriptionHtml) => {
+                                                        const descriptionStart = placement.descriptionStart ?? 0;
+                                                        const visibleDescriptionCount = (
                                                             placement.descriptionEnd ?? proj.description.length
-                                                        )
-                                                        .map((desc: string, localDescriptionIndex: number) => {
-                                                            const i = (placement.descriptionStart ?? 0) + localDescriptionIndex;
-                                                            const bulletLevel = Math.max(
-                                                                1,
-                                                                Math.min(3, Number(proj.descriptionLevels?.[i]) || 1),
-                                                            );
-                                                            const bulletHtml = sanitizeInlineRichText(
-                                                                proj.descriptionHtml?.[i] || escapeHtml(desc),
-                                                            );
-                                                            if (!richTextToPlainText(bulletHtml).trim()) {
-                                                                return (
-                                                                    <li
-                                                                        key={i}
-                                                                        data-pagination-description-index={i}
-                                                                        data-bullet-level={bulletLevel}
-                                                                        className="list-item"
-                                                                    >
-                                                                        <EditableText
-                                                                            value=""
-                                                                            width="full"
-                                                                            placeholder="프로젝트 기여와 성과"
-                                                                            onChange={(newDescription) => {
-                                                                                const updated = [...block.data];
-                                                                                const newDescriptions = [...proj.description];
-                                                                                newDescriptions[i] = newDescription;
-                                                                                updated[projIndex] = { ...proj, description: newDescriptions };
-                                                                                updateBlockData(block.id, updated);
-                                                                            }}
-                                                                        />
-                                                                    </li>
-                                                                );
-                                                            }
-                                                            return (
-                                                                <li
-                                                                    key={i}
-                                                                    data-pagination-description-index={i}
-                                                                    data-bullet-level={bulletLevel}
-                                                                    className="list-item"
-                                                                >
-                                                                    <RichTextEditable
-                                                                        html={bulletHtml}
-                                                                        readOnly={readOnly}
-                                                                        ariaLabel="프로젝트 성과"
-                                                                        className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
-                                                                        onKeyDown={(event) => {
-                                                                            if (event.key === "Enter") event.preventDefault();
-                                                                        }}
-                                                                        onChange={(newHtml) => {
-                                                                            const updated = [...block.data];
-                                                                            const newDescriptions = [...proj.description];
-                                                                            const newDescriptionHtml = Array.isArray(proj.descriptionHtml)
-                                                                                ? [...proj.descriptionHtml]
-                                                                                : proj.description.map((text: string) => escapeHtml(text));
-                                                                            newDescriptions[i] = richTextToPlainText(newHtml);
-                                                                            newDescriptionHtml[i] = newHtml;
-                                                                            updated[projIndex] = {
-                                                                                ...proj,
-                                                                                description: newDescriptions,
-                                                                                descriptionHtml: newDescriptionHtml,
-                                                                            };
-                                                                            updateBlockData(block.id, updated);
-                                                                        }}
-                                                                    />
-                                                                </li>
-                                                            );
-                                                        })}
-                                                </ul>
+                                                        ) - descriptionStart;
+                                                        const updated = [...block.data];
+                                                        const nextDescriptions = [...(proj.description || [])];
+                                                        const nextLevels = [...(proj.descriptionLevels || [])];
+                                                        const nextHtml = [...(proj.descriptionHtml || [])];
+                                                        nextDescriptions.splice(
+                                                            descriptionStart,
+                                                            visibleDescriptionCount,
+                                                            ...descriptions,
+                                                        );
+                                                        nextLevels.splice(
+                                                            descriptionStart,
+                                                            visibleDescriptionCount,
+                                                            ...descriptionLevels,
+                                                        );
+                                                        nextHtml.splice(
+                                                            descriptionStart,
+                                                            visibleDescriptionCount,
+                                                            ...descriptionHtml,
+                                                        );
+                                                        updated[projIndex] = {
+                                                            ...proj,
+                                                            description: nextDescriptions,
+                                                            descriptionLevels: nextLevels,
+                                                            descriptionHtml: nextHtml,
+                                                        };
+                                                        updateBlockData(block.id, updated);
+                                                    }}
+                                                />
                                             </div>
                                         );
                                     })}
@@ -1522,6 +1536,16 @@ export default function ResumeCanvas({
 
             case "skills":
                 const skillCategories = getSkillCategories(block.data as SkillsData);
+                const skillEditorId = (categoryId: string, skillIndex: number | "draft" | "name") => (
+                    `skill-${block.id}-${categoryId}-${skillIndex}`
+                );
+                const focusSkillEditor = (editorId: string) => {
+                    window.setTimeout(() => document.getElementById(editorId)?.click(), 0);
+                };
+                const openSkillDraft = (categoryId: string) => {
+                    setActiveSkillDraftCategoryId(categoryId);
+                    focusSkillEditor(skillEditorId(categoryId, "draft"));
+                };
                 const updateCanvasSkillCategories = (categories: typeof skillCategories) => {
                     updateBlockData(
                         block.id,
@@ -1534,12 +1558,12 @@ export default function ResumeCanvas({
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
-                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                            <h2 className="text-sm font-bold text-neutral-900 tracking-wider">
                                 <EditableText
-                                    value={block.title || "SKILLS"}
+                                    value={formatBlockTitle(block.title || "Skills")}
                                     appearance="plain"
                                     placeholder="스킬"
-                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                    onChange={(title) => updateBlockTitle(block.id, formatBlockTitle(title))}
                                 />
                             </h2>
                         </div>
@@ -1551,6 +1575,7 @@ export default function ResumeCanvas({
                                 >
                                     <strong>
                                         <EditableText
+                                            editorId={skillEditorId(category.id, "name")}
                                             value={category.name}
                                             appearance="plain"
                                             placeholder="카테고리명"
@@ -1559,30 +1584,23 @@ export default function ResumeCanvas({
                                                     index === categoryIndex ? { ...item, name } : item
                                                 )),
                                             )}
+                                            onTabNext={() => {
+                                                if (category.skills.length > 0) {
+                                                    focusSkillEditor(skillEditorId(category.id, 0));
+                                                } else {
+                                                    openSkillDraft(category.id);
+                                                }
+                                            }}
                                         />
                                     </strong>
                                     <div className="flex flex-wrap gap-1.5">
-                                        {category.skills.length === 0 && (
-                                            <span className="rounded border border-neutral-200 bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-900">
-                                                <EditableText
-                                                    value=""
-                                                    placeholder="기술"
-                                                    onChange={(skill) => updateCanvasSkillCategories(
-                                                        skill
-                                                            ? skillCategories.map((item, index) => (
-                                                                index === categoryIndex ? { ...item, skills: [skill] } : item
-                                                            ))
-                                                            : skillCategories,
-                                                    )}
-                                                />
-                                            </span>
-                                        )}
                                         {category.skills.map((skill, skillIndex) => (
                                             <span
                                                 key={`${category.id}-${skillIndex}`}
                                                 className="rounded border border-neutral-200 bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-900"
                                             >
                                                 <EditableText
+                                                    editorId={skillEditorId(category.id, skillIndex)}
                                                     value={skill}
                                                     placeholder="기술"
                                                     onChange={(nextSkill) => updateCanvasSkillCategories(
@@ -1597,9 +1615,52 @@ export default function ResumeCanvas({
                                                                 : item
                                                         )),
                                                     )}
+                                                    onEditEnd={(nextSkill) => {
+                                                        if (nextSkill.trim()) return;
+                                                        updateCanvasSkillCategories(skillCategories.map((item, index) => (
+                                                            index === categoryIndex
+                                                                ? {
+                                                                    ...item,
+                                                                    skills: item.skills.filter((_, currentIndex) => currentIndex !== skillIndex),
+                                                                }
+                                                                : item
+                                                        )));
+                                                    }}
+                                                    onTabNext={() => {
+                                                        if (skillIndex + 1 < category.skills.length) {
+                                                            focusSkillEditor(skillEditorId(category.id, skillIndex + 1));
+                                                        } else {
+                                                            openSkillDraft(category.id);
+                                                        }
+                                                    }}
                                                 />
                                             </span>
                                         ))}
+                                        {!readOnly && activeSkillDraftCategoryId === category.id && (
+                                            <span
+                                                key={`skill-draft-${category.id}-${category.skills.length}`}
+                                                className="rounded border border-neutral-200 bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-900"
+                                            >
+                                                <EditableText
+                                                    editorId={skillEditorId(category.id, "draft")}
+                                                    value=""
+                                                    placeholder="기술"
+                                                    onChange={(skill) => {
+                                                        const nextSkill = skill.trim();
+                                                        if (!nextSkill) return;
+                                                        updateCanvasSkillCategories(skillCategories.map((item, index) => (
+                                                            index === categoryIndex
+                                                                ? { ...item, skills: [...item.skills, nextSkill] }
+                                                                : item
+                                                        )));
+                                                    }}
+                                                    onTabNext={() => focusSkillEditor(skillEditorId(category.id, "draft"))}
+                                                    onEditEnd={(skill) => {
+                                                        if (!skill.trim()) setActiveSkillDraftCategoryId(null);
+                                                    }}
+                                                />
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -1614,12 +1675,12 @@ export default function ResumeCanvas({
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
-                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                            <h2 className="text-sm font-bold text-neutral-900 tracking-wider">
                                 <EditableText
-                                    value={block.title || "EDUCATION"}
+                                    value={formatBlockTitle(block.title || "Education")}
                                     appearance="plain"
                                     placeholder="학력"
-                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                    onChange={(title) => updateBlockTitle(block.id, formatBlockTitle(title))}
                                 />
                             </h2>
                         </div>
@@ -1632,7 +1693,7 @@ export default function ResumeCanvas({
                                         return (
                                             <div key={edu.id} data-pagination-item-index={eduIdx} className="space-y-0.5">
                                                 <div className="flex justify-between items-baseline gap-2">
-                                                    <div className="flex items-center gap-2">
+                                                    <div className="flex min-w-0 flex-1 items-center gap-2">
                                                         <EditableText
                                                             tag="span"
                                                             value={edu.school}
@@ -1701,10 +1762,10 @@ export default function ResumeCanvas({
                             )}
                             <h2 className="text-sm font-bold text-neutral-900 tracking-wider">
                                 <EditableText
-                                    value={block.title === "CERTIFICATIONS & AWARDS" ? "Other Experience" : (block.title || "Other Experience")}
+                                    value={formatBlockTitle(block.title === "CERTIFICATIONS & AWARDS" ? "Other Experience" : (block.title || "Other Experience"))}
                                     appearance="plain"
                                     placeholder="Other Experience"
-                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                    onChange={(title) => updateBlockTitle(block.id, formatBlockTitle(title))}
                                 />
                             </h2>
                         </div>}
@@ -1766,29 +1827,29 @@ export default function ResumeCanvas({
                                                             </a>
                                                         )}
                                                     </div>
-                                                    <div className="resume-other-experience__date flex items-center gap-1 text-xs font-medium text-neutral-500">
-                                                        <EditableText
-                                                            value={startDate}
-                                                            width="short"
-                                                            placeholder="시작일"
-                                                            onChange={(newDate) => {
-                                                                const updated = [...block.data];
-                                                                updated[certIdx] = { ...cert, startDate: newDate };
-                                                                updateBlockData(block.id, updated);
-                                                            }}
-                                                        />
-                                                        <span>~</span>
-                                                        <EditableText
-                                                            value={endDate}
-                                                            width="short"
-                                                            placeholder="종료일"
-                                                            onChange={(newDate) => {
-                                                                const updated = [...block.data];
-                                                                updated[certIdx] = { ...cert, endDate: newDate };
-                                                                updateBlockData(block.id, updated);
-                                                            }}
-                                                        />
-                                                    </div>
+                                                    {(startDate || endDate) && (
+                                                        <div className="resume-other-experience__date flex items-center gap-1 text-xs font-medium text-neutral-500">
+                                                            {startDate && <EditableText
+                                                                value={startDate}
+                                                                width="short"
+                                                                onChange={(newDate) => {
+                                                                    const updated = [...block.data];
+                                                                    updated[certIdx] = { ...cert, startDate: newDate };
+                                                                    updateBlockData(block.id, updated);
+                                                                }}
+                                                            />}
+                                                            {startDate && endDate && <span>~</span>}
+                                                            {endDate && <EditableText
+                                                                value={endDate}
+                                                                width="short"
+                                                                onChange={(newDate) => {
+                                                                    const updated = [...block.data];
+                                                                    updated[certIdx] = { ...cert, endDate: newDate };
+                                                                    updateBlockData(block.id, updated);
+                                                                }}
+                                                            />}
+                                                        </div>
+                                                    )}
                                                 </div>}
                                                 <ul className="resume-other-experience__details">
                                                     {visibleDescriptions.map((description: string, localDescriptionIndex: number) => {
@@ -1854,12 +1915,12 @@ export default function ResumeCanvas({
                             {templateType === "modern" && (
                                 <span style={{ backgroundColor: primaryColor }} className="w-1.5 h-4 rounded-full inline-block" />
                             )}
-                            <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">
+                            <h2 className="text-sm font-bold text-neutral-900 tracking-wider">
                                 <EditableText
-                                    value={block.title}
+                                    value={formatBlockTitle(block.title)}
                                     appearance="plain"
                                     placeholder="섹션 제목"
-                                    onChange={(title) => updateBlockTitle(block.id, title)}
+                                    onChange={(title) => updateBlockTitle(block.id, formatBlockTitle(title))}
                                 />
                             </h2>
                         </div>}

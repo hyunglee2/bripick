@@ -6,6 +6,7 @@ import { useResumeStore } from "@/store/useResumeStore";
 import { ProfileData, SkillCategory, SkillsData } from "@/types/resume";
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
+import { formatBlockTitle } from "@/lib/blockTitles";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText, splitInlineRichTextLines } from "@/lib/richText";
 import ProjectBulletDocumentEditor from "@/components/editor/ProjectBulletDocumentEditor";
 import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
@@ -40,6 +41,7 @@ const DEFAULT_GLOBAL_STYLE = {
     contentWidth: 800,
     basePadding: 36,
     blockGap: 18,
+    projectDividerGap: 100,
     displayTitleFontSize: 24,
     sectionTitleFontSize: 24,
     itemTitleFontSize: 19,
@@ -298,6 +300,23 @@ export default function InspectorPanel() {
                             step="2"
                             value={globalStyle?.blockGap ?? 18}
                             onChange={(e) => updateGlobalStyle({ blockGap: Number(e.target.value) })}
+                            className="w-full accent-blue-500 cursor-pointer"
+                        />
+                    </div>
+
+                    {/* 프로젝트 구분선 위아래 간격 */}
+                    <div className="space-y-2">
+                        <div className="flex justify-between text-xs">
+                            <span className="text-neutral-300">프로젝트 구분선 간격</span>
+                            <span className="text-neutral-400 font-mono">{globalStyle?.projectDividerGap ?? 100}px</span>
+                        </div>
+                        <input
+                            type="range"
+                            min="0"
+                            max="120"
+                            step="2"
+                            value={globalStyle?.projectDividerGap ?? 100}
+                            onChange={(e) => updateGlobalStyle({ projectDividerGap: Number(e.target.value) })}
                             className="w-full accent-blue-500 cursor-pointer"
                         />
                     </div>
@@ -906,11 +925,11 @@ export default function InspectorPanel() {
                             <label className="inspector-label-inset block text-xs font-medium text-neutral-300">블록 제목</label>
                             <input
                                 type="text"
-                                value={currentBlock.type === "certification" && currentBlock.title === "CERTIFICATIONS & AWARDS"
+                                value={formatBlockTitle(currentBlock.type === "certification" && currentBlock.title === "CERTIFICATIONS & AWARDS"
                                     ? "Other Experience"
-                                    : currentBlock.title || ""}
+                                    : currentBlock.title || "")}
                                 placeholder="블록 제목을 입력하세요"
-                                onChange={(e) => updateBlockTitle(currentBlock.id, e.target.value)}
+                                onChange={(e) => updateBlockTitle(currentBlock.id, formatBlockTitle(e.target.value))}
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
                         </div>
@@ -2017,7 +2036,7 @@ export default function InspectorPanel() {
                             type="button"
                             onClick={() => {
                                 const id = `skill-category-${Date.now()}`;
-                                updateSkillCategories([...skillCategories, { id, name: "새 카테고리", skills: [] }]);
+                                updateSkillCategories([...skillCategories, { id, name: "", skills: [] }]);
                                 setExpandedSkillCategoryId(id);
                             }}
                             className="inspector-list-add"
