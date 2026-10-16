@@ -28,6 +28,7 @@ import {
 import { BlockType, ResumeDocument } from "@/types/resume";
 import AuthMenu from "@/components/auth/AuthMenu";
 import { trackAnalyticsEvent } from "@/lib/analytics";
+import { isResumeBackup, prepareImportedResume } from "@/lib/resumeBackup";
 
 type DialogState = {
     title: string;
@@ -213,35 +214,47 @@ export default function EditorHeader() {
     };
 
     const handleUploadJSON = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.currentTarget.files?.[0];
+        e.currentTarget.value = "";
+        if (!selectedFile) return;
+
         const fileReader = new FileReader();
-        if (e.target.files && e.target.files[0]) {
-            fileReader.readAsText(e.target.files[0], "UTF-8");
-            fileReader.onload = (event) => {
-                try {
-                    const parsedData = JSON.parse(event.target?.result as string);
-                    if (parsedData && parsedData.blocks) {
-                        loadResume(parsedData);
-                        setDialog({
-                            title: "이력서를 불러왔어요",
-                            message: "선택한 이력서 데이터가 편집기에 정상적으로 반영되었습니다.",
-                            variant: "success",
-                        });
-                    } else {
-                        setDialog({
-                            title: "파일을 확인해 주세요",
-                            message: "Bripick에서 내보낸 올바른 이력서 JSON 파일이 아닙니다.",
-                            variant: "warning",
-                        });
-                    }
-                } catch {
+        fileReader.readAsText(selectedFile, "UTF-8");
+        fileReader.onload = (event) => {
+            try {
+                const parsedData: unknown = JSON.parse(String(event.target?.result ?? ""));
+                if (!isResumeBackup(parsedData)) {
                     setDialog({
-                        title: "파일을 읽지 못했어요",
-                        message: "JSON 파일이 손상되었거나 지원하지 않는 형식입니다.",
+                        title: "파일을 확인해 주세요",
+                        message: "Bripick에서 내보낸 올바른 이력서 JSON 파일이 아닙니다.",
                         variant: "warning",
                     });
+                    return;
                 }
-            };
-        }
+
+                const importedResume = prepareImportedResume(parsedData);
+                loadResume(importedResume);
+                trackAnalyticsEvent("resume_create", { source: "json_import" });
+                setDialog({
+                    title: "새 이력서로 가져왔어요",
+                    message: `「${importedResume.versionName}」을 현재 계정에 별도 이력서로 추가했습니다. 기존 공개 링크는 가져오지 않았습니다.`,
+                    variant: "success",
+                });
+            } catch {
+                setDialog({
+                    title: "파일을 읽지 못했어요",
+                    message: "JSON 파일이 손상되었거나 지원하지 않는 형식입니다.",
+                    variant: "warning",
+                });
+            }
+        };
+        fileReader.onerror = () => {
+            setDialog({
+                title: "파일을 읽지 못했어요",
+                message: "파일 읽기에 실패했습니다. 파일을 다시 선택해 주세요.",
+                variant: "warning",
+            });
+        };
     };
 
     const handleLoadPreset = () => {

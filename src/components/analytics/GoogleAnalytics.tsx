@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { X } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import {
     ANALYTICS_CONSENT_STORAGE_KEY,
@@ -10,6 +11,8 @@ import {
 const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
 const isValidMeasurementId = Boolean(measurementId && /^G-[A-Z0-9]+$/i.test(measurementId));
 const consentChangeEventName = "bripick:analytics-consent-change";
+const consentDismissedSessionKey = "bripick-analytics-consent-dismissed";
+const consentDismissedEventName = "bripick:analytics-consent-dismissed";
 
 function getSavedConsent(): AnalyticsConsent | null {
     const savedConsent = window.localStorage.getItem(ANALYTICS_CONSENT_STORAGE_KEY);
@@ -26,6 +29,15 @@ function subscribeToConsent(onStoreChange: () => void) {
     };
 }
 
+function getSessionDismissed() {
+    return window.sessionStorage.getItem(consentDismissedSessionKey) === "true";
+}
+
+function subscribeToSessionDismissed(onStoreChange: () => void) {
+    window.addEventListener(consentDismissedEventName, onStoreChange);
+    return () => window.removeEventListener(consentDismissedEventName, onStoreChange);
+}
+
 export default function GoogleAnalytics() {
     if (!isValidMeasurementId || !measurementId) return null;
 
@@ -34,10 +46,20 @@ export default function GoogleAnalytics() {
 
 function AnalyticsConsentManager({ measurementId }: { measurementId: string }) {
     const consent = useSyncExternalStore(subscribeToConsent, getSavedConsent, () => null);
+    const sessionDismissed = useSyncExternalStore(
+        subscribeToSessionDismissed,
+        getSessionDismissed,
+        () => false,
+    );
 
     const handleConsent = (nextConsent: AnalyticsConsent) => {
         window.localStorage.setItem(ANALYTICS_CONSENT_STORAGE_KEY, nextConsent);
         window.dispatchEvent(new Event(consentChangeEventName));
+    };
+
+    const handleDismiss = () => {
+        window.sessionStorage.setItem(consentDismissedSessionKey, "true");
+        window.dispatchEvent(new Event(consentDismissedEventName));
     };
 
     return (
@@ -60,7 +82,7 @@ function AnalyticsConsentManager({ measurementId }: { measurementId: string }) {
                 </>
             )}
 
-            {consent === null && (
+            {consent === null && !sessionDismissed && (
                 <section className="analytics-consent" aria-label="분석 데이터 수집 안내">
                     <p>
                         Bripick은 서비스 이용 현황 분석과 품질 개선을 위해 Google Analytics를 사용합니다.
@@ -73,6 +95,15 @@ function AnalyticsConsentManager({ measurementId }: { measurementId: string }) {
                             onClick={() => handleConsent("granted")}
                         >
                             동의
+                        </button>
+                        <button
+                            type="button"
+                            className="analytics-consent__close"
+                            aria-label="이번 방문에는 닫기"
+                            title="이번 방문에는 닫기"
+                            onClick={handleDismiss}
+                        >
+                            <X size={15} aria-hidden="true" />
                         </button>
                     </div>
                 </section>
