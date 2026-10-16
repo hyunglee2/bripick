@@ -59,6 +59,8 @@ export interface ExperienceItem {
     role: string;
     startDate: string;
     endDate: string;
+    secondStartDate?: string;
+    secondEndDate?: string;
     description: string[];
     descriptionHtml?: string[];
     descriptionStyle?: "bullets" | "paragraph";

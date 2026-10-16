@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, CheckCircle2, Copy, ExternalLink, EyeOff, Globe, LoaderCircle, RefreshCw } from "lucide-react";
 import { useResumeStore } from "@/store/useResumeStore";
 import { getPublicResumeUrl, publishResume, unpublishResume } from "@/lib/resumePublishing";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export default function PublishResumeButton() {
     const resume = useResumeStore((state) => state.resume);
@@ -39,6 +40,7 @@ export default function PublishResumeButton() {
         try {
             const publication = await publishResume(resume);
             updatePublication(publication);
+            trackAnalyticsEvent(isUpdating ? "resume_update" : "resume_publish");
             showToast(isUpdating ? "변경사항을 게시했어요." : "이력서를 게시했어요.");
         } catch (error) {
             showToast(error instanceof Error ? error.message : "게시하지 못했습니다.", "error");
@@ -50,6 +52,7 @@ export default function PublishResumeButton() {
     const handleCopy = async () => {
         try {
             await navigator.clipboard.writeText(publicUrl);
+            trackAnalyticsEvent("public_link_copy");
             showToast("공개 링크를 복사했어요.");
         } catch {
             showToast("공개 링크를 복사하지 못했습니다.", "error");
@@ -62,6 +65,7 @@ export default function PublishResumeButton() {
         try {
             await unpublishResume(resume.publication.slug);
             updatePublication(undefined);
+            trackAnalyticsEvent("resume_unpublish");
             showToast("게시를 취소했어요.");
         } catch (error) {
             showToast(error instanceof Error ? error.message : "게시를 취소하지 못했습니다.", "error");

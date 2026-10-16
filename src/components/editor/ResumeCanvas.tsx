@@ -1209,6 +1209,35 @@ export default function ResumeCanvas({
                                                                 }}
                                                             />
                                                         </li>
+                                                        {(exp.secondStartDate !== undefined || exp.secondEndDate !== undefined) && (
+                                                            <li
+                                                                data-bullet-level="2"
+                                                                className="resume-experience-period__secondary"
+                                                                data-empty={!exp.secondStartDate && !exp.secondEndDate ? "true" : undefined}
+                                                            >
+                                                                <EditableText
+                                                                    value={exp.secondStartDate || ""}
+                                                                    width="short"
+                                                                    placeholder="추가 시작일"
+                                                                    onChange={(newDate) => {
+                                                                        const updated = [...block.data];
+                                                                        updated[expIndex] = { ...exp, secondStartDate: newDate };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                />
+                                                                <span>~</span>
+                                                                <EditableText
+                                                                    value={exp.secondEndDate || ""}
+                                                                    width="short"
+                                                                    placeholder="추가 종료일"
+                                                                    onChange={(newDate) => {
+                                                                        const updated = [...block.data];
+                                                                        updated[expIndex] = { ...exp, secondEndDate: newDate };
+                                                                        updateBlockData(block.id, updated);
+                                                                    }}
+                                                                />
+                                                            </li>
+                                                        )}
                                                     </ul>
                                                 )}
                                                 {!isExperienceProjectContinuation && (() => {

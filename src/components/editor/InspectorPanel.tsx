@@ -412,6 +412,14 @@ export default function InspectorPanel() {
         );
     };
 
+    const handleUpdateExpFields = (expId: string, patch: Record<string, unknown>) => {
+        const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
+        updateBlockData(
+            currentBlock.id,
+            prevData.map((item: any) => (item.id === expId ? { ...item, ...patch } : item)),
+        );
+    };
+
     const handleRemoveExpItem = (expId: string) => {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const nextData = prevData.filter((item: any) => item.id !== expId);
@@ -1556,15 +1564,71 @@ export default function InspectorPanel() {
                                                     </div>
                                                     <div className="inspector-field">
                                                         <label className="inspector-label-inset inspector-field-label block">종료일</label>
-                                                        <input
-                                                            type="text"
-                                                            placeholder="예: 재직 중"
-                                                            value={exp.endDate || ""}
-                                                            onChange={(e) => handleUpdateExpField(exp.id, "endDate", e.target.value)}
-                                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                                        />
+                                                        <div className="inspector-period-input">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="예: 재직 중"
+                                                                value={exp.endDate || ""}
+                                                                onChange={(e) => handleUpdateExpField(exp.id, "endDate", e.target.value)}
+                                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                            />
+                                                            {exp.secondStartDate === undefined && exp.secondEndDate === undefined && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="inspector-period-secret-trigger"
+                                                                    title="근무 기간 하나 더 추가"
+                                                                    aria-label="근무 기간 하나 더 추가"
+                                                                    onClick={() => handleUpdateExpFields(exp.id, {
+                                                                        secondStartDate: "",
+                                                                        secondEndDate: "",
+                                                                    })}
+                                                                >
+                                                                    <Plus size={13} aria-hidden="true" />
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
+
+                                                {(exp.secondStartDate !== undefined || exp.secondEndDate !== undefined) && (
+                                                    <div className="inspector-project-card__dates inspector-secondary-period">
+                                                        <div className="inspector-field">
+                                                            <label className="inspector-label-inset inspector-field-label block">추가 시작일</label>
+                                                            <input
+                                                                type="text"
+                                                                placeholder="예: 2023.10"
+                                                                value={exp.secondStartDate || ""}
+                                                                onChange={(event) => handleUpdateExpField(exp.id, "secondStartDate", event.target.value)}
+                                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                                autoFocus
+                                                            />
+                                                        </div>
+                                                        <div className="inspector-field">
+                                                            <label className="inspector-label-inset inspector-field-label block">추가 종료일</label>
+                                                            <div className="inspector-period-input">
+                                                                <input
+                                                                    type="text"
+                                                                    placeholder="예: 2024.09"
+                                                                    value={exp.secondEndDate || ""}
+                                                                    onChange={(event) => handleUpdateExpField(exp.id, "secondEndDate", event.target.value)}
+                                                                    className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="inspector-period-remove"
+                                                                    title="추가 기간 삭제"
+                                                                    aria-label="추가 근무 기간 삭제"
+                                                                    onClick={() => handleUpdateExpFields(exp.id, {
+                                                                        secondStartDate: undefined,
+                                                                        secondEndDate: undefined,
+                                                                    })}
+                                                                >
+                                                                    <X size={12} aria-hidden="true" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
 
                                                 <div className="inspector-field border-t border-neutral-800 pt-3">
                                                     <div className="flex items-center justify-between gap-3">

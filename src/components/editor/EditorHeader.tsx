@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 import AuthMenu from "@/components/auth/AuthMenu";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 type DialogState = {
     title: string;
@@ -192,6 +193,7 @@ export default function EditorHeader() {
     ];
 
     const handleExportPDF = () => {
+        trackAnalyticsEvent("pdf_download");
         setSelectedBlockId(null);
         setTimeout(() => {
             window.print();
@@ -716,6 +718,7 @@ export default function EditorHeader() {
                                     type="button"
                                     onClick={() => {
                                         createNewResume("새 이력서");
+                                        trackAnalyticsEvent("resume_create");
                                         setOpenMenu(null);
                                         setToastMessage("'새 이력서'를 만들고 편집 화면으로 이동했어요.");
                                     }}
@@ -728,6 +731,7 @@ export default function EditorHeader() {
                                     onClick={() => {
                                         const sourceName = resume.versionName;
                                         duplicateCurrentResume();
+                                        trackAnalyticsEvent("resume_duplicate");
                                         setOpenMenu(null);
                                         setToastMessage(`'${sourceName}' 이력서를 복제했어요.`);
                                     }}

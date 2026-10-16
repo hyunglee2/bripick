@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CheckCircle2, MessageCircle, Send, X } from "lucide-react";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 const feedbackTypes = [
     { value: "bug", label: "오류 제보" },
@@ -58,6 +59,9 @@ export default function FeedbackWidget() {
             if (!response.ok) {
                 throw new Error(body?.error?.message || "피드백을 보내지 못했습니다.");
             }
+            trackAnalyticsEvent("feedback_submit", {
+                feedback_type: String(payload.type || "unknown"),
+            });
             form.reset();
             setSubmitState("success");
         } catch (error) {

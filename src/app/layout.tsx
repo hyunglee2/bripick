@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import FeedbackWidget from "@/components/feedback/FeedbackWidget";
 import {
   OPEN_GRAPH_IMAGE,
@@ -97,6 +98,7 @@ export default function RootLayout({
       <body className="text-neutral-100 antialiased selection:bg-blue-600 selection:text-white">
         {children}
         <FeedbackWidget />
+        <GoogleAnalytics />
       </body>
     </html>
   );

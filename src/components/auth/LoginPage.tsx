@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getAuthSession } from "@/lib/authSession";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export default function LoginPage({
     initialErrorMessage,
@@ -53,7 +54,12 @@ export default function LoginPage({
                     <div className="login-card__providers">
                         <form action="/api/auth/oauth/google" method="get">
                             <input type="hidden" name="next" value={nextPath} />
-                            <button type="submit" className="auth-provider auth-provider--google" disabled={isChecking}>
+                            <button
+                                type="submit"
+                                className="auth-provider auth-provider--google"
+                                disabled={isChecking}
+                                onClick={() => trackAnalyticsEvent("login_start", { method: "google" })}
+                            >
                                 <Image
                                     className="auth-provider__icon"
                                     src="/google-g-logo.png"
@@ -72,6 +78,7 @@ export default function LoginPage({
                                 className="auth-provider auth-provider--kakao"
                                 disabled={isChecking}
                                 aria-label="카카오 로그인"
+                                onClick={() => trackAnalyticsEvent("login_start", { method: "kakao" })}
                             >
                                 <Image
                                     className="auth-provider__kakao-asset"
