@@ -2186,8 +2186,8 @@ export default function ResumeCanvas({
 
                 {/* 캔버스 우측 하단 줌 컨트롤 바 */}
                 <div
-                    className={`editor-zoom-controls no-print fixed bottom-6 bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40${readOnly ? " public-resume-zoom-controls" : ""}`}
-                    style={readOnly ? undefined : { right: 'calc(clamp(380px, 30vw, 480px) + 1.5rem)' }}
+                    className={`editor-zoom-controls no-print fixed bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40${readOnly ? " public-resume-zoom-controls" : ""}`}
+                    style={readOnly ? undefined : { right: 'calc(clamp(380px, 30vw, 480px) + var(--editor-floating-control-offset))' }}
                 >
                     <button
                         onClick={handleZoomOut}

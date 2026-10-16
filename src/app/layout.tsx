@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import FeedbackWidget from "@/components/feedback/FeedbackWidget";
 import {
   OPEN_GRAPH_IMAGE,
   SITE_DESCRIPTION,
@@ -95,6 +96,7 @@ export default function RootLayout({
       </head>
       <body className="text-neutral-100 antialiased selection:bg-blue-600 selection:text-white">
         {children}
+        <FeedbackWidget />
       </body>
     </html>
   );
