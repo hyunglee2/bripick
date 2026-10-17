@@ -28,6 +28,8 @@ export function sanitizeInlineRichText(value: string) {
         .replace(/<\s*span\b([^>]*)>/gi, (_tag, attributes: string) => (
             /\bdata-resume-accent\s*=\s*(?:"true"|'true'|true)/i.test(attributes)
                 ? '<span data-resume-accent="true">'
+                : /\bdata-resume-skill\s*=\s*(?:"true"|'true'|true)/i.test(attributes)
+                    ? '<span data-resume-skill="true">'
                 : ""
         ))
         .replace(/<\s*\/\s*span\s*>/gi, "</span>")
@@ -38,7 +40,8 @@ export function sanitizeInlineRichText(value: string) {
         })
         .replace(/<\s*\/\s*a\s*>/gi, "</a>")
         .replace(/<\s*br\s*\/?>/gi, "<br>")
-        .replace(/<(?!\/?strong\b|\/?u\b|\/?span\b|\/?a\b|br\b)[^>]*>/gi, "");
+        .replace(/<(?!\/?strong\b|\/?u\b|\/?span\b|\/?a\b|br\b)[^>]*>/gi, "")
+        .replace(/<span data-resume-skill="true"><\/span>/gi, "");
 }
 
 export function richTextToPlainText(value: string) {

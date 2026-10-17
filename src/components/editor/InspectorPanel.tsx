@@ -41,7 +41,7 @@ const DEFAULT_GLOBAL_STYLE = {
     contentWidth: 800,
     basePadding: 36,
     blockGap: 18,
-    projectDividerGap: 100,
+    projectDividerGap: 28,
     displayTitleFontSize: 24,
     sectionTitleFontSize: 24,
     itemTitleFontSize: 19,
@@ -72,7 +72,6 @@ export default function InspectorPanel() {
     const [newSkillInputs, setNewSkillInputs] = useState<Record<string, string>>({});
     const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
     const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
-    const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
     const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
     const [editingCertificationId, setEditingCertificationId] = useState<string | null>(null);
     const [pendingProfilePhoto, setPendingProfilePhoto] = useState<{
@@ -93,6 +92,8 @@ export default function InspectorPanel() {
     const currentBlock = blocks[currentIndex];
     const editingExperienceId = currentBlock?.type === "experience" ? selectedBlockItemId : null;
     const setEditingExperienceId = setSelectedBlockItemId;
+    const editingProjectId = currentBlock?.type === "project" ? selectedBlockItemId : null;
+    const setEditingProjectId = setSelectedBlockItemId;
     const expandedExperienceProjectId = currentBlock?.type === "experience"
         ? selectedBlockSubItemId
         : null;
@@ -106,25 +107,15 @@ export default function InspectorPanel() {
     const editingExperienceProject = editingExperience && Array.isArray(editingExperience.projects)
         ? editingExperience.projects.find((project: any) => project.id === expandedExperienceProjectId)
         : undefined;
+    const editingProject = currentBlock?.type === "project" && Array.isArray(currentBlock.data)
+        ? currentBlock.data.find((project: any) => project.id === editingProjectId)
+        : undefined;
     const editingEducation = currentBlock?.type === "education" && Array.isArray(currentBlock.data)
         ? currentBlock.data.find((education: any) => education.id === editingEducationId)
         : undefined;
     const editingCertification = currentBlock?.type === "certification" && Array.isArray(currentBlock.data)
         ? currentBlock.data.find((certification: any) => certification.id === editingCertificationId)
         : undefined;
-
-    useEffect(() => {
-        if (currentBlock?.type !== "project" || !Array.isArray(currentBlock.data)) {
-            setExpandedProjectId(null);
-            return;
-        }
-
-        setExpandedProjectId((current) => (
-            current && currentBlock.data.some((project: any) => project.id === current)
-                ? current
-                : currentBlock.data[0]?.id ?? null
-        ));
-    }, [currentBlock]);
 
     const fontOptions = [
         { label: "Pretendard (기본 / 깔끔한 고딕)", value: "'Pretendard', -apple-system, sans-serif" },
@@ -308,14 +299,14 @@ export default function InspectorPanel() {
                     <div className="space-y-2">
                         <div className="flex justify-between text-xs">
                             <span className="text-neutral-300">프로젝트 구분선 간격</span>
-                            <span className="text-neutral-400 font-mono">{globalStyle?.projectDividerGap ?? 100}px</span>
+                            <span className="text-neutral-400 font-mono">{globalStyle?.projectDividerGap ?? 28}px</span>
                         </div>
                         <input
                             type="range"
                             min="0"
                             max="120"
                             step="2"
-                            value={globalStyle?.projectDividerGap ?? 100}
+                            value={globalStyle?.projectDividerGap ?? 28}
                             onChange={(e) => updateGlobalStyle({ projectDividerGap: Number(e.target.value) })}
                             className="w-full accent-blue-500 cursor-pointer"
                         />
@@ -506,7 +497,8 @@ export default function InspectorPanel() {
             descriptionHtml: [],
         };
         updateBlockData(currentBlock.id, [...prevData, newItem]);
-        setExpandedProjectId(newItem.id);
+        setEditingProjectId(newItem.id);
+        blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const handleUpdateProjectField = (projId: string, field: string, value: any) => {
@@ -521,8 +513,8 @@ export default function InspectorPanel() {
         const prevData = Array.isArray(currentBlock.data) ? currentBlock.data : [];
         const nextData = prevData.filter((item: any) => item.id !== projId);
         updateBlockData(currentBlock.id, nextData);
-        if (expandedProjectId === projId) {
-            setExpandedProjectId(nextData[0]?.id ?? null);
+        if (editingProjectId === projId) {
+            setEditingProjectId(null);
         }
     };
 
@@ -830,7 +822,7 @@ export default function InspectorPanel() {
         <aside ref={blockPanelRef} style={inspectorAccentStyle} className="inspector-panel inspector-panel--block h-full w-full border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
             <div className="inspector-panel-stack">
                 {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
-                {editingExperience || editingEducation || editingCertification ? (
+                {editingExperience || editingProject || editingEducation || editingCertification ? (
                     <div className="inspector-heading inspector-heading--experience-detail border-b border-neutral-800">
                         <div className="inspector-heading__detail-title">
                             <button
@@ -845,6 +837,7 @@ export default function InspectorPanel() {
                                     setEditingExperienceId(null);
                                     setEditingEducationId(null);
                                     setEditingCertificationId(null);
+                                    setEditingProjectId(null);
                                     setExpandedExperienceProjectId(null);
                                     blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
                                 }}
@@ -852,6 +845,8 @@ export default function InspectorPanel() {
                                     ? "회사 설정으로 돌아가기"
                                     : editingExperience
                                     ? "경력(회사) 목록으로 돌아가기"
+                                    : editingProject
+                                        ? "프로젝트 목록으로 돌아가기"
                                     : editingEducation
                                         ? "학력 목록으로 돌아가기"
                                         : "기타 경험 목록으로 돌아가기"}
@@ -859,6 +854,8 @@ export default function InspectorPanel() {
                                     ? "회사 설정으로 돌아가기"
                                     : editingExperience
                                     ? "경력(회사) 목록으로 돌아가기"
+                                    : editingProject
+                                        ? "프로젝트 목록으로 돌아가기"
                                     : editingEducation
                                         ? "학력 목록으로 돌아가기"
                                         : "기타 경험 목록으로 돌아가기"}
@@ -870,6 +867,8 @@ export default function InspectorPanel() {
                                     ? (editingExperienceProject.title || "제목 없는 프로젝트")
                                     : editingExperience
                                     ? (editingExperience.company || "회사명 없음")
+                                    : editingProject
+                                        ? (editingProject.title || "제목 없는 프로젝트")
                                     : editingEducation
                                         ? (editingEducation.school || "학교명 없음")
                                         : (editingCertification?.title || "활동명 없음")}
@@ -927,7 +926,7 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
-                {!editingExperience && !editingEducation && !editingCertification && (
+                {!editingExperience && !editingProject && !editingEducation && !editingCertification && (
                     <>
                         <div className="inspector-field space-y-1.5">
                             <label className="inspector-label-inset block text-xs font-medium text-neutral-300">블록 제목</label>
@@ -1840,8 +1839,8 @@ export default function InspectorPanel() {
 
                 {/* [프로젝트 폼] */}
                 {currentBlock.type === "project" && (
-                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
-                        <h3 className="inspector-section-heading">프로젝트 목록</h3>
+                    <div className={`inspector-list-section${editingProject ? " inspector-list-section--experience-detail" : " border-t border-neutral-800 pt-4"}`}>
+                        {!editingProject && <h3 className="inspector-section-heading">프로젝트 목록</h3>}
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
                                 프로젝트 항목을 추가해 주세요.
@@ -1849,22 +1848,29 @@ export default function InspectorPanel() {
                         )}
 
                         {Array.isArray(currentBlock.data) &&
-                            currentBlock.data.map((proj: any, projectIndex: number) => (
+                            currentBlock.data
+                                .filter((proj: any) => !editingProject || proj.id === editingProject.id)
+                                .map((proj: any, projectIndex: number) => (
                                 <div
                                     key={proj.id}
-                                    className="inspector-repeat-card inspector-project-card"
+                                    className={editingProject?.id === proj.id
+                                        ? "inspector-experience-editor__card"
+                                        : "inspector-repeat-card inspector-project-card"}
                                 >
-                                    <div className="inspector-project-card__summary">
+                                    {!editingProject && <div className="inspector-project-card__summary">
                                         <button
                                             type="button"
                                             className="inspector-project-card__toggle"
-                                            onClick={() => setExpandedProjectId((current) => current === proj.id ? null : proj.id)}
-                                            aria-expanded={expandedProjectId === proj.id}
+                                            onClick={() => {
+                                                setEditingProjectId(proj.id);
+                                                blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                            }}
+                                            aria-label={`${proj.title || "제목 없는 프로젝트"} 편집`}
                                         >
                                             <span className="inspector-project-card__summary-copy">
                                                 <strong>{proj.title || "제목 없는 프로젝트"}</strong>
                                             </span>
-                                            <ChevronDown className={expandedProjectId === proj.id ? "rotate-180" : ""} size={15} />
+                                            <span className="inspector-project-card__edit-action" aria-hidden="true">편집</span>
                                         </button>
                                         <details className="inspector-contact-menu inspector-project-menu">
                                             <summary
@@ -1911,12 +1917,12 @@ export default function InspectorPanel() {
                                                 </button>
                                             </div>
                                         </details>
-                                    </div>
+                                    </div>}
 
-                                    {expandedProjectId === proj.id && (
+                                    {editingProject?.id === proj.id && (
                                         <div className="inspector-project-card__body">
                                             <div className="inspector-field">
-                                                <label className="inspector-label-inset block text-xs text-neutral-400">프로젝트명</label>
+                                                <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
                                                 <input
                                                     type="text"
                                                     placeholder="프로젝트명"
@@ -1927,7 +1933,7 @@ export default function InspectorPanel() {
                                             </div>
 
                                             <div className="inspector-field">
-                                                <label className="inspector-label-inset block text-xs text-neutral-400">역할 / 기여도</label>
+                                                <label className="inspector-label-inset inspector-field-label block">역할 / 기여도</label>
                                                 <input
                                                     type="text"
                                                     placeholder="담당 역할 또는 기여도"
@@ -1973,7 +1979,7 @@ export default function InspectorPanel() {
 
                                             <div className="inspector-field inspector-project-card__bullets">
                                                 <div>
-                                                    <label className="inspector-label-inset block text-xs text-neutral-400">기여/성과</label>
+                                                    <label className="inspector-label-inset inspector-field-label block">기여/성과</label>
                                                     <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
                                                         <span><Kbd>Enter</Kbd> 새 불릿</span>
                                                         <span><Kbd>Tab</Kbd> 들여쓰기</span>
@@ -2002,9 +2008,11 @@ export default function InspectorPanel() {
                                     )}
                                 </div>
                             ))}
-                        <button type="button" onClick={handleAddProjectItem} className="inspector-list-add">
-                            <Plus size={14} /> 프로젝트 추가
-                        </button>
+                        {!editingProject && (
+                            <button type="button" onClick={handleAddProjectItem} className="inspector-list-add">
+                                <Plus size={14} /> 프로젝트 추가
+                            </button>
+                        )}
                     </div>
                 )}
 

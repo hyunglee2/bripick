@@ -268,7 +268,7 @@ export default function EditorHeader() {
                 contentWidth: 800,
                 basePadding: 36,
                 blockGap: 18,
-                projectDividerGap: 25,
+                projectDividerGap: 28,
                 displayTitleFontSize: 24,
                 sectionTitleFontSize: 24,
                 itemTitleFontSize: 19,

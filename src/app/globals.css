@@ -924,7 +924,7 @@ body,
   --resume-caption-size: 14px;
   --resume-section-content-gap: 12px;
   --resume-block-gap: 18px;
-  --resume-project-divider-gap: 30px;
+  --resume-project-divider-gap: 28px;
   --resume-bullet-font-size: var(--resume-body-size);
   --resume-bullet-line-height: 1.5;
   --resume-bullet-item-gap: 2px;
@@ -1620,7 +1620,7 @@ body,
 }
 
 .reference-template [data-block-type="skills"] span[class*="rounded"] {
-  color: #1f2937 !important;
+  color: #18181b !important;
   background: #f1f3f5 !important;
   border: 0 !important;
   border-radius: 4px !important;
@@ -1820,6 +1820,27 @@ body,
   font: inherit !important;
   letter-spacing: inherit !important;
   line-height: inherit !important;
+}
+
+.resume-paper [data-resume-skill="true"] {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #f1f3f5;
+  color: #18181b !important;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.project-bullet-editor__content [data-resume-skill="true"],
+.inspector-rich-text-editor [data-resume-skill="true"] {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #252a34;
+  color: #e5e7eb !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
 }
 
 .inspector-panel .inspector-heading>div:first-child {
@@ -2744,9 +2765,17 @@ select:not([multiple]) {
   white-space: nowrap;
 }
 
+.resume-skill-category>strong span {
+  color: #18181b;
+}
+
 .resume-skill-category>div {
   min-width: 0;
   flex: 1 1 auto;
+}
+
+.reference-template .resume-skill-category>div span {
+  color: #18181b !important;
 }
 
 .reference-template .resume-additional-information__item::before {
@@ -3517,11 +3546,18 @@ summary[data-tooltip],
   line-height: 1.5;
 }
 
-.reference-template .resume-experience-project .resume-project-bullets {
+.reference-template [data-pagination-item-index] .resume-project-contributions {
   margin-top: 14px !important;
   margin-left: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   padding-left: 24px !important;
   border-left: 3px solid var(--resume-blue);
+  font-weight: 400;
+}
+
+.reference-template [data-pagination-item-index] .resume-project-contributions>li {
+  color: #18181b;
 }
 
 .reference-template .resume-experience-company-identity {
@@ -3629,7 +3665,7 @@ summary[data-tooltip],
   flex-direction: column;
   gap: 2px;
   margin-top: 7px;
-  color: #171717;
+  color: #18181b;
   font-size: var(--resume-caption-size);
   font-weight: 300;
   line-height: 1.6;
@@ -3730,7 +3766,7 @@ summary[data-tooltip],
   gap: 3px;
   margin: 0;
   padding-left: 14px;
-  color: #262626;
+  color: #18181b;
   font-size: var(--resume-body-font-size);
   line-height: 1.45;
   list-style: disc;
@@ -3740,6 +3776,11 @@ summary[data-tooltip],
   margin: 0 !important;
   padding: 0 0 0 14px !important;
   border-left: 0 !important;
+}
+
+.reference-template .resume-education-major,
+.reference-template .resume-additional-information__item .resume-rich-bullet {
+  color: #18181b;
 }
 
 .resume-other-experience__details li {
@@ -4482,6 +4523,50 @@ summary[data-tooltip],
   background: rgba(12, 14, 20, 0.92);
   backdrop-filter: blur(3px);
   font-size: 13px;
+}
+
+.app-loading-screen {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  background: #0c0e14;
+}
+
+.bripick-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  color: #aeb6c3;
+}
+
+.bripick-loading-logo {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 12px 24px rgba(47, 128, 195, 0.18));
+}
+
+.bripick-loading-logo__static {
+  display: none;
+}
+
+.bripick-loading__label {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bripick-loading-logo__animated {
+    display: none;
+  }
+
+  .bripick-loading-logo__static {
+    display: block;
+  }
 }
 
 .workspace-sync-error {

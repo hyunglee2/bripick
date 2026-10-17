@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import ServiceDialog from "@/components/ui/ServiceDialog";
+import BripickLoadingLogo from "@/components/ui/BripickLoadingLogo";
 import { getAuthSession, type AuthUser } from "@/lib/authSession";
 import { createSampleResume } from "@/lib/sampleResume";
 import { useResumeStore } from "@/store/useResumeStore";
@@ -22,6 +23,7 @@ type WorkspaceMigration = {
 const LEGACY_STORAGE_KEY = "bripick-resume-storage";
 const GUEST_STORAGE_KEY = "bripick-resume-storage:guest";
 const GUEST_BASELINE_KEY = "bripick-resume-storage:guest-baseline";
+const MINIMUM_LOADING_DURATION_MS = 1200;
 const accountStorageKey = (userId: string) => `bripick-resume-storage:user:${userId}`;
 
 function workspaceSignature(workspace: StoredWorkspace) {
@@ -97,7 +99,27 @@ export default function ResumeWorkspaceSync() {
     const [migration, setMigration] = useState<WorkspaceMigration | null>(null);
     const unsubscribeRef = useRef<(() => void) | null>(null);
     const saveTimerRef = useRef<number | null>(null);
+    const loadingTimerRef = useRef<number | null>(null);
+    const loadingStartedAtRef = useRef(Date.now());
     const activeUserIdRef = useRef<string | null>(null);
+
+    const beginLoading = useCallback(() => {
+        if (loadingTimerRef.current !== null) window.clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+        loadingStartedAtRef.current = Date.now();
+        setIsLoading(true);
+    }, []);
+
+    const finishLoading = useCallback(() => {
+        const elapsed = Date.now() - loadingStartedAtRef.current;
+        const remaining = Math.max(0, MINIMUM_LOADING_DURATION_MS - elapsed);
+
+        if (loadingTimerRef.current !== null) window.clearTimeout(loadingTimerRef.current);
+        loadingTimerRef.current = window.setTimeout(() => {
+            setIsLoading(false);
+            loadingTimerRef.current = null;
+        }, remaining);
+    }, []);
 
     const stopSync = useCallback(() => {
         unsubscribeRef.current?.();
@@ -135,8 +157,8 @@ export default function ResumeWorkspaceSync() {
         if (shouldSave) await saveWorkspace(workspace.resumes, workspace.activeResumeId ?? workspace.resumes[0].id);
         startSync(user.id);
         setMigration(null);
-        setIsLoading(false);
-    }, [replaceWorkspace, startSync]);
+        finishLoading();
+    }, [finishLoading, replaceWorkspace, startSync]);
 
     const activateGuestWorkspace = useCallback(() => {
         stopSync();
@@ -147,12 +169,12 @@ export default function ResumeWorkspaceSync() {
         replaceWorkspace(workspace.resumes, workspace.activeResumeId);
         setMigration(null);
         setErrorMessage(null);
-        setIsLoading(false);
-    }, [replaceWorkspace, stopSync]);
+        finishLoading();
+    }, [finishLoading, replaceWorkspace, stopSync]);
 
     const load = useCallback(async () => {
         stopSync();
-        setIsLoading(true);
+        beginLoading();
         setErrorMessage(null);
         setMigration(null);
 
@@ -205,13 +227,14 @@ export default function ResumeWorkspaceSync() {
         } catch {
             setErrorMessage("계정의 이력서를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.");
         }
-    }, [activateAccountWorkspace, activateGuestWorkspace, stopSync]);
+    }, [activateAccountWorkspace, activateGuestWorkspace, beginLoading, stopSync]);
 
     useEffect(() => {
         const initialLoad = window.setTimeout(() => void load(), 0);
         window.addEventListener("bripick:auth-changed", load);
         return () => {
             window.clearTimeout(initialLoad);
+            if (loadingTimerRef.current !== null) window.clearTimeout(loadingTimerRef.current);
             window.removeEventListener("bripick:auth-changed", load);
             stopSync();
         };
@@ -258,8 +281,8 @@ export default function ResumeWorkspaceSync() {
     return (
         <>
             {isLoading && !migration && (
-                <div className="workspace-sync-state" role="status" aria-live="polite">
-                    <span>계정 이력서를 불러오는 중…</span>
+                <div className="workspace-sync-state">
+                    <BripickLoadingLogo label="계정 이력서를 불러오는 중…" />
                 </div>
             )}
             {errorMessage && (

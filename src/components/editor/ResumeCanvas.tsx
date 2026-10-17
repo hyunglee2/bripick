@@ -172,7 +172,7 @@ export default function ResumeCanvas({
         "--resume-body-size": `${Math.max(14, globalStyle?.bodyFontSize ?? 14)}px`,
         "--resume-caption-size": `${Math.max(14, globalStyle?.captionFontSize ?? 14)}px`,
         "--resume-block-gap": `${globalStyle?.blockGap ?? 18}px`,
-        "--resume-project-divider-gap": `${globalStyle?.projectDividerGap ?? 100}px`,
+        "--resume-project-divider-gap": `${globalStyle?.projectDividerGap ?? 28}px`,
     } as React.CSSProperties;
 
     const fitCanvasToView = useCallback((mode: Exclude<CanvasViewMode, "custom">) => {
@@ -1396,6 +1396,7 @@ export default function ResumeCanvas({
                                                                         html={project.descriptionHtml || []}
                                                                         placeholder="프로젝트 기여와 성과"
                                                                         ariaLabel="프로젝트 기여와 성과"
+                                                                        className="resume-project-contributions"
                                                                         onChange={(descriptions, descriptionLevels, descriptionHtml) => {
                                                                             updateExperienceProject(project, projectIndex, {
                                                                                 description: descriptions,
@@ -1444,6 +1445,7 @@ export default function ResumeCanvas({
                                             <div
                                                 key={proj.id}
                                                 data-pagination-item-index={projIndex}
+                                                data-resume-child-id={proj.id}
                                                 className={`resume-project-item space-y-1 ${localIndex > 0 ? "resume-project-item--separated" : ""}`}
                                             >
                                                 {!isDescriptionContinuation && <div className="resume-project-header flex justify-between items-baseline gap-2">
@@ -1519,7 +1521,7 @@ export default function ResumeCanvas({
                                                     descriptionStart={placement.descriptionStart ?? 0}
                                                     placeholder="프로젝트 기여와 성과"
                                                     ariaLabel="프로젝트 성과"
-                                                    className="list-disc list-inside text-xs text-neutral-700 space-y-1 pt-1"
+                                                    className="resume-project-contributions"
                                                     onChange={(descriptions, descriptionLevels, descriptionHtml) => {
                                                         const descriptionStart = placement.descriptionStart ?? 0;
                                                         const visibleDescriptionCount = (
@@ -1743,7 +1745,7 @@ export default function ResumeCanvas({
                                                                 updated[eduIdx] = { ...edu, major: newMajor };
                                                                 updateBlockData(block.id, updated);
                                                             }}
-                                                            className="text-xs font-semibold text-neutral-700"
+                                                            className="resume-education-major text-xs font-semibold text-neutral-700"
                                                         />
                                                     </div>
                                                     <div className="text-xs text-neutral-500 font-medium flex items-center gap-1">

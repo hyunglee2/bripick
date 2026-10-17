@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link2 } from "lucide-react";
+import { Link2, Tag } from "lucide-react";
 
 type RichTextBubbleToolbarProps = {
     editorRef: React.RefObject<HTMLElement | null>;
@@ -12,7 +12,7 @@ type RichTextBubbleToolbarProps = {
 };
 
 type ToolbarPosition = { left: number; top: number };
-type ActiveFormats = { bold: boolean; accent: boolean; link: boolean };
+type ActiveFormats = { bold: boolean; accent: boolean; skill: boolean; link: boolean };
 type SelectionOffsets = { start: number; end: number };
 
 export default function RichTextBubbleToolbar({
@@ -34,6 +34,7 @@ export default function RichTextBubbleToolbar({
     const [activeFormats, setActiveFormats] = useState<ActiveFormats>({
         bold: false,
         accent: false,
+        skill: false,
         link: false,
     });
 
@@ -105,6 +106,7 @@ export default function RichTextBubbleToolbar({
         setActiveFormats({
             bold: document.queryCommandState("bold"),
             accent: Boolean(selectionElement?.closest('[data-resume-accent="true"]')),
+            skill: Boolean(selectionElement?.closest('[data-resume-skill="true"]')),
             link: Boolean(selectionElement?.closest("a")),
         });
         const resumePaper = editor.closest<HTMLElement>(".resume-paper");
@@ -165,6 +167,62 @@ export default function RichTextBubbleToolbar({
         selection?.removeAllRanges();
         selection?.addRange(nextRange);
         savedRangeRef.current = nextRange.cloneRange();
+        onFormat();
+        updateFromSelection();
+    };
+
+    const toggleSkillTag = () => {
+        if (!restoreSelection()) return;
+        const editor = editorRef.current;
+        const selection = window.getSelection();
+        const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+        if (!editor || !range || range.collapsed) return;
+
+        const closestSkillTag = (node: Node | null) => {
+            const element = node instanceof HTMLElement ? node : node?.parentElement;
+            return element?.closest<HTMLElement>('[data-resume-skill="true"]') || null;
+        };
+        const intersectingTag = Array.from(
+            editor.querySelectorAll<HTMLElement>('[data-resume-skill="true"]'),
+        ).find((tag) => {
+            try {
+                return range.intersectsNode(tag);
+            } catch {
+                return false;
+            }
+        }) || null;
+        const existingTag = closestSkillTag(range.startContainer)
+            || closestSkillTag(range.endContainer)
+            || closestSkillTag(range.commonAncestorContainer)
+            || intersectingTag;
+
+        if (existingTag && editor.contains(existingTag)) {
+            const contents = document.createDocumentFragment();
+            while (existingTag.firstChild) contents.append(existingTag.firstChild);
+            const firstNode = contents.firstChild;
+            const lastNode = contents.lastChild;
+            existingTag.replaceWith(contents);
+            if (firstNode && lastNode) {
+                const nextRange = document.createRange();
+                nextRange.setStartBefore(firstNode);
+                nextRange.setEndAfter(lastNode);
+                selection?.removeAllRanges();
+                selection?.addRange(nextRange);
+                savedRangeRef.current = nextRange.cloneRange();
+            }
+        } else {
+            const tag = document.createElement("span");
+            tag.dataset.resumeSkill = "true";
+            tag.append(range.extractContents());
+            range.insertNode(tag);
+
+            const nextRange = document.createRange();
+            nextRange.selectNodeContents(tag);
+            selection?.removeAllRanges();
+            selection?.addRange(nextRange);
+            savedRangeRef.current = nextRange.cloneRange();
+        }
+
         onFormat();
         updateFromSelection();
     };
@@ -285,6 +343,17 @@ export default function RichTextBubbleToolbar({
                         onClick={applyAccentColor}
                     >
                         <span className="rich-text-bubble-toolbar__accent-letter" aria-hidden="true">A</span>
+                    </button>
+                    <button
+                        type="button"
+                        className={activeFormats.skill ? "is-active" : undefined}
+                        aria-label="기술 태그"
+                        aria-pressed={activeFormats.skill}
+                        data-tooltip="기술 태그"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={toggleSkillTag}
+                    >
+                        <Tag size={15} />
                     </button>
                     {allowLink && (
                         <button
