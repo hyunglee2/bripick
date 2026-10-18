@@ -46,7 +46,7 @@ function Invoke-Checked {
 
 try {
     if (-not (Test-Path -LiteralPath $localEnvPath)) {
-        throw "Missing .env.local. Supabase production environment values are required."
+        throw "Missing .env.local. Production environment values are required."
     }
 
     $supabaseUrl = Get-DotEnvValue @("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL")
@@ -60,7 +60,23 @@ try {
         throw "Missing Supabase URL or publishable key in .env.local."
     }
 
-    $serverEnv = "SUPABASE_URL=$supabaseUrl`nSUPABASE_PUBLISHABLE_KEY=$supabaseKey`n"
+    $resendApiKey = Get-DotEnvValue @("RESEND_API_KEY")
+    $feedbackToEmail = Get-DotEnvValue @("FEEDBACK_TO_EMAIL")
+    $feedbackFromEmail = Get-DotEnvValue @("FEEDBACK_FROM_EMAIL")
+
+    if (-not $resendApiKey -or -not $feedbackToEmail -or -not $feedbackFromEmail) {
+        throw "Missing Resend feedback environment values in .env.local."
+    }
+
+    $escapedFeedbackFromEmail = $feedbackFromEmail.Replace('\', '\\').Replace('"', '\"')
+    $serverEnv = @(
+        "SUPABASE_URL=$supabaseUrl"
+        "SUPABASE_PUBLISHABLE_KEY=$supabaseKey"
+        "RESEND_API_KEY=$resendApiKey"
+        "FEEDBACK_TO_EMAIL=$feedbackToEmail"
+        "FEEDBACK_FROM_EMAIL=`"$escapedFeedbackFromEmail`""
+        ""
+    ) -join "`n"
     [System.IO.File]::WriteAllText(
         $serverEnvPath,
         $serverEnv,

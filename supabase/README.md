@@ -5,13 +5,16 @@
 3. 저장소 루트에 `.env.local`을 만들고 `.env.example`의 두 값을 채웁니다.
 4. 다시 빌드·배포합니다. 두 값은 Next.js 서버에서만 읽으며 브라우저 번들에는 포함되지 않습니다.
 
-`npm run deploy`는 `.env.local`에서 이 두 값을 읽어 암호화된 SSH/SFTP 연결로
+`npm run deploy`는 `.env.local`에서 Supabase와 피드백 메일 환경변수를 읽어 암호화된 SSH/SFTP 연결로
 운영 서버에 전송하고, `/etc/bripick.env`에 소유자 전용 권한(`600`)으로 설치합니다.
 환경 값은 배포 압축 파일에 포함되지 않으며 전송용 임시 파일은 배포 후 삭제됩니다.
 
 ```env
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+RESEND_API_KEY=re_xxxxxxxxx
+FEEDBACK_TO_EMAIL=hihylee2@gmail.com
+FEEDBACK_FROM_EMAIL=Bripick <feedback@mail.coreluma.kr>
 ```
 
 Supabase Connect 화면에서 복사한 `NEXT_PUBLIC_SUPABASE_URL`과
