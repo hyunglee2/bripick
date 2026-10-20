@@ -7826,3 +7826,380 @@ body:has(.editor-tutorial) .feedback-launcher {
     width: 68%;
   }
 }
+
+/* ───────── Minimal 템플릿: 장식 없이 선과 여백으로만 위계를 만든다 ───────── */
+.minimal-template {
+  --minimal-ink: #111111;
+  --minimal-text: #262626;
+  --minimal-muted: #737373;
+  --minimal-rule: #e5e5e5;
+  --minimal-rule-strong: #111111;
+  color: var(--minimal-text);
+  letter-spacing: -0.012em;
+}
+
+.minimal-template .resume-block-item {
+  margin-bottom: var(--resume-block-gap) !important;
+  padding-right: 0 !important;
+  padding-left: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.minimal-template .resume-block-item:hover {
+  background: #fafafa !important;
+}
+
+.minimal-template .resume-block-item.resume-block-selected {
+  background: transparent !important;
+}
+
+.minimal-template .resume-block-item>hr {
+  /* 섹션 제목 밑줄만으로 구분하므로 블록 구분선은 쓰지 않는다. */
+  display: none;
+}
+
+/* 섹션 제목: 굵은 제목 + 얇은 검정 선 */
+.minimal-template .resume-section>div:first-child[class~="border-b"] {
+  padding-bottom: 6px !important;
+  border-bottom: 1px solid var(--minimal-rule-strong) !important;
+}
+
+.minimal-template .resume-block-item h2 {
+  color: var(--minimal-ink) !important;
+  font-size: var(--resume-section-title-size) !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.03em !important;
+  text-transform: none !important;
+}
+
+.minimal-template .resume-item-title {
+  color: var(--minimal-ink) !important;
+  font-weight: 700 !important;
+}
+
+.minimal-template a {
+  color: var(--resume-blue);
+}
+
+/* 공통 불릿: • → ◦ → – */
+.minimal-template ul.resume-project-bullets,
+.minimal-template .resume-experience-company-description--bullets,
+.minimal-template .resume-other-experience__details,
+.minimal-template .resume-minimal-profile__summary {
+  margin: 8px 0 0 !important;
+  padding: 0 0 0 18px !important;
+  border: 0 !important;
+  color: var(--minimal-text);
+  font-size: var(--resume-bullet-font-size) !important;
+  line-height: var(--resume-bullet-line-height) !important;
+  list-style: disc outside !important;
+}
+
+.minimal-template ul.resume-project-bullets:not(:has(li)) {
+  display: none;
+}
+
+.minimal-template ul.resume-project-bullets>li,
+.minimal-template .resume-experience-company-description--bullets>li,
+.minimal-template .resume-other-experience__details>li,
+.minimal-template .resume-minimal-profile__summary>li {
+  display: list-item !important;
+  padding-left: 2px;
+  color: var(--minimal-text);
+  list-style-type: disc !important;
+}
+
+.minimal-template ul.resume-project-bullets>li+li,
+.minimal-template .resume-experience-company-description--bullets>li+li,
+.minimal-template .resume-other-experience__details>li+li,
+.minimal-template .resume-minimal-profile__summary>li+li {
+  margin-top: var(--resume-bullet-item-gap);
+}
+
+.minimal-template li::marker {
+  color: var(--minimal-muted);
+}
+
+.minimal-template ul.resume-project-bullets>li[data-bullet-level="2"] {
+  margin-left: 20px;
+  list-style-type: circle !important;
+}
+
+.minimal-template ul.resume-project-bullets>li[data-bullet-level="3"] {
+  margin-left: 40px;
+  list-style-type: none !important;
+}
+
+.minimal-template ul.resume-project-bullets>li[data-bullet-level="3"]::before {
+  content: "–";
+  display: inline-block;
+  width: 1.1em;
+  margin-left: -1.1em;
+  color: var(--minimal-muted);
+}
+
+/* 프로필 */
+.minimal-template [data-block-type="profile"] {
+  margin-bottom: calc(var(--resume-block-gap) + 8px) !important;
+}
+
+.resume-minimal-profile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 28px;
+  align-items: start;
+}
+
+.resume-minimal-profile--with-photo {
+  grid-template-columns: minmax(0, 1fr) 104px;
+}
+
+.resume-minimal-profile__identity {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.minimal-template .resume-minimal-profile__name {
+  color: var(--minimal-ink);
+  font-size: calc(var(--resume-display-title-size) * 1.5);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.minimal-template .resume-minimal-profile__role {
+  margin-top: 6px;
+  color: var(--minimal-text);
+  font-size: calc(var(--resume-item-title-size) - 2px);
+  font-weight: 500;
+}
+
+.minimal-template .resume-minimal-profile__tagline {
+  margin-top: 4px;
+  color: var(--minimal-muted);
+  font-size: var(--resume-caption-size);
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.resume-minimal-profile__contacts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+  font-size: var(--resume-caption-size);
+  line-height: 1.5;
+}
+
+.resume-minimal-profile__contact-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 20px;
+}
+
+.resume-minimal-profile__contact {
+  display: inline-flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--minimal-text, #262626);
+}
+
+.minimal-template .resume-minimal-profile__contact-label {
+  color: var(--minimal-muted);
+  font-weight: 500;
+}
+
+.minimal-template .resume-contact-link {
+  color: var(--minimal-text);
+  text-decoration: underline;
+  text-decoration-color: var(--minimal-rule);
+  text-underline-offset: 3px;
+}
+
+.minimal-template .resume-minimal-profile__photo {
+  width: 104px;
+  border: 0;
+  border-radius: 4px;
+  background: #f0f0f0;
+  color: #a3a3a3;
+  font-size: 32px;
+}
+
+.minimal-template .resume-minimal-profile__summary {
+  grid-column: 1 / -1;
+  margin-top: 18px !important;
+}
+
+.minimal-template .resume-profile-introduction.resume-minimal-profile__summary {
+  padding: 0 !important;
+  list-style: none !important;
+  font-size: max(var(--resume-body-size), 14px) !important;
+  line-height: 1.7 !important;
+}
+
+/* 기술 스택 */
+.minimal-template .resume-skill-category strong {
+  color: var(--minimal-ink);
+  font-weight: 700;
+}
+
+.minimal-template [data-block-type="skills"] .resume-skill-category .flex-wrap>span {
+  border: 1px solid #d4d4d4 !important;
+  border-radius: 3px !important;
+  background: transparent !important;
+  color: var(--minimal-text) !important;
+  font-weight: 400 !important;
+}
+
+/* 경력 */
+.minimal-template .resume-experience-item+.resume-experience-item {
+  margin-top: 22px;
+}
+
+.minimal-template .resume-experience-company-identity {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.minimal-template .resume-experience-company-role {
+  color: var(--minimal-muted);
+  font-size: var(--resume-caption-size);
+  font-weight: 400;
+}
+
+.minimal-template .resume-experience-period {
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  color: var(--minimal-muted);
+  font-size: var(--resume-caption-size) !important;
+  font-weight: 400 !important;
+  list-style: none !important;
+}
+
+.minimal-template .resume-experience-period>li {
+  display: inline !important;
+  list-style: none !important;
+}
+
+.minimal-template .resume-experience-period>li+li::before {
+  content: "·";
+  margin: 0 6px;
+}
+
+.minimal-template .resume-experience-period li>span+span {
+  margin-left: 4px;
+}
+
+.minimal-template .resume-experience-company-description {
+  margin-top: 8px;
+  color: var(--minimal-text);
+  font-size: var(--resume-body-size);
+  line-height: 1.6;
+}
+
+.minimal-template .resume-experience-company-description--paragraph {
+  display: block;
+  white-space: pre-line;
+}
+
+/* 페이지 나눔 계산은 요소 높이와 margin만 합산하므로 flex gap 대신 margin으로 간격을 만든다. */
+.minimal-template .resume-experience-projects {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 16px;
+  margin-left: 2px;
+  padding-left: 18px;
+}
+
+.minimal-template [data-experience-project-start]:not([data-experience-project-start="0"]) .resume-experience-projects,
+.minimal-template [data-experience-project-description-start]:not([data-experience-project-description-start="0"]) .resume-experience-projects,
+.minimal-template [data-experience-project-continuation="true"] .resume-experience-projects {
+  margin-top: 0;
+}
+
+.minimal-template .resume-experience-project+.resume-experience-project {
+  margin-top: 18px;
+}
+
+.minimal-template .resume-experience-project__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.minimal-template .resume-experience-project__header span[class~="h-1.5"] {
+  display: none;
+}
+
+.minimal-template .resume-experience-project__summary {
+  display: block;
+  margin-top: 2px;
+  color: var(--minimal-muted);
+  font-size: var(--resume-caption-size);
+  line-height: 1.5;
+}
+
+/* 프로젝트 */
+.minimal-template .resume-project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* margin-top은 페이지 나눔의 projectItemGap(Minimal)과 같은 값이어야 한다. */
+.minimal-template .resume-project-item--separated {
+  margin-top: var(--resume-project-divider-gap);
+}
+
+.minimal-template .resume-project-header .text-xs,
+.minimal-template .resume-experience-project__header .text-xs,
+.minimal-template .resume-other-experience__date,
+.minimal-template [data-block-type="education"] .text-neutral-500 {
+  color: var(--minimal-muted) !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.minimal-template .resume-project-summary {
+  display: block;
+  margin-top: 2px;
+  color: var(--minimal-muted) !important;
+  font-weight: 400 !important;
+}
+
+/* 기타 경험 */
+.minimal-template .resume-other-experience__summary {
+  padding-left: 0;
+}
+
+.minimal-template .resume-other-experience__summary::before {
+  content: none;
+}
+
+.minimal-template .resume-other-experience__details {
+  margin-top: 0 !important;
+}
+
+/* 추가 정보 */
+.minimal-template .resume-additional-information__item>span:first-child {
+  color: var(--minimal-muted);
+  font-size: 0.8em;
+  line-height: 2;
+}
+
+.minimal-template .resume-additional-information__item .resume-rich-bullet {
+  color: var(--minimal-text) !important;
+  font-size: var(--resume-body-size) !important;
+}

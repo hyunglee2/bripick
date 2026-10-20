@@ -21,6 +21,36 @@ const DESCRIPTION_FIT_TOLERANCE = 12;
 const ITEM_HEADER_FIT_TOLERANCE = 72;
 const EDUCATION_ITEM_FIT_TOLERANCE = 160;
 const PROJECT_ITEM_GAP = 26;
+
+type PaginationTuning = {
+    bottomSafetyGap: number;
+    descriptionFitTolerance: number;
+    itemHeaderFitTolerance: number;
+    educationItemFitTolerance: number;
+    projectItemGap: number;
+};
+
+// 위 상수들은 Modern 레이아웃 기준으로 맞춘 값이다.
+const MODERN_PAGINATION_TUNING: PaginationTuning = {
+    bottomSafetyGap: PAGINATION_BOTTOM_SAFETY_GAP,
+    descriptionFitTolerance: DESCRIPTION_FIT_TOLERANCE,
+    itemHeaderFitTolerance: ITEM_HEADER_FIT_TOLERANCE,
+    educationItemFitTolerance: EDUCATION_ITEM_FIT_TOLERANCE,
+    projectItemGap: PROJECT_ITEM_GAP,
+};
+
+// Minimal은 여백이 촘촘해 허용 오차만큼 하단을 넘치기 쉽다. 오차 없이 측정값 그대로 배치한다.
+const MINIMAL_MAX_OVERFLOW_COMPENSATION = 240;
+
+const getMinimalPaginationTuning = (projectDividerGap: number, overflowCompensation: number): PaginationTuning => ({
+    // 실제 렌더 결과가 넘치면 그만큼 사용 가능 높이를 줄여 다시 배치한다.
+    bottomSafetyGap: PAGINATION_BOTTOM_SAFETY_GAP + overflowCompensation,
+    descriptionFitTolerance: 0,
+    itemHeaderFitTolerance: 0,
+    educationItemFitTolerance: 0,
+    // Minimal CSS의 프로젝트 사이 margin-top과 같은 값
+    projectItemGap: projectDividerGap,
+});
 const FLOW_BLOCK_TYPES = new Set<ResumeBlock["type"]>([
     "experience",
     "project",
@@ -122,6 +152,7 @@ export default function ResumeCanvas({
     } | null>(null);
     const [profilePhotoMenu, setProfilePhotoMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
     const [pagePlacements, setPagePlacements] = useState<BlockPlacement[][]>(() => getInitialPlacements(blocks));
+    const [minimalOverflowCompensation, setMinimalOverflowCompensation] = useState(0);
     const scrollContainerRef = useRef<HTMLElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const zoomLevelRef = useRef(zoomLevel);
@@ -144,6 +175,7 @@ export default function ResumeCanvas({
         | null
     >(null);
     const paginationFrameRef = useRef<number | null>(null);
+    const latestPaginationSignatureRef = useRef<string | null>(null);
     const paginationBlockSignaturesRef = useRef<string[]>([]);
     const dragScrollFrameRef = useRef<number | null>(null);
     const dragClientYRef = useRef<number | null>(null);
@@ -604,7 +636,10 @@ export default function ResumeCanvas({
             if (disposed) return;
             // DOM 높이는 소수점 단위 줄바꿈과 편집기 장식선 때문에 합산값보다
             // 조금 커질 수 있다. 하단 여백을 침범하기 전에 다음 페이지로 넘긴다.
-            const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2) - PAGINATION_BOTTOM_SAFETY_GAP;
+            const tuning = templateType === "minimal"
+                ? getMinimalPaginationTuning(globalStyle?.projectDividerGap ?? 28, minimalOverflowCompensation)
+                : MODERN_PAGINATION_TUNING;
+            const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2) - tuning.bottomSafetyGap;
             const measuredBlockHeights = new Map<number, number>();
             const measuredPlacementHeights = new Map<string, number>();
             const measuredItemHeights = new Map<string, number>();
@@ -1059,7 +1094,7 @@ export default function ResumeCanvas({
                                             `${index}:${itemStart}:${projectIndex}:${descriptionEnd}`,
                                         ) || 24;
                                         const fitTolerance = descriptionEnd === projectDescriptions.length - 1
-                                            ? DESCRIPTION_FIT_TOLERANCE
+                                            ? tuning.descriptionFitTolerance
                                             : 0;
                                         if (descriptionEnd > descriptionStart
                                             && usedHeight + fragmentHeight + descriptionHeight
@@ -1124,7 +1159,7 @@ export default function ResumeCanvas({
                                 ) || 24;
                                 const itemHeaderHeight = baseHeight + itemChromeHeight;
                                 if (usedHeight + itemHeaderHeight
-                                        <= availableHeight + ITEM_HEADER_FIT_TOLERANCE
+                                        <= availableHeight + tuning.itemHeaderFitTolerance
                                     && usedHeight + itemHeaderHeight + firstDescriptionHeight > availableHeight) {
                                     pushPlacement({
                                         blockIndex: index,
@@ -1157,7 +1192,7 @@ export default function ResumeCanvas({
                                         `${index}:${itemStart}:${descriptionEnd}`
                                     ) || 24;
                                     const fitTolerance = descriptionEnd === descriptions.length - 1
-                                        ? DESCRIPTION_FIT_TOLERANCE
+                                        ? tuning.descriptionFitTolerance
                                         : 0;
                                     if (descriptionEnd > descriptionStart
                                         && usedHeight + fragmentHeight + descriptionHeight
@@ -1214,7 +1249,7 @@ export default function ResumeCanvas({
                         }
 
                         const flowFitTolerance = block.type === "education" && !keepItemTogether
-                            ? EDUCATION_ITEM_FIT_TOLERANCE
+                            ? tuning.educationItemFitTolerance
                             : 0;
                         if (nextPages.at(-1)!.length > 0
                             && usedHeight + baseHeight > availableHeight + flowFitTolerance) startNewPage();
@@ -1224,7 +1259,7 @@ export default function ResumeCanvas({
                         while (itemEnd < itemCount) {
                             const itemHeight = measuredItemHeights.get(`${index}:${itemEnd}`) || 80;
                             const interItemGap = block.type === "project" && itemEnd > itemStart
-                                ? PROJECT_ITEM_GAP
+                                ? tuning.projectItemGap
                                 : 0;
                             if (itemEnd > itemStart && usedHeight + sliceHeight + interItemGap + itemHeight > availableHeight) break;
                             if (itemEnd === itemStart && nextPages.at(-1)!.length > 0
@@ -1251,6 +1286,7 @@ export default function ResumeCanvas({
             });
 
             const nextSignature = JSON.stringify(nextPages);
+            latestPaginationSignatureRef.current = nextSignature;
             if (paginationFrameRef.current !== null) cancelAnimationFrame(paginationFrameRef.current);
             paginationFrameRef.current = requestAnimationFrame(() => {
                 paginationFrameRef.current = null;
@@ -1296,7 +1332,43 @@ export default function ResumeCanvas({
         canvasRef,
         paperPadding,
         templateType,
+        minimalOverflowCompensation,
     ]);
+
+    // Minimal은 측정 조각과 실제 조각의 높이 차이로 페이지 하단을 넘칠 수 있다.
+    // 배치가 화면에 반영된 뒤 실제로 넘친 만큼 여유 높이를 늘려 다시 배치한다.
+    useLayoutEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const frame = requestAnimationFrame(() => {
+            if (templateType !== "minimal") {
+                setMinimalOverflowCompensation((current) => (current === 0 ? current : 0));
+                return;
+            }
+            // 새 배치가 아직 반영되지 않은 화면은 측정하지 않는다.
+            if (latestPaginationSignatureRef.current !== JSON.stringify(pagePlacements)) return;
+            let maxOverflow = 0;
+            canvas.querySelectorAll<HTMLElement>(".resume-paper").forEach((paper) => {
+                const blocksOnPage = paper.querySelectorAll<HTMLElement>("[data-resume-block-index]");
+                // 블록 하나가 한 페이지보다 큰 경우는 다시 배치해도 줄어들지 않는다.
+                if (blocksOnPage.length < 2) return;
+                const paperRect = paper.getBoundingClientRect();
+                const scale = paper.offsetHeight > 0 ? paperRect.height / paper.offsetHeight : 1;
+                const contentLimit = paper.offsetHeight - Number.parseFloat(window.getComputedStyle(paper).paddingBottom || "0");
+                blocksOnPage.forEach((element) => {
+                    const bottom = (element.getBoundingClientRect().bottom - paperRect.top) / scale;
+                    maxOverflow = Math.max(maxOverflow, bottom - contentLimit);
+                });
+            });
+            if (maxOverflow > 1) {
+                setMinimalOverflowCompensation((current) => Math.min(
+                    MINIMAL_MAX_OVERFLOW_COMPENSATION,
+                    current + Math.ceil(maxOverflow),
+                ));
+            }
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [canvasRef, pagePlacements, templateType]);
 
     // 단일 블록 렌더러 함수
     const renderBlockContent = (block: ResumeBlock, placement: BlockPlacement) => {
@@ -1468,6 +1540,130 @@ export default function ResumeCanvas({
                                     readOnly={readOnly}
                                     placeholder="자기소개를 입력하세요"
                                     className="resume-profile-introduction"
+                                    onChange={(html) => {
+                                        const highlightsHtml = splitInlineRichTextLines(html);
+                                        updateBlockData(block.id, {
+                                            ...block.data,
+                                            highlights: highlightsHtml.map(richTextToPlainText),
+                                            highlightsHtml,
+                                        });
+                                    }}
+                                />
+                            )}
+                        </div>
+                    );
+                }
+                if (templateType === "minimal") {
+                    const highlights = Array.isArray(block.data.highlights) ? block.data.highlights : [];
+                    const displayedHighlights = highlights.length > 0 ? highlights : [""];
+                    const introductionStyle = block.data.introductionStyle || "bullets";
+                    return (
+                        <div className={`resume-minimal-profile${showProfilePhoto ? " resume-minimal-profile--with-photo" : ""}`}>
+                            <div className="resume-minimal-profile__identity">
+                                <EditableText
+                                    tag="h1"
+                                    value={block.data.name || ""}
+                                    placeholder="이름"
+                                    onChange={(name) => updateBlockData(block.id, { ...block.data, name })}
+                                    className="resume-minimal-profile__name"
+                                />
+                                <EditableText
+                                    tag="span"
+                                    value={block.data.role || ""}
+                                    placeholder="직무"
+                                    onChange={(role) => updateBlockData(block.id, { ...block.data, role })}
+                                    className="resume-minimal-profile__role"
+                                />
+                                <RichTextEditable
+                                    html={block.data.bioHtml || escapeHtml(block.data.bio || "")}
+                                    readOnly={readOnly}
+                                    placeholder="강점, 태도, 역할 중심의 한 줄 소개"
+                                    onChange={(bioHtml) => updateBlockData(block.id, {
+                                        ...block.data,
+                                        bio: richTextToPlainText(bioHtml),
+                                        bioHtml,
+                                    })}
+                                    className="resume-minimal-profile__tagline"
+                                />
+                                <div className="resume-minimal-profile__contacts">
+                                    {profileContactRows.map((row) => (
+                                        <div key={row.map((contact) => contact.id).join("-")} className="resume-minimal-profile__contact-line">
+                                            {row.map((contact) => (
+                                                <span key={contact.id} className="resume-minimal-profile__contact">
+                                                    <EditableText
+                                                        value={contact.label}
+                                                        placeholder="연락처 항목"
+                                                        className="resume-minimal-profile__contact-label"
+                                                        onChange={(label) => updateDisplayedProfileContact(contact.id, "label", label)}
+                                                    />
+                                                    <EditableText
+                                                        value={contact.value}
+                                                        placeholder="내용 또는 URL"
+                                                        className={/^https?:\/\//i.test(contact.value) ? "resume-contact-link" : ""}
+                                                        onChange={(value) => updateDisplayedProfileContact(contact.id, "value", value)}
+                                                    />
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            {showProfilePhoto && (
+                                <button
+                                    type="button"
+                                    className="resume-profile-photo resume-profile-photo-picker resume-minimal-profile__photo"
+                                    aria-label="프로필 사진 관리"
+                                    aria-haspopup="menu"
+                                    aria-expanded={profilePhotoMenu?.blockId === block.id}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        const rect = event.currentTarget.getBoundingClientRect();
+                                        openProfilePhotoMenu(block.id, rect.left, rect.bottom + 6);
+                                    }}
+                                    onContextMenu={(event) => {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        openProfilePhotoMenu(block.id, event.clientX, event.clientY);
+                                    }}
+                                    onDragStart={(event) => event.preventDefault()}
+                                >
+                                    {block.data.photo ? (
+                                        <img src={block.data.photo} alt="프로필" />
+                                    ) : (
+                                        <span>{String(block.data.name || "?").slice(0, 1)}</span>
+                                    )}
+                                    <span className="resume-profile-photo-picker__overlay no-print" aria-hidden="true">
+                                        사진 관리
+                                    </span>
+                                </button>
+                            )}
+                            {(!readOnly || highlights.length > 0) && introductionStyle === "bullets" && (
+                                <ul className="resume-profile-highlights resume-minimal-profile__summary">
+                                    {displayedHighlights.map((highlight: string, index: number) => (
+                                        <li key={index}>
+                                            <RichTextEditable
+                                                html={block.data.highlightsHtml?.[index] || escapeHtml(highlight)}
+                                                readOnly={readOnly}
+                                                placeholder="핵심 경험이나 강점을 입력하세요"
+                                                className="resume-rich-bullet"
+                                                onChange={(highlightHtml) => {
+                                                    const updated = [...displayedHighlights];
+                                                    const highlightsHtml = [...(block.data.highlightsHtml || [])];
+                                                    updated[index] = richTextToPlainText(highlightHtml);
+                                                    highlightsHtml[index] = highlightHtml;
+                                                    updateBlockData(block.id, { ...block.data, highlights: updated, highlightsHtml });
+                                                }}
+                                            />
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {(!readOnly || highlights.length > 0) && introductionStyle === "paragraph" && (
+                                <RichTextEditable
+                                    html={(block.data.highlightsHtml || highlights.map(escapeHtml)).join("<br>")}
+                                    readOnly={readOnly}
+                                    placeholder="자기소개를 입력하세요"
+                                    className="resume-profile-introduction resume-minimal-profile__summary"
                                     onChange={(html) => {
                                         const highlightsHtml = splitInlineRichTextLines(html);
                                         updateBlockData(block.id, {
@@ -2511,7 +2707,7 @@ export default function ResumeCanvas({
                                     fontFamily: fontFamily,
                                     ...typographyStyle,
                                 }}
-                                className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : ""}`}
+                                className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : templateType === "minimal" ? "minimal-template" : ""}`}
                             >
                                 {page.blocks.map(({ block, globalIdx, placement }, fragmentIndex) => {
                                     const fragmentKey = `${page.pageIndex}-${block.id}-${placement.itemStart ?? "all"}-${placement.descriptionStart ?? "all"}-${fragmentIndex}`;
