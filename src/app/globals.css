@@ -4365,6 +4365,193 @@ summary[data-tooltip],
   background: #3a414d;
 }
 
+.editor-tutorial {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  pointer-events: none;
+}
+
+body:has(.editor-tutorial) .feedback-launcher {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.editor-tutorial__highlight {
+  position: fixed;
+  z-index: 0;
+  border: 2px solid #60a5fa;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(3, 7, 18, 0.68), 0 0 0 5px rgba(47, 128, 195, 0.2);
+  pointer-events: none;
+  transition: top 180ms ease, left 180ms ease, width 180ms ease, height 180ms ease;
+}
+
+.editor-tutorial__popover {
+  position: fixed;
+  z-index: 1;
+  padding: 18px;
+  border: 1px solid #3b4250;
+  border-radius: 16px;
+  background: #171a22;
+  color: #f4f4f5;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.42);
+  pointer-events: auto;
+  animation: editor-tutorial-enter 160ms ease-out;
+}
+
+.editor-tutorial__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #8b95a5;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.editor-tutorial__topline button {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  margin: -7px -7px 0 0;
+  border-radius: 7px;
+  color: #8b95a5;
+}
+
+.editor-tutorial__topline button:hover,
+.editor-tutorial__topline button:focus-visible {
+  background: #272c36;
+  color: #fff;
+  outline: none;
+}
+
+.editor-tutorial__popover h2 {
+  margin-top: 8px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.editor-tutorial__popover p {
+  margin-top: 7px;
+  color: #b7bec9;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.editor-tutorial__progress {
+  display: flex;
+  gap: 5px;
+  margin-top: 15px;
+}
+
+.editor-tutorial__progress span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #3d4450;
+  transition: width 150ms ease, background-color 150ms ease;
+}
+
+.editor-tutorial__progress span.is-active {
+  width: 18px;
+  background: var(--brand-primary);
+}
+
+.editor-tutorial__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.editor-tutorial__actions>div {
+  display: flex;
+  gap: 7px;
+}
+
+.editor-tutorial__actions button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid #3b4250;
+  border-radius: 8px;
+  color: #d4d4d8;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.editor-tutorial__actions button:hover,
+.editor-tutorial__actions button:focus-visible {
+  background: #272c36;
+  color: #fff;
+  outline: none;
+}
+
+.editor-tutorial__actions .editor-tutorial__skip {
+  padding-inline: 0;
+  border-color: transparent;
+  color: #8b95a5;
+}
+
+.editor-tutorial__actions .editor-tutorial__primary {
+  border-color: #3184c9;
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+.editor-tutorial__actions .editor-tutorial__primary:hover,
+.editor-tutorial__actions .editor-tutorial__primary:focus-visible {
+  background: #3d91d5;
+}
+
+[data-theme="light"] .editor-tutorial__popover {
+  border-color: #d9dee6;
+  background: #fff;
+  color: #18181b;
+  box-shadow: 0 20px 55px rgba(25, 31, 40, 0.22);
+}
+
+[data-theme="light"] .editor-tutorial__popover h2 {
+  color: #18181b;
+}
+
+[data-theme="light"] .editor-tutorial__popover p {
+  color: #626b78;
+}
+
+[data-theme="light"] .editor-tutorial__actions button {
+  border-color: #d9dee6;
+  color: #52525b;
+}
+
+[data-theme="light"] .editor-tutorial__actions button:hover,
+[data-theme="light"] .editor-tutorial__actions button:focus-visible {
+  background: #f1f4f7;
+  color: #18181b;
+}
+
+[data-theme="light"] .editor-tutorial__actions .editor-tutorial__skip {
+  border-color: transparent;
+  color: #7a8492;
+}
+
+[data-theme="light"] .editor-tutorial__actions .editor-tutorial__primary {
+  border-color: #3184c9;
+  background: var(--brand-primary);
+  color: #fff;
+}
+
+@keyframes editor-tutorial-enter {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.985);
+  }
+}
+
 @media (max-width: 640px),
 (pointer: coarse) {
 
@@ -4373,6 +4560,12 @@ summary[data-tooltip],
   .inspector-rich-text-editor {
     -webkit-touch-callout: none;
     user-select: text;
+  }
+
+  .editor-tutorial__popover {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
   }
 }
 

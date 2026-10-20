@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import EditorHeader from "@/components/editor/EditorHeader";
 import EditorWorkspace from "@/components/editor/EditorWorkspace";
+import EditorTutorial from "@/components/editor/EditorTutorial";
 import ResumeWorkspaceSync from "@/components/auth/ResumeWorkspaceSync";
 
 export const metadata: Metadata = {
@@ -11,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function EditorPage() {
-  return <main className="flex flex-col h-screen overflow-hidden" data-nosnippet><ResumeWorkspaceSync /><EditorHeader /><EditorWorkspace /></main>;
+  return <main className="flex flex-col h-screen overflow-hidden" data-nosnippet><ResumeWorkspaceSync /><EditorHeader /><EditorWorkspace /><EditorTutorial /></main>;
 }

@@ -2469,6 +2469,7 @@ export default function ResumeCanvas({
         <>
             <main
                 ref={scrollContainerRef}
+                data-tour="canvas"
                 onClick={() => setSelectedBlockId(null)}
                 onDragOver={handleCanvasDragOver}
                 className={`editor-canvas flex-1 bg-[#444444] overflow-auto p-8 flex ${readOnly ? "items-start" : "justify-center"} cursor-default relative${readOnly ? " resume-canvas--readonly" : ""}`}
@@ -2695,6 +2696,7 @@ export default function ResumeCanvas({
 
                 {/* 캔버스 우측 하단 줌 컨트롤 바 */}
                 <div
+                    data-tour="zoom-controls"
                     className={`editor-zoom-controls no-print fixed bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40${readOnly ? " public-resume-zoom-controls" : ""}`}
                 >
                     {!readOnly && (

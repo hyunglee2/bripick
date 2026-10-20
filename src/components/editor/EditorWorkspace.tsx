@@ -57,6 +57,12 @@ export default function EditorWorkspace() {
         return () => window.clearTimeout(timer);
     }, []);
 
+    useEffect(() => {
+        const prepareTutorial = () => setMobileInspectorLevel("half");
+        window.addEventListener("bripick:start-editor-tutorial", prepareTutorial);
+        return () => window.removeEventListener("bripick:start-editor-tutorial", prepareTutorial);
+    }, []);
+
     const finishResize = useCallback(() => {
         setIsResizing(false);
         document.body.style.removeProperty("cursor");
@@ -175,6 +181,7 @@ export default function EditorWorkspace() {
                 </div>
                 <button
                     type="button"
+                    data-tour="panel-toggle"
                     className="editor-mobile-panel-toggle"
                     aria-expanded={mobileInspectorLevel !== "collapsed"}
                     aria-controls="editor-inspector-panel"
@@ -187,7 +194,7 @@ export default function EditorWorkspace() {
                 >
                     작업 패널
                 </button>
-                <div id="editor-inspector-panel" className="editor-inspector-shell min-h-0 shrink-0" style={{ width: inspectorWidth }}>
+                <div data-tour="inspector" id="editor-inspector-panel" className="editor-inspector-shell min-h-0 shrink-0" style={{ width: inspectorWidth }}>
                     <InspectorPanel />
                 </div>
             </div>

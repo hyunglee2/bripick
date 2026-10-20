@@ -6,6 +6,7 @@ import { useResumeStore } from "@/store/useResumeStore";
 import AtsCheckerModal from "@/components/editor/AtsCheckerModal";
 import ServiceDialog, { ServiceDialogVariant } from "@/components/ui/ServiceDialog";
 import PublishResumeButton from "@/components/editor/PublishResumeButton";
+import { EDITOR_TUTORIAL_EVENT } from "@/components/editor/EditorTutorial";
 import {
     Plus,
     Download,
@@ -24,6 +25,7 @@ import {
     MoreHorizontal,
     Check,
     CheckCircle2,
+    CircleHelp,
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 import AuthMenu from "@/components/auth/AuthMenu";
@@ -653,7 +655,7 @@ export default function EditorHeader() {
                         </div>
                     </div>
 
-                    <div className="header-document relative flex min-w-0 items-center border-l border-neutral-800 pl-3">
+                    <div data-tour="document-menu" className="header-document relative flex min-w-0 items-center border-l border-neutral-800 pl-3">
                         <FileText size={14} className="mr-2 shrink-0 text-neutral-500" />
                         <input
                             type="text"
@@ -796,6 +798,7 @@ export default function EditorHeader() {
                     <div className="relative hidden shrink-0 sm:block">
                         <button
                             type="button"
+                            data-tour="add-block"
                             onClick={() => setOpenMenu(openMenu === "blocks" ? null : "blocks")}
                             className="header-button header-button--outline flex h-8 items-center gap-1.5 rounded-lg border border-neutral-700 bg-neutral-900 px-3 text-xs font-medium text-neutral-200 transition hover:border-neutral-600 hover:bg-neutral-800"
                             aria-expanded={openMenu === "blocks"}
@@ -826,6 +829,7 @@ export default function EditorHeader() {
                     <PublishResumeButton />
                     <button
                         onClick={handleExportPDF}
+                        data-tour="pdf-export"
                         className="header-button header-button--primary flex h-8 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500 active:scale-95"
                     >
                         <Download size={14} /> <span className="hidden sm:inline">PDF 저장</span>
@@ -864,6 +868,16 @@ export default function EditorHeader() {
                                 >
                                     {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
                                     {theme === "dark" ? "라이트 모드" : "다크 모드"}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenMenu(null);
+                                        window.dispatchEvent(new CustomEvent(EDITOR_TUTORIAL_EVENT));
+                                    }}
+                                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
+                                >
+                                    <CircleHelp size={14} /> 튜토리얼 다시 보기
                                 </button>
                                 <div className="my-1 border-t border-neutral-800" />
                                 <p className="px-2.5 pb-1.5 pt-1 text-[11px] font-medium text-neutral-500">데이터</p>
