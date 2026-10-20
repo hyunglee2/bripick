@@ -109,6 +109,7 @@ export default function ResumeCanvas({
     const [dragOverFragmentKey, setDragOverFragmentKey] = useState<string | null>(null);
     const [dragOverPosition, setDragOverPosition] = useState<"before" | "after" | null>(null);
     const [zoomLevel, setZoomLevel] = useState<number>(100);
+    const [currentPage, setCurrentPage] = useState(1);
     const [viewMode, setViewMode] = useState<CanvasViewMode>(readOnly ? "width" : "custom");
     const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
     const [activeSkillDraftCategoryId, setActiveSkillDraftCategoryId] = useState<string | null>(null);
@@ -539,6 +540,50 @@ export default function ResumeCanvas({
                 placement,
             })),
     })), [blocks, pagePlacements]);
+
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        const canvas = canvasRef.current;
+        if (!container || !canvas) return;
+
+        let frameId: number | null = null;
+        const updateCurrentPage = () => {
+            frameId = null;
+            const containerRect = container.getBoundingClientRect();
+            const viewportCenter = containerRect.top + (containerRect.height / 2);
+            const pageElements = Array.from(canvas.querySelectorAll<HTMLElement>(".resume-page"));
+            if (pageElements.length === 0) {
+                setCurrentPage(1);
+                return;
+            }
+
+            let closestPage = 1;
+            let closestDistance = Number.POSITIVE_INFINITY;
+            pageElements.forEach((page, index) => {
+                const rect = page.getBoundingClientRect();
+                const pageCenter = rect.top + (rect.height / 2);
+                const distance = Math.abs(pageCenter - viewportCenter);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closestPage = index + 1;
+                }
+            });
+            setCurrentPage(closestPage);
+        };
+        const scheduleUpdate = () => {
+            if (frameId !== null) cancelAnimationFrame(frameId);
+            frameId = requestAnimationFrame(updateCurrentPage);
+        };
+
+        scheduleUpdate();
+        container.addEventListener("scroll", scheduleUpdate, { passive: true });
+        window.addEventListener("resize", scheduleUpdate);
+        return () => {
+            container.removeEventListener("scroll", scheduleUpdate);
+            window.removeEventListener("resize", scheduleUpdate);
+            if (frameId !== null) cancelAnimationFrame(frameId);
+        };
+    }, [pages.length, viewMode, zoomLevel]);
 
     // 텍스트 줄바꿈과 사용자 패딩까지 반영된 실제 DOM 높이로 페이지를 다시 계산한다.
     useLayoutEffect(() => {
@@ -2650,8 +2695,22 @@ export default function ResumeCanvas({
                 {/* 캔버스 우측 하단 줌 컨트롤 바 */}
                 <div
                     className={`editor-zoom-controls no-print fixed bg-[#181920]/90 backdrop-blur border border-neutral-700 rounded-full px-3 py-1.5 shadow-xl flex items-center gap-2 z-40${readOnly ? " public-resume-zoom-controls" : ""}`}
-                    style={readOnly ? undefined : { right: 'calc(clamp(380px, 30vw, 480px) + var(--editor-floating-control-offset))' }}
                 >
+                    {!readOnly && (
+                        <>
+                            <div
+                                className="editor-document-status"
+                                aria-label={`현재 ${currentPage}페이지, 전체 ${pages.length}페이지`}
+                            >
+                                <span className="editor-document-status__page">
+                                    <strong>{currentPage}</strong>
+                                    <span aria-hidden="true">/</span>
+                                    <span>{pages.length}</span>
+                                </span>
+                            </div>
+                            <div className="w-[1px] h-3 bg-neutral-700 mx-0.5" />
+                        </>
+                    )}
                     <button
                         onClick={handleZoomOut}
                         disabled={zoomLevel <= minimumZoom}

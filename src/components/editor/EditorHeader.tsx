@@ -101,6 +101,21 @@ export default function EditorHeader() {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const headerRef = useRef<HTMLElement>(null);
+    const formattedUpdatedAt = (() => {
+        const date = new Date(resume.updatedAt);
+        if (Number.isNaN(date.getTime())) return "-";
+        const parts = new Intl.DateTimeFormat("ko-KR", {
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+        }).formatToParts(date);
+        const getPart = (type: Intl.DateTimeFormatPartTypes) => (
+            parts.find((part) => part.type === type)?.value || ""
+        );
+        return `${getPart("month")}.${getPart("day")} ${getPart("hour")}:${getPart("minute")}`;
+    })();
 
     useEffect(() => {
         const currentTheme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
@@ -660,7 +675,10 @@ export default function EditorHeader() {
 
                         {openMenu === "document" && (
                             <div className="header-menu absolute left-0 top-11 w-full overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
-                                <p className="px-2.5 pb-1.5 pt-1 text-[11px] font-medium text-neutral-500">내 이력서</p>
+                                <div className="flex items-center justify-between gap-2 px-2.5 pb-1.5 pt-1">
+                                    <p className="text-[11px] font-medium text-neutral-500">내 이력서</p>
+                                    <p className="whitespace-nowrap text-[10px] text-neutral-500">최종 편집 {formattedUpdatedAt}</p>
+                                </div>
                                 <div
                                     className="space-y-1"
                                     onKeyDown={(event) => {
