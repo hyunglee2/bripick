@@ -223,7 +223,8 @@ export default function ResumeCanvas({
             : mode === "two-page"
                 ? availableWidth / ((paperWidth * 2) + 40)
                 : widthScale;
-        setZoomLevel(Math.max(25, Math.min(Math.floor(nextScale * 100), 100)));
+        const minimumFitZoom = container.clientWidth < 768 ? 10 : 25;
+        setZoomLevel(Math.max(minimumFitZoom, Math.min(Math.floor(nextScale * 100), 100)));
         container.scrollLeft = 0;
         container.scrollTop = 0;
     }, [globalStyle?.contentWidth]);

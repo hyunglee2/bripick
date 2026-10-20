@@ -125,14 +125,35 @@ export default function RichTextBubbleToolbar({
     useEffect(() => {
         const editor = editorRef.current;
         const handleOpenLinkEditor = () => openLinkEditor();
+        let deferredSelectionUpdate: number | null = null;
+        const handleTouchSelectionEnd = () => {
+            window.requestAnimationFrame(updateFromSelection);
+            if (deferredSelectionUpdate !== null) window.clearTimeout(deferredSelectionUpdate);
+            deferredSelectionUpdate = window.setTimeout(updateFromSelection, 120);
+        };
+        const handleContextMenu = (event: Event) => {
+            if (!window.matchMedia("(max-width: 640px), (pointer: coarse)").matches) return;
+            const selection = window.getSelection();
+            const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+            if (range && !range.collapsed && editor?.contains(range.commonAncestorContainer)) {
+                event.preventDefault();
+            }
+        };
         document.addEventListener("selectionchange", updateFromSelection);
         window.addEventListener("resize", updateFromSelection);
         window.addEventListener("scroll", updateFromSelection, true);
+        editor?.addEventListener("touchend", handleTouchSelectionEnd);
+        editor?.addEventListener("pointerup", handleTouchSelectionEnd);
+        editor?.addEventListener("contextmenu", handleContextMenu);
         editor?.addEventListener("open-rich-text-link", handleOpenLinkEditor);
         return () => {
+            if (deferredSelectionUpdate !== null) window.clearTimeout(deferredSelectionUpdate);
             document.removeEventListener("selectionchange", updateFromSelection);
             window.removeEventListener("resize", updateFromSelection);
             window.removeEventListener("scroll", updateFromSelection, true);
+            editor?.removeEventListener("touchend", handleTouchSelectionEnd);
+            editor?.removeEventListener("pointerup", handleTouchSelectionEnd);
+            editor?.removeEventListener("contextmenu", handleContextMenu);
             editor?.removeEventListener("open-rich-text-link", handleOpenLinkEditor);
         };
     });

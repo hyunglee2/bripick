@@ -545,6 +545,10 @@ body,
   height: 100%;
 }
 
+.editor-mobile-panel-toggle {
+  display: none;
+}
+
 .editor-panel-resizer {
   position: relative;
   z-index: 30;
@@ -970,6 +974,8 @@ body,
   --resume-section-content-gap: 12px;
   --resume-block-gap: 18px;
   --resume-project-divider-gap: 28px;
+  /* Figma: 2465px 용지에서 본문 여백 안쪽으로 200px 추가 들여쓰기 (A4 렌더링 기준 약 64px). */
+  --resume-project-indent: 48px;
   --resume-bullet-font-size: var(--resume-body-size);
   --resume-bullet-line-height: 1.5;
   --resume-bullet-item-gap: 2px;
@@ -3539,8 +3545,214 @@ summary[data-tooltip],
 }
 
 @media (max-width: 640px) {
+  .editor-header--shadcn {
+    gap: 6px;
+    padding-inline: 8px !important;
+  }
+
+  .editor-header--shadcn>div:first-child {
+    gap: 6px;
+  }
+
   .editor-header--shadcn .header-brand-logo {
     width: 23px;
+  }
+
+  .editor-header--shadcn .header-brand {
+    padding-right: 0;
+  }
+
+  .editor-header--shadcn .header-document {
+    width: 46px;
+    padding-left: 6px;
+  }
+
+  .editor-header--shadcn .header-document>svg {
+    margin-right: 0;
+  }
+
+  .editor-header--shadcn .header-document>input {
+    display: none;
+  }
+
+  .editor-header--shadcn .header-document>button {
+    width: 22px;
+  }
+
+  .editor-header--shadcn .header-history {
+    display: none;
+  }
+
+  .editor-header--shadcn .header-actions {
+    gap: 4px;
+  }
+
+  .editor-header--shadcn .header-account {
+    margin-left: 0;
+    padding-left: 6px;
+  }
+
+  .editor-header--shadcn .header-menu {
+    min-width: min(280px, calc(100vw - 16px));
+  }
+
+  .editor-workspace {
+    flex-direction: column;
+  }
+
+  .editor-workspace .editor-canvas {
+    display: block !important;
+    width: 100%;
+    min-height: 0;
+    flex: 0 0 42%;
+    padding: 12px 0 20px;
+  }
+
+  .editor-workspace .editor-canvas::after {
+    content: "";
+    display: block;
+    width: 100%;
+    height: 28px;
+    flex: 0 0 28px;
+  }
+
+  .editor-panel-resizer {
+    display: none;
+  }
+
+  .editor-mobile-panel-toggle {
+    position: relative;
+    display: flex;
+    min-height: 34px;
+    flex: 0 0 34px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid #343945;
+    border-bottom: 0;
+    /* border-radius: 18px 18px 0 0; */
+    background: #171b23;
+    color: transparent;
+    font-size: 0;
+    box-shadow: 0 -5px 18px rgba(0, 0, 0, 0.22);
+    cursor: ns-resize;
+    touch-action: none;
+  }
+
+  .editor-mobile-panel-toggle::before {
+    content: "";
+    position: absolute;
+    top: 11px;
+    left: 50%;
+    width: 48px;
+    height: 5px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: #626975;
+  }
+
+  [data-theme="light"] .editor-mobile-panel-toggle {
+    border-color: #d8dde4;
+    background: #ffffff;
+    box-shadow: 0 -5px 18px rgba(25, 31, 40, 0.12);
+  }
+
+  [data-theme="light"] .editor-mobile-panel-toggle::before {
+    background: #71717a;
+  }
+
+  .editor-inspector-shell {
+    width: 100% !important;
+    height: 58%;
+    min-height: 0;
+    flex: 1 1 auto;
+    border-top: 1px solid #292e38;
+  }
+
+  .editor-inspector-shell .inspector-panel {
+    padding: 16px !important;
+    border-left: 0 !important;
+  }
+
+  .editor-inspector-shell .inspector-heading {
+    top: -16px;
+  }
+
+  .editor-zoom-controls:not(.public-resume-zoom-controls) {
+    bottom: calc(58dvh - 20px);
+  }
+
+  .editor-workspace.is-mobile-inspector-collapsed .editor-canvas {
+    flex: 1 1 auto;
+  }
+
+  .editor-workspace.is-mobile-inspector-collapsed .editor-inspector-shell {
+    display: none;
+  }
+
+  .editor-workspace.is-mobile-inspector-full .editor-canvas {
+    min-height: 36px;
+    flex: 0 0 6%;
+    padding-bottom: 0;
+  }
+
+  .editor-workspace.is-mobile-inspector-full .editor-canvas::after {
+    display: none;
+  }
+
+  .editor-workspace.is-mobile-inspector-full .editor-inspector-shell {
+    height: auto;
+    flex: 1 1 auto;
+  }
+
+  .editor-workspace.is-mobile-inspector-full .editor-zoom-controls:not(.public-resume-zoom-controls) {
+    display: none;
+  }
+
+  body:has(.editor-workspace.is-mobile-inspector-full) .feedback-launcher {
+    display: none;
+  }
+
+  .editor-workspace.is-mobile-inspector-collapsed .editor-mobile-panel-toggle {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 65;
+    width: 100%;
+    min-height: 34px;
+    padding: 0;
+    transform: none;
+  }
+
+  [data-theme="light"] .editor-workspace.is-mobile-inspector-collapsed .editor-mobile-panel-toggle {
+    background: #ffffff;
+  }
+
+  .editor-workspace.is-mobile-inspector-collapsed .editor-zoom-controls:not(.public-resume-zoom-controls) {
+    right: 8px;
+    bottom: 40px;
+    left: auto;
+    transform: none;
+  }
+
+  .editor-workspace.is-mobile-inspector-collapsed~.feedback-launcher,
+  body:has(.editor-workspace.is-mobile-inspector-collapsed) .feedback-launcher {
+    bottom: 40px;
+  }
+
+  .feedback-launcher {
+    right: auto;
+    bottom: 12px;
+    left: 8px;
+    width: 40px;
+    min-height: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .feedback-launcher>span {
+    display: none;
   }
 }
 
@@ -3569,7 +3781,7 @@ summary[data-tooltip],
   flex-direction: column;
   gap: 0;
   margin-top: var(--resume-project-divider-gap);
-  margin-left: 18px;
+  margin-left: var(--resume-project-indent);
 }
 
 .reference-template .resume-experience-project {
@@ -4151,6 +4363,17 @@ summary[data-tooltip],
 .rich-text-bubble-toolbar__link-form button:hover {
   color: #fff;
   background: #3a414d;
+}
+
+@media (max-width: 640px),
+(pointer: coarse) {
+
+  .resume-rich-text-editor,
+  .project-bullet-editor__content,
+  .inspector-rich-text-editor {
+    -webkit-touch-callout: none;
+    user-select: text;
+  }
 }
 
 .auth-menu {
