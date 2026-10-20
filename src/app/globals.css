@@ -929,6 +929,10 @@ body,
   --resume-bullet-line-height: 1.5;
   --resume-bullet-item-gap: 2px;
   --resume-bullet-letter-spacing: -0.018em;
+  height: 1130px;
+  min-height: 1130px;
+  max-height: 1130px;
+  overflow: hidden;
   font-size: var(--resume-body-size);
 }
 
@@ -1482,6 +1486,15 @@ body,
 
 /* 회사 정보 없이 하위 프로젝트만 이어지는 조각에는 회사 시작 마커를 반복하지 않습니다. */
 .reference-template [data-experience-project-start]:not([data-experience-project-start="0"]) [data-pagination-item-index]::before {
+  content: none;
+}
+
+/* 같은 프로젝트의 내용이 다음 페이지로 이어질 때 회사 항목 마커를 반복하지 않습니다. */
+.reference-template [data-experience-project-description-start]:not([data-experience-project-description-start="0"]) [data-pagination-item-index]::before {
+  content: none;
+}
+
+.reference-template [data-experience-project-continuation="true"] [data-pagination-item-index]::before {
   content: none;
 }
 
@@ -3529,6 +3542,36 @@ summary[data-tooltip],
 .reference-template [data-experience-project-start]:not([data-experience-project-start="0"]) .resume-experience-project:first-child {
   padding-top: 0;
   border-top: 0;
+}
+
+/* 프로젝트 내부 불릿의 연속 조각은 새 프로젝트가 아니므로 상단 여백과 구분선을 만들지 않습니다. */
+.reference-template [data-experience-project-description-start]:not([data-experience-project-description-start="0"]) .resume-experience-projects {
+  margin-top: 0;
+}
+
+.reference-template [data-experience-project-description-start]:not([data-experience-project-description-start="0"]) .resume-experience-project:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.reference-template [data-experience-project-continuation="true"] .resume-experience-project:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* 문서 흐름상 페이지 끝에 제목 한 줄만 들어가는 경우 숨은 조각 여백을 만들지 않습니다. */
+.reference-template [data-experience-project-title-only="true"] .resume-experience-projects {
+  margin-top: 0;
+}
+
+.reference-template [data-experience-project-title-only="true"] .resume-experience-project:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.reference-template [data-experience-project-description-start]:not([data-experience-project-description-start="0"]) .resume-project-contributions {
+  margin-top: 0 !important;
 }
 
 .reference-template .resume-experience-project__header {

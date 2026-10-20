@@ -1010,13 +1010,31 @@ export default function InspectorPanel() {
 
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="min-w-0 flex-1">
+                                        <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
+                                        <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
+                                            이 블록 앞에서 페이지를 나눕니다.
+                                        </span>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={currentBlock.style.startOnNewPage === true}
+                                        onChange={(event) => updateBlockStyle(currentBlock.id, {
+                                            startOnNewPage: event.target.checked,
+                                        })}
+                                        aria-label="블록을 새 페이지에서 시작"
+                                        className="h-4 w-4 cursor-pointer accent-blue-500"
+                                    />
+                                </div>
+
+                                <div className="flex items-center justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
                                         <span className="block text-xs text-neutral-300">
-                                            {currentBlock.type === "project" ? "블록 자동 페이지 맞춤" : "블록 자동 페이지 맞춤"}
+                                            페이지 경계에서 항목 자동 이동
                                         </span>
                                         <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
                                             {currentBlock.type === "project"
-                                                ? "블록 내 모든 프로젝트가 페이지 경계에서 잘리지 않도록 한 번에 설정합니다."
-                                                : "블록이 페이지 경계에서 잘리지 않도록 다음 페이지 상단부터 깔끔하게 시작합니다."}
+                                                ? "한 페이지에 들어갈 수 있는 프로젝트가 페이지 끝에 걸리면, 프로젝트 전체를 다음 페이지로 옮깁니다."
+                                                : "한 페이지에 들어갈 수 있는 항목이 페이지 끝에 걸리면, 항목 전체를 다음 페이지로 옮깁니다."}
                                         </span>
                                     </div>
                                     <input
@@ -1459,6 +1477,25 @@ export default function InspectorPanel() {
 
                                         {editingExperience?.id === exp.id && editingExperienceProject && (
                                             <div className="inspector-project-card__body">
+                                                <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
+                                                        <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
+                                                            이 프로젝트 앞에서 페이지를 나눕니다.
+                                                        </span>
+                                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editingExperienceProject.startOnNewPage === true}
+                                                        onChange={(event) => handleUpdateExperienceProject(
+                                                            exp.id,
+                                                            editingExperienceProject.id,
+                                                            { startOnNewPage: event.target.checked },
+                                                        )}
+                                                        aria-label="프로젝트를 새 페이지에서 시작"
+                                                        className="h-4 w-4 cursor-pointer accent-blue-500"
+                                                    />
+                                                </div>
                                                 <div className="inspector-field">
                                                     <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
                                                     <input
@@ -1527,6 +1564,26 @@ export default function InspectorPanel() {
 
                                         {editingExperience?.id === exp.id && !editingExperienceProject && (
                                             <div className="inspector-project-card__body">
+
+                                                <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
+                                                    <div className="min-w-0 flex-1">
+                                                        <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
+                                                        <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
+                                                            이 회사 경력 앞에서 페이지를 나눕니다.
+                                                        </span>
+                                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={exp.startOnNewPage === true}
+                                                        onChange={(event) => handleUpdateExpField(
+                                                            exp.id,
+                                                            "startOnNewPage",
+                                                            event.target.checked,
+                                                        )}
+                                                        aria-label="회사 경력을 새 페이지에서 시작"
+                                                        className="h-4 w-4 cursor-pointer accent-blue-500"
+                                                    />
+                                                </div>
 
                                                 <div className="inspector-field">
                                                     <label className="inspector-label-inset inspector-field-label block">회사명</label>
@@ -1905,7 +1962,7 @@ export default function InspectorPanel() {
                                                         !(proj.keepTogether ?? (currentBlock.style.keepTogether === true)),
                                                     )}
                                                 >
-                                                    <span>자동 페이지 맞춤</span>
+                                                    <span>페이지 경계에서 자동 이동</span>
                                                     <span className="inspector-project-menu__switch" aria-hidden="true" />
                                                 </button>
                                                 <button
@@ -1921,6 +1978,25 @@ export default function InspectorPanel() {
 
                                     {editingProject?.id === proj.id && (
                                         <div className="inspector-project-card__body">
+                                            <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
+                                                    <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
+                                                        이 프로젝트 앞에서 페이지를 나눕니다.
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={proj.startOnNewPage === true}
+                                                    onChange={(event) => handleUpdateProjectField(
+                                                        proj.id,
+                                                        "startOnNewPage",
+                                                        event.target.checked,
+                                                    )}
+                                                    aria-label="프로젝트를 새 페이지에서 시작"
+                                                    className="h-4 w-4 cursor-pointer accent-blue-500"
+                                                />
+                                            </div>
                                             <div className="inspector-field">
                                                 <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
                                                 <input
@@ -2190,6 +2266,25 @@ export default function InspectorPanel() {
 
                                     {editingEducation?.id === edu.id && (
                                     <div className="inspector-project-card__body">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
+                                        <div className="min-w-0 flex-1">
+                                            <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
+                                            <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
+                                                이 학력 항목 앞에서 페이지를 나눕니다.
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            checked={edu.startOnNewPage === true}
+                                            onChange={(event) => handleUpdateEduField(
+                                                edu.id,
+                                                "startOnNewPage",
+                                                event.target.checked,
+                                            )}
+                                            aria-label="학력 항목을 새 페이지에서 시작"
+                                            className="h-4 w-4 cursor-pointer accent-blue-500"
+                                        />
+                                    </div>
                                     <div className="inspector-field">
                                         <label className="inspector-label-inset inspector-field-label block">학교명</label>
                                         <input
@@ -2341,6 +2436,25 @@ export default function InspectorPanel() {
 
                                     {editingCertification?.id === cert.id && (
                                     <div className="inspector-project-card__body">
+                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
+                                        <div className="min-w-0 flex-1">
+                                            <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
+                                            <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
+                                                이 기타 경험 항목 앞에서 페이지를 나눕니다.
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            checked={cert.startOnNewPage === true}
+                                            onChange={(event) => handleUpdateCertField(
+                                                cert.id,
+                                                "startOnNewPage",
+                                                event.target.checked,
+                                            )}
+                                            aria-label="기타 경험 항목을 새 페이지에서 시작"
+                                            className="h-4 w-4 cursor-pointer accent-blue-500"
+                                        />
+                                    </div>
                                     <div className="inspector-field">
                                         <label className="inspector-label-inset inspector-field-label block">활동명</label>
                                         <textarea

@@ -18,6 +18,7 @@ export interface BlockStyle {
     columns: number;
     showDivider: boolean;
     keepTogether?: boolean;
+    startOnNewPage?: boolean;
     useCustomPadding?: boolean;
     otherExperienceLeftColumnRatio?: number;
 }
@@ -66,6 +67,7 @@ export interface ExperienceItem {
     descriptionStyle?: "bullets" | "paragraph";
     techStack?: string[];
     projects?: ExperienceProject[];
+    startOnNewPage?: boolean;
 }
 
 export interface ExperienceProject {
@@ -77,6 +79,7 @@ export interface ExperienceProject {
     description: string[];
     descriptionLevels?: number[];
     descriptionHtml?: string[];
+    startOnNewPage?: boolean;
 }
 
 export interface ProjectItem {
@@ -90,6 +93,7 @@ export interface ProjectItem {
     descriptionLevels?: number[];
     descriptionHtml?: string[];
     keepTogether?: boolean;
+    startOnNewPage?: boolean;
 }
 
 export interface EducationItem {
@@ -100,6 +104,7 @@ export interface EducationItem {
     endDate: string;
     status: string; // 예: "졸업", "재학 중", "수료"
     score?: string;  // 예: "3.8 / 4.5"
+    startOnNewPage?: boolean;
 }
 
 export interface CertificationItem {
@@ -113,6 +118,7 @@ export interface CertificationItem {
     descriptionLevels?: number[];
     descriptionHtml?: string[];
     issuer?: string;
+    startOnNewPage?: boolean;
 }
 
 export interface ResumeBlock {

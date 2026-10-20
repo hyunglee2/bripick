@@ -16,6 +16,10 @@ import ServiceDialog from "@/components/ui/ServiceDialog";
 import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
 
 const A4_PAPER_HEIGHT = 1130;
+const PAGINATION_BOTTOM_SAFETY_GAP = 24;
+const DESCRIPTION_FIT_TOLERANCE = 12;
+const ITEM_HEADER_FIT_TOLERANCE = 72;
+const EDUCATION_ITEM_FIT_TOLERANCE = 160;
 const PROJECT_ITEM_GAP = 26;
 const FLOW_BLOCK_TYPES = new Set<ResumeBlock["type"]>([
     "experience",
@@ -31,9 +35,36 @@ type BlockPlacement = {
     itemEnd?: number;
     descriptionStart?: number;
     descriptionEnd?: number;
+    itemHeaderOnly?: boolean;
+    itemHeaderContinuation?: boolean;
     experienceProjectStart?: number;
     experienceProjectEnd?: number;
+    experienceProjectContinuation?: boolean;
+    experienceCompanyOnly?: boolean;
+    experienceProjectDescriptionStart?: number;
+    experienceProjectDescriptionEnd?: number;
+    experienceProjectHeaderOnly?: boolean;
+    experienceProjectHeaderContinuation?: boolean;
+    experienceProjectTitleOnly?: boolean;
+    experienceProjectTitleContinuation?: boolean;
 };
+
+const getPlacementMeasurementKey = (blockIndex: number, placement: BlockPlacement) => [
+    blockIndex,
+    placement.itemStart ?? "all",
+    placement.itemEnd ?? "all",
+    placement.descriptionStart ?? "all",
+    placement.descriptionEnd ?? "all",
+    placement.itemHeaderOnly === true ? "item-header" : "item-body",
+    placement.itemHeaderContinuation === true ? "item-header-continuation" : "item-header-initial",
+    placement.experienceProjectStart ?? "all",
+    placement.experienceProjectEnd ?? "all",
+    placement.experienceProjectDescriptionStart ?? "all",
+    placement.experienceProjectDescriptionEnd ?? "all",
+    placement.experienceCompanyOnly === true ? "company" : "content",
+    placement.experienceProjectHeaderOnly === true ? "header" : "body",
+    placement.experienceProjectTitleOnly === true ? "title" : "detail",
+].join(":");
 
 type CanvasViewMode = "custom" | "page" | "width" | "two-page";
 
@@ -112,6 +143,7 @@ export default function ResumeCanvas({
         | null
     >(null);
     const paginationFrameRef = useRef<number | null>(null);
+    const paginationBlockSignaturesRef = useRef<string[]>([]);
     const dragScrollFrameRef = useRef<number | null>(null);
     const dragClientYRef = useRef<number | null>(null);
     const profilePhotoMenuRef = useRef<HTMLDivElement>(null);
@@ -514,17 +546,33 @@ export default function ResumeCanvas({
         if (!canvas) return;
         let disposed = false;
         let observer: ResizeObserver | null = null;
+        const currentBlockSignatures = blocks.map((block) => JSON.stringify(block));
+        const previousBlockSignatures = paginationBlockSignaturesRef.current;
+        const firstChangedBlockIndex = previousBlockSignatures.length === currentBlockSignatures.length
+            ? currentBlockSignatures.findIndex((signature, index) => signature !== previousBlockSignatures[index])
+            : -1;
+        const lockedBlockCount = firstChangedBlockIndex > 0 ? firstChangedBlockIndex : 0;
+        paginationBlockSignaturesRef.current = currentBlockSignatures;
 
         const repaginate = () => {
             if (disposed) return;
-            const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2);
+            // DOM 높이는 소수점 단위 줄바꿈과 편집기 장식선 때문에 합산값보다
+            // 조금 커질 수 있다. 하단 여백을 침범하기 전에 다음 페이지로 넘긴다.
+            const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2) - PAGINATION_BOTTOM_SAFETY_GAP;
             const measuredBlockHeights = new Map<number, number>();
+            const measuredPlacementHeights = new Map<string, number>();
             const measuredItemHeights = new Map<string, number>();
             const measuredDescriptionHeights = new Map<string, number>();
             const measuredItemChromeHeights = new Map<string, number>();
             const measuredContinuationItemChromeHeights = new Map<string, number>();
             const measuredExperienceCompanyHeights = new Map<string, number>();
-            const measuredExperienceProjectHeights = new Map<string, number>();
+            const measuredExperienceProjectDescriptionHeights = new Map<string, number>();
+            const measuredExperienceProjectChromeHeights = new Map<string, number>();
+            const measuredExperienceContinuationProjectChromeHeights = new Map<string, number>();
+            const measuredExperienceProjectHeaderHeights = new Map<string, number>();
+            const measuredExperienceContinuationProjectHeaderHeights = new Map<string, number>();
+            const measuredExperienceProjectTitleHeights = new Map<string, number>();
+            const measuredExperienceContinuationBaseHeights = new Map<number, number>();
             const measuredBaseHeights = new Map<number, number>();
             const measuredContinuationBaseHeights = new Map<number, number>();
 
@@ -536,7 +584,16 @@ export default function ResumeCanvas({
                     + Number.parseFloat(style.marginTop || "0")
                     + Number.parseFloat(style.marginBottom || "0");
                 measuredBlockHeights.set(index, Math.max(measuredBlockHeights.get(index) || 0, outerHeight));
-                const isDescriptionContinuation = Number(element.dataset.descriptionStart || "0") > 0;
+                const placementKey = element.dataset.paginationPlacementKey;
+                if (placementKey) {
+                    measuredPlacementHeights.set(
+                        placementKey,
+                        Math.max(measuredPlacementHeights.get(placementKey) || 0, outerHeight),
+                    );
+                }
+                const isDescriptionContinuation = Number(element.dataset.descriptionStart || "0") > 0
+                    || element.dataset.descriptionContinuation === "true";
+                const isExperienceProjectContinuation = element.dataset.experienceProjectContinuation === "true";
 
                 let itemsHeight = 0;
                 element.querySelectorAll<HTMLElement>("[data-pagination-item-index]").forEach((item) => {
@@ -557,17 +614,57 @@ export default function ResumeCanvas({
                         let projectsHeight = 0;
                         item.querySelectorAll<HTMLElement>("[data-experience-project-index]").forEach((project) => {
                             const projectIndex = Number(project.dataset.experienceProjectIndex);
+                            const isProjectDescriptionContinuation = project.dataset.experienceProjectDescriptionContinuation === "true";
                             const projectStyle = window.getComputedStyle(project);
                             const projectHeight = project.offsetHeight
                                 + Number.parseFloat(projectStyle.marginTop || "0")
                                 + Number.parseFloat(projectStyle.marginBottom || "0");
-                            measuredExperienceProjectHeights.set(
-                                `${index}:${itemIndex}:${projectIndex}`,
-                                Math.max(
-                                    measuredExperienceProjectHeights.get(`${index}:${itemIndex}:${projectIndex}`) || 0,
-                                    projectHeight,
-                                ),
+                            const contributions = project.querySelector<HTMLElement>(".resume-project-contributions");
+                            const projectHeader = project.querySelector<HTMLElement>(".resume-experience-project__header");
+                            const contributionsStyle = contributions ? window.getComputedStyle(contributions) : null;
+                            const contributionsHeight = contributions
+                                ? contributions.offsetHeight
+                                    + Number.parseFloat(contributionsStyle?.marginTop || "0")
+                                    + Number.parseFloat(contributionsStyle?.marginBottom || "0")
+                                : 0;
+                            let projectDescriptionsHeight = 0;
+                            project.querySelectorAll<HTMLElement>("[data-pagination-description-index]").forEach((description) => {
+                                const descriptionIndex = Number(description.dataset.paginationDescriptionIndex);
+                                const descriptionStyle = window.getComputedStyle(description);
+                                const descriptionHeight = description.offsetHeight
+                                    + Number.parseFloat(descriptionStyle.marginTop || "0")
+                                    + Number.parseFloat(descriptionStyle.marginBottom || "0");
+                                const descriptionKey = `${index}:${itemIndex}:${projectIndex}:${descriptionIndex}`;
+                                measuredExperienceProjectDescriptionHeights.set(
+                                    descriptionKey,
+                                    Math.max(measuredExperienceProjectDescriptionHeights.get(descriptionKey) || 0, descriptionHeight),
+                                );
+                                projectDescriptionsHeight += descriptionHeight;
+                            });
+                            const projectChromeHeights = isExperienceProjectContinuation || isProjectDescriptionContinuation
+                                ? measuredExperienceContinuationProjectChromeHeights
+                                : measuredExperienceProjectChromeHeights;
+                            const projectHeaderHeights = isExperienceProjectContinuation || isProjectDescriptionContinuation
+                                ? measuredExperienceContinuationProjectHeaderHeights
+                                : measuredExperienceProjectHeaderHeights;
+                            const projectKey = `${index}:${itemIndex}:${projectIndex}`;
+                            projectChromeHeights.set(
+                                projectKey,
+                                Math.max(projectChromeHeights.get(projectKey) || 0, Math.max(0, projectHeight - projectDescriptionsHeight)),
                             );
+                            projectHeaderHeights.set(
+                                projectKey,
+                                Math.max(projectHeaderHeights.get(projectKey) || 0, Math.max(0, projectHeight - contributionsHeight)),
+                            );
+                            if (projectHeader) {
+                                measuredExperienceProjectTitleHeights.set(
+                                    projectKey,
+                                    Math.max(
+                                        measuredExperienceProjectTitleHeights.get(projectKey) || 0,
+                                        projectHeader.offsetHeight,
+                                    ),
+                                );
+                            }
                             projectsHeight += projectHeight;
                         });
                         if (projectsHeight > 0) {
@@ -607,9 +704,11 @@ export default function ResumeCanvas({
                 });
 
                 if (itemsHeight > 0) {
-                    const baseHeights = isDescriptionContinuation
-                        ? measuredContinuationBaseHeights
-                        : measuredBaseHeights;
+                    const baseHeights = isExperienceProjectContinuation
+                        ? measuredExperienceContinuationBaseHeights
+                        : isDescriptionContinuation
+                            ? measuredContinuationBaseHeights
+                            : measuredBaseHeights;
                     baseHeights.set(index, Math.max(baseHeights.get(index) || 0, outerHeight - itemsHeight));
                 }
             });
@@ -631,15 +730,51 @@ export default function ResumeCanvas({
             const nextPages: BlockPlacement[][] = [[]];
             let usedHeight = 0;
 
+            if (lockedBlockCount > 0) {
+                const lockedPages = pagePlacements.map((page) => (
+                    page.filter((placement) => placement.blockIndex < lockedBlockCount)
+                ));
+                let lastLockedPageIndex = -1;
+                lockedPages.forEach((page, pageIndex) => {
+                    if (page.length > 0) lastLockedPageIndex = pageIndex;
+                });
+                if (lastLockedPageIndex >= 0) {
+                    nextPages.splice(
+                        0,
+                        nextPages.length,
+                        ...lockedPages.slice(0, lastLockedPageIndex + 1).map((page) => [...page]),
+                    );
+                    usedHeight = nextPages.at(-1)!.reduce((height, placement) => (
+                        height + (
+                            measuredPlacementHeights.get(
+                                getPlacementMeasurementKey(placement.blockIndex, placement),
+                            ) || measuredBlockHeights.get(placement.blockIndex) || 0
+                        )
+                    ), 0);
+                }
+            }
+
             const startNewPage = () => {
                 nextPages.push([]);
                 usedHeight = 0;
             };
 
+            const pushPlacement = (placement: BlockPlacement, estimatedHeight: number) => {
+                nextPages.at(-1)!.push(placement);
+                usedHeight += measuredPlacementHeights.get(
+                    getPlacementMeasurementKey(placement.blockIndex, placement),
+                ) || estimatedHeight;
+            };
+
             blocks.forEach((block, index) => {
+                if (index < lockedBlockCount) return;
                 if (block.type === "page_break") {
                     // 이전 버전에 저장된 수동 페이지 나눔 블록은 무시한다.
                     return;
+                }
+
+                if (block.style.startOnNewPage === true && nextPages.at(-1)!.length > 0) {
+                    startNewPage();
                 }
 
                 const itemCount = getFlowItemCount(block);
@@ -652,51 +787,274 @@ export default function ResumeCanvas({
                             ? (block.data[itemStart]?.keepTogether ?? (block.style.keepTogether === true))
                             : block.style.keepTogether === true;
                         const flowItem = Array.isArray(block.data) ? block.data[itemStart] : undefined;
+                        if (flowItem?.startOnNewPage === true && nextPages.at(-1)!.length > 0) {
+                            startNewPage();
+                        }
                         const experienceProjects = block.type === "experience" && Array.isArray(flowItem?.projects)
                             ? flowItem.projects
                             : [];
+                        const hasForcedExperienceProjectPageBreak = experienceProjects.some(
+                            (project: { startOnNewPage?: boolean }) => project.startOnNewPage === true,
+                        );
                         const descriptions = block.type === "experience" && Array.isArray(flowItem?.projects) && flowItem.projects.length > 0
                             ? undefined
                             : flowItem?.description;
                         const itemHeight = measuredItemHeights.get(`${index}:${itemStart}`) || 80;
 
-                        if (block.type === "experience" && experienceProjects.length > 0 && !keepItemTogether) {
-                            const companyHeight = measuredExperienceCompanyHeights.get(`${index}:${itemStart}`) || 90;
-                            let experienceProjectStart = 0;
+                        const experienceCompanyHeight = block.type === "experience" && experienceProjects.length > 0
+                            ? (measuredExperienceCompanyHeights.get(`${index}:${itemStart}`) || 90)
+                            : 0;
+                        const fullExperienceProjectsHeight = experienceProjects.reduce(
+                            (total: number, project: { description?: string[] }, projectIndex: number) => {
+                                const projectKey = `${index}:${itemStart}:${projectIndex}`;
+                                const projectChromeHeight = measuredExperienceProjectChromeHeights.get(projectKey) || 64;
+                                const descriptions = Array.isArray(project.description) ? project.description : [];
+                                const descriptionsHeight = descriptions.reduce(
+                                    (height, _description, descriptionIndex) => height + (
+                                        measuredExperienceProjectDescriptionHeights.get(
+                                            `${index}:${itemStart}:${projectIndex}:${descriptionIndex}`,
+                                        ) || 24
+                                    ),
+                                    0,
+                                );
+                                return total + projectChromeHeight + descriptionsHeight;
+                            },
+                            0,
+                        );
+                        const oversizedExperienceItem = block.type === "experience"
+                            && experienceProjects.length > 0
+                            && baseHeight + experienceCompanyHeight + fullExperienceProjectsHeight > availableHeight;
+                        const fullExperienceItemHeight = baseHeight
+                            + experienceCompanyHeight
+                            + fullExperienceProjectsHeight;
 
-                            while (experienceProjectStart < experienceProjects.length) {
-                                const isProjectContinuation = experienceProjectStart > 0;
-                                const fragmentBaseHeight = isProjectContinuation ? 24 : baseHeight;
-                                const fragmentCompanyHeight = isProjectContinuation ? 0 : companyHeight;
-                                let fragmentHeight = fragmentBaseHeight + fragmentCompanyHeight;
-                                let experienceProjectEnd = experienceProjectStart;
-
-                                while (experienceProjectEnd < experienceProjects.length) {
-                                    const projectHeight = measuredExperienceProjectHeights.get(
-                                        `${index}:${itemStart}:${experienceProjectEnd}`,
-                                    ) || 120;
-                                    if (experienceProjectEnd > experienceProjectStart
-                                        && usedHeight + fragmentHeight + projectHeight > availableHeight) break;
-                                    if (experienceProjectEnd === experienceProjectStart
-                                        && nextPages.at(-1)!.length > 0
-                                        && usedHeight + fragmentHeight + projectHeight > availableHeight) {
-                                        startNewPage();
-                                    }
-                                    fragmentHeight += projectHeight;
-                                    experienceProjectEnd += 1;
+                        if (block.type === "experience" && experienceProjects.length > 0) {
+                            // 한 장 안에 들어가는 경력은 자동 맞춤 시 통째로 다음 페이지로 옮긴다.
+                            if (keepItemTogether && !oversizedExperienceItem && !hasForcedExperienceProjectPageBreak) {
+                                if (nextPages.at(-1)!.length > 0
+                                    && usedHeight + fullExperienceItemHeight > availableHeight) {
+                                    startNewPage();
                                 }
-
-                                nextPages.at(-1)!.push({
+                                const placement: BlockPlacement = {
                                     blockIndex: index,
                                     itemStart,
                                     itemEnd: itemStart + 1,
-                                    experienceProjectStart,
-                                    experienceProjectEnd,
-                                });
-                                usedHeight += fragmentHeight;
-                                experienceProjectStart = experienceProjectEnd;
-                                if (experienceProjectStart < experienceProjects.length) startNewPage();
+                                    experienceProjectStart: 0,
+                                    experienceProjectEnd: experienceProjects.length,
+                                };
+                                pushPlacement(placement, fullExperienceItemHeight);
+                                itemStart += 1;
+                                continue;
                             }
+
+                            // 페이지 경계 자동 이동이 켜져 있어도 한 장보다 긴 경력은 강제로
+                            // 한 페이지에 밀어 넣지 않는다. 새 페이지에서 시작한 뒤
+                            // 프로젝트의 기여/성과 불릿 단위로 자연스럽게 나눈다.
+                            if (keepItemTogether && nextPages.at(-1)!.length > 0) startNewPage();
+                            const companyHeight = experienceCompanyHeight;
+                            let companyPending = true;
+
+                            if (!keepItemTogether && nextPages.at(-1)!.length > 0) {
+                                const firstProject = experienceProjects[0] as { description?: string[] } | undefined;
+                                const firstProjectDescriptions = Array.isArray(firstProject?.description)
+                                    ? firstProject.description
+                                    : [];
+                                const firstProjectKey = `${index}:${itemStart}:0`;
+                                const firstProjectChromeHeight = measuredExperienceProjectChromeHeights.get(firstProjectKey) || 64;
+                                const firstDescriptionHeight = firstProjectDescriptions.length > 0
+                                    ? (measuredExperienceProjectDescriptionHeights.get(`${firstProjectKey}:0`) || 24)
+                                    : 0;
+                                const companyFragmentHeight = baseHeight + companyHeight;
+                                const firstProjectMinimumHeight = firstProjectChromeHeight + firstDescriptionHeight;
+
+                                // 현재 페이지에 회사 정보는 들어가지만 첫 프로젝트 내용까지는
+                                // 들어가지 않으면 회사부터 배치하고 프로젝트만 다음 페이지로 잇는다.
+                                if (usedHeight + companyFragmentHeight <= availableHeight
+                                    && usedHeight + companyFragmentHeight + firstProjectMinimumHeight > availableHeight) {
+                                    const placement: BlockPlacement = {
+                                        blockIndex: index,
+                                        itemStart,
+                                        itemEnd: itemStart + 1,
+                                        experienceProjectStart: 0,
+                                        experienceProjectEnd: 0,
+                                        experienceCompanyOnly: true,
+                                    };
+                                    pushPlacement(placement, companyFragmentHeight);
+                                    companyPending = false;
+                                }
+                            }
+
+                            experienceProjects.forEach((project: { title?: string; description?: string[]; startOnNewPage?: boolean }, projectIndex: number) => {
+                                const projectDescriptions = Array.isArray(project.description) ? project.description : [];
+                                let descriptionStart = 0;
+                                let projectHeaderPlacedOnPreviousPage = false;
+                                let projectTitlePlacedOnPreviousPage = false;
+
+                                if (project.startOnNewPage === true) {
+                                    if (companyPending) {
+                                        const companyFragmentHeight = baseHeight + companyHeight;
+                                        if (nextPages.at(-1)!.length > 0
+                                            && usedHeight + companyFragmentHeight > availableHeight) {
+                                            startNewPage();
+                                        }
+                                        const placement: BlockPlacement = {
+                                            blockIndex: index,
+                                            itemStart,
+                                            itemEnd: itemStart + 1,
+                                            experienceProjectStart: projectIndex,
+                                            experienceProjectEnd: projectIndex,
+                                            experienceCompanyOnly: true,
+                                        };
+                                        pushPlacement(placement, companyFragmentHeight);
+                                        companyPending = false;
+                                    }
+                                    if (nextPages.at(-1)!.length > 0) startNewPage();
+                                }
+
+                                if (!keepItemTogether
+                                    && project.startOnNewPage !== true
+                                    && projectDescriptions.length > 0
+                                    && nextPages.at(-1)!.length > 0) {
+                                    const projectKey = `${index}:${itemStart}:${projectIndex}`;
+                                    const fragmentBaseHeight = companyPending
+                                        ? baseHeight
+                                        : (measuredExperienceContinuationBaseHeights.get(index) || 24);
+                                    const fragmentCompanyHeight = companyPending ? companyHeight : 0;
+                                    const projectHeaderChromeHeight = companyPending
+                                        ? (measuredExperienceProjectHeaderHeights.get(projectKey) || 48)
+                                        : (measuredExperienceContinuationProjectHeaderHeights.get(projectKey)
+                                            || measuredExperienceProjectHeaderHeights.get(projectKey)
+                                            || 48);
+                                    const projectContentChromeHeight = companyPending
+                                        ? (measuredExperienceProjectChromeHeights.get(projectKey) || 64)
+                                        : (measuredExperienceContinuationProjectChromeHeights.get(projectKey)
+                                            || measuredExperienceProjectChromeHeights.get(projectKey)
+                                            || 64);
+                                    const firstDescriptionHeight = measuredExperienceProjectDescriptionHeights.get(
+                                        `${projectKey}:0`,
+                                    ) || 24;
+                                    const projectHeaderHeight = fragmentBaseHeight
+                                        + fragmentCompanyHeight
+                                        + projectHeaderChromeHeight;
+                                    const projectWithFirstDescriptionHeight = fragmentBaseHeight
+                                        + fragmentCompanyHeight
+                                        + projectContentChromeHeight
+                                        + firstDescriptionHeight;
+
+                                    if (usedHeight + projectHeaderHeight <= availableHeight
+                                        && usedHeight + projectWithFirstDescriptionHeight > availableHeight) {
+                                        const placement: BlockPlacement = {
+                                            blockIndex: index,
+                                            itemStart,
+                                            itemEnd: itemStart + 1,
+                                            experienceProjectStart: projectIndex,
+                                            experienceProjectEnd: projectIndex + 1,
+                                            experienceProjectContinuation: !companyPending,
+                                            experienceProjectDescriptionStart: 0,
+                                            experienceProjectDescriptionEnd: 0,
+                                            experienceProjectHeaderOnly: true,
+                                        };
+                                        pushPlacement(placement, projectHeaderHeight);
+                                        companyPending = false;
+                                        projectHeaderPlacedOnPreviousPage = true;
+                                        startNewPage();
+                                    } else {
+                                        const projectTitleHeight = (companyPending
+                                            ? fragmentBaseHeight + fragmentCompanyHeight
+                                            : 0)
+                                            + (measuredExperienceProjectTitleHeights.get(projectKey) || 22);
+                                        if (usedHeight + projectTitleHeight <= availableHeight
+                                            && usedHeight + projectHeaderHeight > availableHeight) {
+                                            const placement: BlockPlacement = {
+                                                blockIndex: index,
+                                                itemStart,
+                                                itemEnd: itemStart + 1,
+                                                experienceProjectStart: projectIndex,
+                                                experienceProjectEnd: projectIndex + 1,
+                                                experienceProjectContinuation: !companyPending,
+                                                experienceProjectDescriptionStart: 0,
+                                                experienceProjectDescriptionEnd: 0,
+                                                experienceProjectTitleOnly: true,
+                                            };
+                                            pushPlacement(placement, projectTitleHeight);
+                                            companyPending = false;
+                                            projectTitlePlacedOnPreviousPage = true;
+                                            startNewPage();
+                                        }
+                                    }
+                                }
+
+                                do {
+                                    const isDescriptionContinuation = descriptionStart > 0;
+                                    const isProjectContinuation = !companyPending || isDescriptionContinuation;
+                                    const fragmentBaseHeight = companyPending
+                                        ? baseHeight
+                                        : (measuredExperienceContinuationBaseHeights.get(index) || 24);
+                                    const fragmentCompanyHeight = companyPending ? companyHeight : 0;
+                                    const projectKey = `${index}:${itemStart}:${projectIndex}`;
+                                    let projectChromeHeight = isDescriptionContinuation
+                                        ? 0
+                                        : companyPending
+                                            ? (measuredExperienceProjectChromeHeights.get(projectKey) || 64)
+                                            : (measuredExperienceContinuationProjectChromeHeights.get(projectKey)
+                                                || measuredExperienceProjectChromeHeights.get(projectKey)
+                                                || 64);
+                                    if (projectTitlePlacedOnPreviousPage && descriptionStart === 0) {
+                                        projectChromeHeight = Math.max(
+                                            0,
+                                            projectChromeHeight - (measuredExperienceProjectTitleHeights.get(projectKey) || 22),
+                                        );
+                                    }
+                                    let fragmentHeight = fragmentBaseHeight + fragmentCompanyHeight + projectChromeHeight;
+                                    let descriptionEnd = descriptionStart;
+
+                                    while (descriptionEnd < projectDescriptions.length) {
+                                        const descriptionHeight = measuredExperienceProjectDescriptionHeights.get(
+                                            `${index}:${itemStart}:${projectIndex}:${descriptionEnd}`,
+                                        ) || 24;
+                                        const fitTolerance = descriptionEnd === projectDescriptions.length - 1
+                                            ? DESCRIPTION_FIT_TOLERANCE
+                                            : 0;
+                                        if (descriptionEnd > descriptionStart
+                                            && usedHeight + fragmentHeight + descriptionHeight
+                                                > availableHeight + fitTolerance) break;
+                                        if (descriptionEnd === descriptionStart
+                                            && nextPages.at(-1)!.length > 0
+                                            && usedHeight + fragmentHeight + descriptionHeight
+                                                > availableHeight + fitTolerance) {
+                                            startNewPage();
+                                        }
+                                        fragmentHeight += descriptionHeight;
+                                        descriptionEnd += 1;
+                                    }
+
+                                    if (projectDescriptions.length === 0
+                                        && nextPages.at(-1)!.length > 0
+                                        && usedHeight + fragmentHeight > availableHeight) {
+                                        startNewPage();
+                                    }
+
+                                    const placement: BlockPlacement = {
+                                        blockIndex: index,
+                                        itemStart,
+                                        itemEnd: itemStart + 1,
+                                        experienceProjectStart: projectIndex,
+                                        experienceProjectEnd: projectIndex + 1,
+                                        experienceProjectContinuation: isProjectContinuation,
+                                        experienceProjectDescriptionStart: descriptionStart,
+                                        experienceProjectDescriptionEnd: descriptionEnd,
+                                        experienceProjectHeaderContinuation: projectHeaderPlacedOnPreviousPage
+                                            && descriptionStart === 0,
+                                        experienceProjectTitleContinuation: projectTitlePlacedOnPreviousPage
+                                            && descriptionStart === 0,
+                                    };
+                                    pushPlacement(placement, fragmentHeight);
+                                    companyPending = false;
+                                    descriptionStart = descriptionEnd;
+
+                                    if (descriptionStart < projectDescriptions.length) startNewPage();
+                                } while (descriptionStart < projectDescriptions.length);
+                            });
 
                             itemStart += 1;
                             continue;
@@ -705,19 +1063,40 @@ export default function ResumeCanvas({
                         // 한 페이지보다 긴 항목은 항상 bullet 단위로 나눠 배치한다.
                         // 묶기를 끄면 현재 페이지의 남은 공간부터 bullet 단위로 채운다.
                         const itemDoesNotFitPage = baseHeight + itemHeight > availableHeight;
-                        const itemDoesNotFitRemainingSpace = usedHeight + baseHeight + itemHeight > availableHeight;
                         if (Array.isArray(descriptions) && descriptions.length > 0
-                            && (itemDoesNotFitPage || (!keepItemTogether && itemDoesNotFitRemainingSpace))) {
+                            && (itemDoesNotFitPage || !keepItemTogether)) {
                             // 묶기가 켜진 항목 자체가 한 페이지보다 길다면 현재 페이지의
                             // 남은 공간을 사용하지 않고 새 페이지에서 항목을 시작한다.
                             if (keepItemTogether && itemDoesNotFitPage && nextPages.at(-1)!.length > 0) {
                                 startNewPage();
                             }
                             const itemChromeHeight = measuredItemChromeHeights.get(`${index}:${itemStart}`) || 60;
+                            let itemHeaderPlacedOnPreviousPage = false;
+                            if (!keepItemTogether && nextPages.at(-1)!.length > 0) {
+                                const firstDescriptionHeight = measuredDescriptionHeights.get(
+                                    `${index}:${itemStart}:0`,
+                                ) || 24;
+                                const itemHeaderHeight = baseHeight + itemChromeHeight;
+                                if (usedHeight + itemHeaderHeight
+                                        <= availableHeight + ITEM_HEADER_FIT_TOLERANCE
+                                    && usedHeight + itemHeaderHeight + firstDescriptionHeight > availableHeight) {
+                                    pushPlacement({
+                                        blockIndex: index,
+                                        itemStart,
+                                        itemEnd: itemStart + 1,
+                                        descriptionStart: 0,
+                                        descriptionEnd: 0,
+                                        itemHeaderOnly: true,
+                                    }, itemHeaderHeight);
+                                    itemHeaderPlacedOnPreviousPage = true;
+                                    startNewPage();
+                                }
+                            }
                             let descriptionStart = 0;
 
                             while (descriptionStart < descriptions.length) {
-                                const isContinuationFragment = descriptionStart > 0;
+                                const isContinuationFragment = descriptionStart > 0
+                                    || itemHeaderPlacedOnPreviousPage;
                                 const fragmentBaseHeight = isContinuationFragment
                                     ? (measuredContinuationBaseHeights.get(index) || 40)
                                     : baseHeight;
@@ -731,10 +1110,15 @@ export default function ResumeCanvas({
                                     const descriptionHeight = measuredDescriptionHeights.get(
                                         `${index}:${itemStart}:${descriptionEnd}`
                                     ) || 24;
+                                    const fitTolerance = descriptionEnd === descriptions.length - 1
+                                        ? DESCRIPTION_FIT_TOLERANCE
+                                        : 0;
                                     if (descriptionEnd > descriptionStart
-                                        && usedHeight + fragmentHeight + descriptionHeight > availableHeight) break;
+                                        && usedHeight + fragmentHeight + descriptionHeight
+                                            > availableHeight + fitTolerance) break;
                                     if (descriptionEnd === descriptionStart && nextPages.at(-1)!.length > 0
-                                        && usedHeight + fragmentHeight + descriptionHeight > availableHeight) {
+                                        && usedHeight + fragmentHeight + descriptionHeight
+                                            > availableHeight + fitTolerance) {
                                         startNewPage();
                                     }
                                     fragmentHeight += descriptionHeight;
@@ -746,7 +1130,8 @@ export default function ResumeCanvas({
 
                                 // 페이지 하단에 불릿 하나만 고립되면 프로젝트 조각 전체를
                                 // 다음 페이지로 보내 한 줄짜리 조각 카드가 생기지 않게 한다.
-                                if (fragmentDescriptionCount === 1
+                                if (keepItemTogether
+                                    && fragmentDescriptionCount === 1
                                     && remainingDescriptionCount > 0
                                     && nextPages.at(-1)!.length > 0) {
                                     startNewPage();
@@ -755,7 +1140,9 @@ export default function ResumeCanvas({
 
                                 // 마지막 불릿 하나만 다음 페이지에 남는 경우에는 현재 조각의
                                 // 마지막 불릿도 함께 넘겨 continuation에 최소 두 줄을 유지한다.
-                                if (remainingDescriptionCount === 1 && fragmentDescriptionCount > 1) {
+                                if (keepItemTogether
+                                    && remainingDescriptionCount === 1
+                                    && fragmentDescriptionCount > 1) {
                                     descriptionEnd -= 1;
                                     fragmentHeight -= measuredDescriptionHeights.get(
                                         `${index}:${itemStart}:${descriptionEnd}`
@@ -768,6 +1155,8 @@ export default function ResumeCanvas({
                                     itemEnd: itemStart + 1,
                                     descriptionStart,
                                     descriptionEnd,
+                                    itemHeaderContinuation: itemHeaderPlacedOnPreviousPage
+                                        && descriptionStart === 0,
                                 });
                                 usedHeight += fragmentHeight;
                                 descriptionStart = descriptionEnd;
@@ -778,7 +1167,11 @@ export default function ResumeCanvas({
                             continue;
                         }
 
-                        if (nextPages.at(-1)!.length > 0 && usedHeight + baseHeight > availableHeight) startNewPage();
+                        const flowFitTolerance = block.type === "education" && !keepItemTogether
+                            ? EDUCATION_ITEM_FIT_TOLERANCE
+                            : 0;
+                        if (nextPages.at(-1)!.length > 0
+                            && usedHeight + baseHeight > availableHeight + flowFitTolerance) startNewPage();
 
                         let sliceHeight = baseHeight;
                         let itemEnd = itemStart;
@@ -789,7 +1182,8 @@ export default function ResumeCanvas({
                                 : 0;
                             if (itemEnd > itemStart && usedHeight + sliceHeight + interItemGap + itemHeight > availableHeight) break;
                             if (itemEnd === itemStart && nextPages.at(-1)!.length > 0
-                                && usedHeight + sliceHeight + itemHeight > availableHeight) {
+                                && usedHeight + sliceHeight + itemHeight
+                                    > availableHeight + flowFitTolerance) {
                                 startNewPage();
                             }
                             sliceHeight += interItemGap + itemHeight;
@@ -860,8 +1254,15 @@ export default function ResumeCanvas({
 
     // 단일 블록 렌더러 함수
     const renderBlockContent = (block: ResumeBlock, placement: BlockPlacement) => {
-        const isDescriptionContinuation = (placement.descriptionStart ?? 0) > 0;
-        const isExperienceProjectContinuation = (placement.experienceProjectStart ?? 0) > 0;
+        const isDescriptionContinuation = (placement.descriptionStart ?? 0) > 0
+            || placement.itemHeaderContinuation === true;
+        const isExperienceProjectDescriptionContinuation = (placement.experienceProjectDescriptionStart ?? 0) > 0
+            || placement.experienceProjectHeaderContinuation === true;
+        const isExperienceProjectTitleContinuation = placement.experienceProjectTitleContinuation === true;
+        const isExperienceProjectContinuation = (placement.experienceProjectStart ?? 0) > 0
+            || placement.experienceProjectContinuation === true
+            || isExperienceProjectDescriptionContinuation
+            || isExperienceProjectTitleContinuation;
         const isBlockContinuation = (placement.itemStart ?? 0) > 0
             || isDescriptionContinuation
             || isExperienceProjectContinuation;
@@ -1314,7 +1715,9 @@ export default function ResumeCanvas({
                                                         </ul>
                                                     );
                                                 })()}
-                                                {!isDescriptionContinuation && visibleExperienceProjects.length > 0 && (
+                                                {!isDescriptionContinuation
+                                                    && !placement.experienceCompanyOnly
+                                                    && visibleExperienceProjects.length > 0 && (
                                                     <div className="resume-experience-projects">
                                                         {visibleExperienceProjects
                                                             .slice(
@@ -1326,18 +1729,26 @@ export default function ResumeCanvas({
                                                                 const projectDescriptions = Array.isArray(project.description)
                                                                     ? project.description
                                                                     : [];
+                                                                const projectDescriptionStart = placement.experienceProjectDescriptionStart ?? 0;
+                                                                const projectDescriptionEnd = placement.experienceProjectDescriptionEnd ?? projectDescriptions.length;
                                                                 const visibleProjectDescriptions = projectDescriptions.length > 0
-                                                                    ? projectDescriptions
+                                                                    ? projectDescriptions.slice(projectDescriptionStart, projectDescriptionEnd)
                                                                     : readOnly
                                                                         ? []
                                                                         : [""];
                                                                 return <div
                                                                     key={project.id}
                                                                     data-experience-project-index={projectIndex}
+                                                                    data-experience-project-description-continuation={
+                                                                        isExperienceProjectDescriptionContinuation
+                                                                        || isExperienceProjectTitleContinuation
+                                                                    }
                                                                     data-resume-sub-child-id={project.id === placeholderProjectId ? undefined : project.id}
                                                                     className="resume-experience-project"
                                                                 >
-                                                                    <div className="resume-experience-project__header">
+                                                                    {!isExperienceProjectDescriptionContinuation
+                                                                        && !isExperienceProjectTitleContinuation
+                                                                        && <div className="resume-experience-project__header">
                                                                         <div className="flex min-w-0 items-center gap-2">
                                                                             <span style={{ backgroundColor: primaryColor }} className="h-1.5 w-1.5 shrink-0" />
                                                                             <EditableText
@@ -1377,8 +1788,10 @@ export default function ResumeCanvas({
                                                                                 />}
                                                                             </div>
                                                                         )}
-                                                                    </div>
-                                                                    <EditableText
+                                                                    </div>}
+                                                                    {!isExperienceProjectDescriptionContinuation
+                                                                        && !placement.experienceProjectTitleOnly
+                                                                        && <EditableText
                                                                         tag="div"
                                                                         value={project.role}
                                                                         width="full"
@@ -1387,24 +1800,34 @@ export default function ResumeCanvas({
                                                                             updateExperienceProject(project, projectIndex, { role });
                                                                         }}
                                                                         className="resume-experience-project__summary"
-                                                                    />
-                                                                    <ProjectBulletDocumentEditor
+                                                                    />}
+                                                                    {!placement.experienceProjectHeaderOnly
+                                                                        && !placement.experienceProjectTitleOnly
+                                                                        && <ProjectBulletDocumentEditor
                                                                         variant="resume"
                                                                         readOnly={readOnly}
                                                                         descriptions={visibleProjectDescriptions}
-                                                                        levels={project.descriptionLevels || []}
-                                                                        html={project.descriptionHtml || []}
+                                                                        levels={(project.descriptionLevels || []).slice(projectDescriptionStart, projectDescriptionEnd)}
+                                                                        html={(project.descriptionHtml || []).slice(projectDescriptionStart, projectDescriptionEnd)}
+                                                                        descriptionStart={projectDescriptionStart}
                                                                         placeholder="프로젝트 기여와 성과"
                                                                         ariaLabel="프로젝트 기여와 성과"
                                                                         className="resume-project-contributions"
                                                                         onChange={(descriptions, descriptionLevels, descriptionHtml) => {
+                                                                            const visibleDescriptionCount = projectDescriptionEnd - projectDescriptionStart;
+                                                                            const nextDescriptions = [...projectDescriptions];
+                                                                            const nextLevels = [...(project.descriptionLevels || [])];
+                                                                            const nextHtml = [...(project.descriptionHtml || [])];
+                                                                            nextDescriptions.splice(projectDescriptionStart, visibleDescriptionCount, ...descriptions);
+                                                                            nextLevels.splice(projectDescriptionStart, visibleDescriptionCount, ...descriptionLevels);
+                                                                            nextHtml.splice(projectDescriptionStart, visibleDescriptionCount, ...descriptionHtml);
                                                                             updateExperienceProject(project, projectIndex, {
-                                                                                description: descriptions,
-                                                                                descriptionLevels,
-                                                                                descriptionHtml,
+                                                                                description: nextDescriptions,
+                                                                                descriptionLevels: nextLevels,
+                                                                                descriptionHtml: nextHtml,
                                                                             });
                                                                         }}
-                                                                    />
+                                                                    />}
                                                                 </div>;
                                                             })}
                                                     </div>
@@ -2034,7 +2457,9 @@ export default function ResumeCanvas({
                                 onClick={(e) => e.stopPropagation()}
                                 style={{
                                     width: `${globalStyle?.contentWidth || 800}px`,
+                                    height: `${A4_PAPER_HEIGHT}px`,
                                     minHeight: `${A4_PAPER_HEIGHT}px`,
+                                    maxHeight: `${A4_PAPER_HEIGHT}px`,
                                     padding: `${paperPadding}px`,
                                     fontFamily: fontFamily,
                                     ...typographyStyle,
@@ -2051,14 +2476,21 @@ export default function ResumeCanvas({
                                     const isHidden = block.isVisible === false;
                                     const continuesPreviousFragment = page.blocks[fragmentIndex - 1]?.globalIdx === globalIdx;
                                     const continuesNextFragment = page.blocks[fragmentIndex + 1]?.globalIdx === globalIdx;
+                                    const isGenericDescriptionContinuation = (placement.descriptionStart ?? 0) > 0
+                                        || placement.itemHeaderContinuation === true;
 
                                     return (
                                         <div
                                             key={fragmentKey}
                                             data-resume-block-index={globalIdx}
+                                            data-pagination-placement-key={getPlacementMeasurementKey(globalIdx, placement)}
                                             data-block-type={block.type}
                                             data-description-start={placement.descriptionStart ?? 0}
+                                            data-description-continuation={isGenericDescriptionContinuation}
                                             data-experience-project-start={placement.experienceProjectStart ?? 0}
+                                            data-experience-project-description-start={placement.experienceProjectDescriptionStart ?? 0}
+                                            data-experience-project-continuation={placement.experienceProjectContinuation === true}
+                                            data-experience-project-title-only={placement.experienceProjectTitleOnly === true}
                                             data-custom-padding={block.style.useCustomPadding === true}
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, globalIdx)}
