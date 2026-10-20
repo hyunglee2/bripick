@@ -2,6 +2,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import Link from "next/link";
 import { useResumeStore } from "@/store/useResumeStore";
 import AtsCheckerModal from "@/components/editor/AtsCheckerModal";
 import ServiceDialog, { ServiceDialogVariant } from "@/components/ui/ServiceDialog";
@@ -638,7 +639,12 @@ export default function EditorHeader() {
                 className="editor-header editor-header--shadcn sticky top-0 z-50 flex h-14 items-center justify-between gap-4 border-b border-neutral-800 bg-[#12131a] px-5"
             >
                 <div className="flex min-w-0 items-center gap-3">
-                    <div className="header-brand shrink-0 pr-1">
+                    <Link
+                        href="/"
+                        className="header-brand shrink-0 rounded-md pr-1 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#12131a]"
+                        aria-label="Bripick 랜딩페이지로 이동"
+                        title="Bripick 홈으로 이동"
+                    >
                         <div className="header-brand-logo" role="img" aria-label="Bripick">
                             <img
                                 src="/bripick_header_logo_light.svg"
@@ -653,7 +659,7 @@ export default function EditorHeader() {
                                 className="header-brand-logo-dark"
                             />
                         </div>
-                    </div>
+                    </Link>
 
                     <div data-tour="document-menu" className="header-document relative flex min-w-0 items-center border-l border-neutral-800 pl-3">
                         <FileText size={14} className="mr-2 shrink-0 text-neutral-500" />

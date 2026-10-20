@@ -7,14 +7,20 @@ import {
   Blocks,
   Check,
   ChevronDown,
+  Copy,
   Download,
+  Eye,
   FileCheck2,
   FileDown,
+  FileText,
   Globe2,
   Link2,
   ListChecks,
+  MousePointer2,
   Plus,
   Redo2,
+  Rows3,
+  Send,
   SlidersHorizontal,
   ShieldCheck,
   Sparkles,
@@ -61,6 +67,27 @@ const features = [
   { icon: FileCheck2, label: "ATS 검사", title: "제출 전에 한 번 더 점검", description: "이력서의 기본 구성과 읽기 어려운 부분을 확인하고 지원 전에 보완할 수 있어요." },
 ];
 
+const differences = [
+  {
+    icon: MousePointer2,
+    label: "작성",
+    title: "문서와 설정을 오가지 않고",
+    description: "미리보기에서 텍스트를 바로 고치고, 선택한 블록의 세부 설정은 작업 패널에서 이어서 편집하세요.",
+  },
+  {
+    icon: Rows3,
+    label: "구성",
+    title: "페이지가 늘어나도 자연스럽게",
+    description: "A4 경계에 맞춰 내용이 이어집니다. 필요한 항목만 새 페이지에서 시작하도록 세부적으로 조정할 수 있어요.",
+  },
+  {
+    icon: Send,
+    label: "제출",
+    title: "완성한 모습 그대로 전달",
+    description: "PDF 파일로 저장하거나 공개 링크로 공유해 지원 방식에 맞는 결과물을 바로 준비하세요.",
+  },
+];
+
 export default function HomePage() {
   return (
     <main className="landing-page">
@@ -73,7 +100,7 @@ export default function HomePage() {
           <Link href="/" className="landing-brand" aria-label="Bripick 홈">
             <Image src="/bripick_header_logo_dark.svg" width={124} height={35} alt="Bripick" priority />
           </Link>
-          <nav className="landing-nav" aria-label="주요 메뉴"><a href="#features">기능</a><a href="#workflow">사용 방법</a></nav>
+          <nav className="landing-nav" aria-label="주요 메뉴"><a href="#difference">특징</a><a href="#features">기능</a><a href="#workflow">사용 방법</a></nav>
           <div className="landing-header__actions">
             <Link href="/login?next=%2Feditor" className="landing-link-button">로그인</Link>
             <Link href="/editor" className="landing-primary-button landing-primary-button--small">이력서 만들기 <ArrowRight size={16} /></Link>
@@ -85,9 +112,9 @@ export default function HomePage() {
         <div className="landing-hero__glow landing-hero__glow--left" /><div className="landing-hero__glow landing-hero__glow--right" />
         <div className="landing-shell landing-hero__content">
           <div className="landing-hero__copy" data-reveal>
-            <div className="landing-eyebrow landing-hero__intro" style={{ "--intro-delay": "90ms" } as CSSProperties}><Sparkles size={14} /> 개발자를 위한 이력서 빌더</div>
-            <h1 className="landing-hero__intro" style={{ "--intro-delay": "180ms" } as CSSProperties}>개발자의 경험이<br /><span>제대로 읽히는 이력서</span></h1>
-            <p className="landing-hero__intro" style={{ "--intro-delay": "270ms" } as CSSProperties}>경력과 프로젝트를 블록으로 정리하고 결과를 바로 확인하세요.<br className="landing-desktop-break" /> 완성한 이력서는 PDF로 저장하거나 링크로 공유할 수 있습니다.</p>
+            <div className="landing-eyebrow landing-hero__intro" style={{ "--intro-delay": "90ms" } as CSSProperties}><Sparkles size={14} /> 개발자를 위한 이력서 편집기</div>
+            <h1 className="landing-hero__intro" style={{ "--intro-delay": "180ms" } as CSSProperties}>개발 경험을 쓰는 순간,<br /><span>이력서가 완성됩니다</span></h1>
+            <p className="landing-hero__intro" style={{ "--intro-delay": "270ms" } as CSSProperties}>복잡한 서식 대신 경력과 프로젝트에 집중하세요.<br className="landing-desktop-break" /> 미리보기에서 바로 고치고, A4 페이지 그대로 PDF 또는 링크로 제출할 수 있어요.</p>
             <div className="landing-hero__actions landing-hero__intro" style={{ "--intro-delay": "360ms" } as CSSProperties}>
               <Link href="/editor" className="landing-primary-button">무료로 이력서 만들기 <ArrowRight size={18} /></Link>
               <a href="#workflow" className="landing-secondary-button">어떻게 작동하나요?</a>
@@ -98,6 +125,7 @@ export default function HomePage() {
           </div>
 
           <div className="landing-product" data-reveal="scale">
+            <div className="landing-product__caption"><span><i /> 실제 Bripick 편집 화면</span><small>작성과 미리보기를 한 화면에서</small></div>
             <div className="landing-demo__header">
               <Image src="/bripick_header_logo_dark.svg" width={92} height={26} alt="" />
               <div className="landing-demo__document">샘플 이력서 <ChevronDown size={13} /></div>
@@ -130,7 +158,73 @@ export default function HomePage() {
               </aside>
             </div>
           </div>
+          <div className="landing-product__summary" data-reveal>
+            <span><Check size={15} /> 미리보기에서 바로 편집</span>
+            <span><Check size={15} /> A4 페이지 자동 구성</span>
+            <span><Check size={15} /> PDF 저장과 링크 공유</span>
+          </div>
         </div>
+      </section>
+
+      <section id="difference" className="landing-section landing-difference"><div className="landing-shell landing-difference__grid">
+        <div className="landing-section__heading landing-section__heading--left landing-difference__heading" data-reveal="left">
+          <span>이력서에 맞춘 편집 경험</span>
+          <h2>서식을 만지는 시간보다 경험을 설명하는 시간에 집중하세요.</h2>
+          <p>일반 문서 편집기의 자유로움은 유지하고, 개발자 이력서에 필요한 구조와 제출 흐름은 Bripick이 정리합니다.</p>
+        </div>
+        <div className="landing-difference__list">
+          {differences.map(({ icon: Icon, label, title, description }, index) => (
+            <article key={label} data-reveal="right">
+              <div className="landing-difference__number">0{index + 1}</div>
+              <div className="landing-difference__icon"><Icon size={20} /></div>
+              <div><span>{label}</span><h3>{title}</h3><p>{description}</p></div>
+            </article>
+          ))}
+        </div>
+      </div></section>
+
+      <section className="landing-showcase" aria-label="Bripick 주요 편집 기능">
+        <article className="landing-showcase__row landing-shell">
+          <div className="landing-showcase__visual landing-showcase__visual--edit" data-reveal="left" aria-hidden="true">
+            <div className="landing-mock-window">
+              <div className="landing-mock-window__bar"><span /><span /><span /><small>Bripick Editor</small></div>
+              <div className="landing-edit-mock">
+                <div className="landing-edit-mock__page">
+                  <div className="landing-edit-mock__profile"><i /><div><small>복잡한 문제를 이해하기 쉬운 화면으로 풀어내는</small><strong>Frontend Engineer <em>김브릭</em>입니다.</strong></div></div>
+                  <h4>Work Experience</h4>
+                  <div className="landing-edit-mock__company"><b>Bripick</b><span>Frontend Engineer</span></div>
+                  <p>사용자 흐름과 서비스 목표를 연결해 아이디어를 실제 기능으로 구현합니다.</p>
+                  <div className="landing-edit-mock__selected">미리보기에서 텍스트를 선택하고 바로 수정할 수 있어요.</div>
+                </div>
+                <div className="landing-edit-mock__toolbar"><b>B</b><i>I</i><u>U</u><span>A</span><span>•••</span></div>
+                <div className="landing-edit-mock__cursor"><MousePointer2 size={21} /><span>바로 편집</span></div>
+              </div>
+            </div>
+          </div>
+          <div className="landing-showcase__copy" data-reveal="right"><span>DIRECT EDITING</span><h2>보이는 문서에서<br />바로 고치세요.</h2><p>텍스트는 미리보기에서 직접 수정하고, 블록을 선택하면 세부 설정이 작업 패널에 열립니다. 결과를 상상할 필요 없이 완성되는 모습을 보며 작성하세요.</p><Link href="/editor" className="landing-text-link">직접 편집해 보기 <ArrowRight size={16} /></Link></div>
+        </article>
+
+        <article className="landing-showcase__row landing-showcase__row--reverse landing-shell">
+          <div className="landing-showcase__visual landing-showcase__visual--pages" data-reveal="right" aria-hidden="true">
+            <div className="landing-pages-mock">
+              <div className="landing-pages-mock__page landing-pages-mock__page--back"><span>A4 · Page 1</span><i /><i /><i /><strong>Work Experience</strong><i /><i /></div>
+              <div className="landing-pages-mock__page landing-pages-mock__page--front"><span>A4 · Page 2</span><i /><i /><strong>Project Experience</strong><i /><i /><i /></div>
+              <div className="landing-pages-mock__flow"><Rows3 size={18} /> 내용이 다음 페이지로 자연스럽게 이어져요</div>
+            </div>
+          </div>
+          <div className="landing-showcase__copy" data-reveal="left"><span>SMART PAGINATION</span><h2>페이지가 늘어나도<br />흐름은 그대로.</h2><p>내용은 A4 여백 안에서 자연스럽게 다음 페이지로 이어집니다. 회사나 프로젝트처럼 꼭 구분하고 싶은 항목만 새 페이지에서 시작할 수 있어요.</p></div>
+        </article>
+
+        <article className="landing-showcase__row landing-shell">
+          <div className="landing-showcase__visual landing-showcase__visual--share" data-reveal="left" aria-hidden="true">
+            <div className="landing-share-mock">
+              <div className="landing-share-mock__resume"><div><FileText size={22} /><span><b>김브릭 이력서</b><small>최종 편집 방금 전</small></span></div><div className="landing-share-mock__preview"><Image src="/landing-resume-preview.png" width={1389} height={1003} alt="" /></div></div>
+              <div className="landing-share-mock__actions"><div><span><Download size={18} /></span><b>PDF로 저장</b><small>지원서에 바로 첨부하세요</small></div><div><span><Link2 size={18} /></span><b>링크로 공유</b><small>수정해도 같은 주소로</small></div></div>
+              <div className="landing-share-mock__link"><Eye size={15} /><span>bripick.coreluma.kr/r/kimbrick</span><Copy size={15} /></div>
+            </div>
+          </div>
+          <div className="landing-showcase__copy" data-reveal="right"><span>READY TO SHARE</span><h2>완성한 이력서를<br />원하는 방식으로.</h2><p>정해진 양식이 필요할 때는 PDF로, 최신 내용을 계속 보여주고 싶을 때는 공개 링크로 공유하세요. 작성부터 제출까지 한곳에서 끝낼 수 있습니다.</p></div>
+        </article>
       </section>
 
       <section id="features" className="landing-section landing-features"><div className="landing-shell">
@@ -140,18 +234,18 @@ export default function HomePage() {
 
       <section id="workflow" className="landing-section landing-workflow"><div className="landing-shell landing-workflow__grid">
         <div className="landing-section__heading landing-section__heading--left" data-reveal="left"><span>간단한 작업 흐름</span><h2>빈 문서 앞에서<br />막히지 않도록</h2><p>준비된 구조에서 내용을 채우고, 필요한 만큼 다듬은 뒤 바로 제출하세요.</p><Link href="/editor" className="landing-text-link">편집기에서 직접 확인하기 <ArrowRight size={16} /></Link></div>
-        <ol className="landing-steps"><li data-reveal="right"><b>01</b><div><h3>블록을 선택하세요</h3><p>프로필, 경력, 프로젝트 등 필요한 항목을 원하는 순서로 구성합니다.</p></div></li><li data-reveal="right"><b>02</b><div><h3>내용을 채우고 바로 확인하세요</h3><p>오른쪽에서 편집한 내용이 실제 이력서 모습에 즉시 반영됩니다.</p></div></li><li data-reveal="right"><b>03</b><div><h3>PDF 또는 링크로 제출하세요</h3><p>지원 방식에 맞춰 파일로 저장하거나 공개 주소를 전달합니다.</p></div></li></ol>
+        <ol className="landing-steps"><li data-reveal="right"><b>01</b><div><h3>필요한 블록을 선택하세요</h3><p>프로필, 경력, 프로젝트 등 필요한 항목을 원하는 순서로 구성합니다.</p></div></li><li data-reveal="right"><b>02</b><div><h3>미리보기에서 바로 다듬으세요</h3><p>텍스트는 문서에서 직접 수정하고, 선택한 영역의 세부 설정은 작업 패널에서 조정합니다.</p></div></li><li data-reveal="right"><b>03</b><div><h3>PDF 또는 링크로 제출하세요</h3><p>지원 방식에 맞춰 파일로 저장하거나 공개 주소를 전달합니다.</p></div></li></ol>
       </div></section>
 
       <section className="landing-section landing-storage"><div className="landing-shell" data-reveal>
-        <div className="landing-storage__heading"><span>저장과 계정 연결</span><h2>먼저 써보고,<br />필요할 때 로그인하세요.</h2><p>작성 중인 이력서는 브라우저에 자동 저장됩니다. 로그인하면 그대로 계정에 가져올 수 있어요.</p></div>
+        <div className="landing-storage__heading"><span>로그인해서 이어서 쓰기</span><h2>어디서든<br />이어서 작성하세요.</h2><p>로그인하면 작성한 이력서가 계정에 저장돼요. 다른 기기에서도 그대로 열어보고 수정할 수 있습니다.</p></div>
         <div className="landing-storage__options">
-          <article><div><ListChecks size={19} /><span>01</span></div><h3>로그인 없이 작성</h3><p>회원가입을 기다릴 필요 없이 바로 시작하고, 현재 브라우저에서 계속 작업합니다.</p></article>
-          <article><div><ShieldCheck size={19} /><span>02</span></div><h3>필요할 때 계정 연결</h3><p>작성하던 이력서를 계정으로 가져와 다른 기기에서도 이어서 관리합니다.</p></article>
+          <article><div><ListChecks size={19} /><span>01</span></div><h3>이력서를 계정에 저장</h3><p>만든 이력서를 계정에서 확인하고 필요할 때 바로 수정할 수 있어요.</p></article>
+          <article><div><ShieldCheck size={19} /><span>02</span></div><h3>다른 기기에서 계속 작성</h3><p>쓰던 기기가 아니어도 로그인하면 마지막으로 작성한 내용을 이어서 쓸 수 있어요.</p></article>
         </div>
       </div></section>
 
-      <section className="landing-cta"><div className="landing-shell landing-cta__inner" data-reveal><h2>지금, 이력서 작성을 시작하세요.</h2><p>로그인 없이 바로 사용할 수 있고, 작성한 내용은 브라우저에 자동 저장됩니다.</p><Link href="/editor" className="landing-primary-button">무료로 시작하기 <ArrowRight size={18} /></Link></div></section>
+      <section className="landing-cta"><div className="landing-shell landing-cta__inner" data-reveal><h2>당신의 경험이,<br />더 선명하게 읽히도록.</h2><p>복잡한 서식은 덜어내고, 지금까지의 경험을 설득력 있는 이력서로 완성해 보세요.</p><Link href="/editor" className="landing-primary-button">무료로 시작하기 <ArrowRight size={18} /></Link></div></section>
 
       <footer className="landing-footer"><div className="landing-shell landing-footer__inner"><Image src="/bripick_header_logo_dark.svg" width={106} height={30} alt="Bripick" /><p>경험을 더 명확하게 보여주는 개발자 이력서 빌더</p><div><Link href="/editor">편집기</Link><Link href="/login?next=%2Feditor">로그인</Link></div></div></footer>
     </main>
