@@ -227,7 +227,7 @@ export default function ResumeCanvas({
     const templateType = globalStyle?.template || "modern";
     const primaryColor = globalStyle?.primaryColor || "#2f80c3";
     const fontFamily = globalStyle?.fontFamily || "'Pretendard', sans-serif";
-    const paperPadding = globalStyle?.basePadding ?? 36;
+    const paperPadding = globalStyle?.basePadding ?? 48;
     const typographyStyle = {
         "--resume-blue": primaryColor,
         "--resume-display-title-size": `${globalStyle?.displayTitleFontSize ?? 24}px`,

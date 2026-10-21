@@ -144,7 +144,11 @@ export interface GlobalStyle {
     bodyFontSize?: number;
     captionFontSize?: number;
     template?: TemplateStyle;
+    /** 템플릿마다 따로 저장한 전역 설정. 현재 템플릿의 값은 위 필드에도 그대로 들어 있다. */
+    templateStyles?: Partial<Record<TemplateStyle, TemplateGlobalStyle>>;
 }
+
+export type TemplateGlobalStyle = Partial<Omit<GlobalStyle, "template" | "templateStyles">>;
 
 export interface SkillCategory {
     id: string;

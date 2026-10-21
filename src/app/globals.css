@@ -7712,6 +7712,7 @@ body:has(.editor-tutorial) .feedback-launcher {
 }
 
 @media (max-width: 900px) {
+
   .landing-showcase__row,
   .landing-showcase__row--reverse {
     grid-template-columns: 1fr;
@@ -7838,8 +7839,9 @@ body:has(.editor-tutorial) .feedback-launcher {
   letter-spacing: -0.012em;
 }
 
+/* 섹션 사이 간격: 문서 전역설정의 블록 간격을 기준으로 Minimal에 맞게 넓힌다. */
 .minimal-template .resume-block-item {
-  margin-bottom: var(--resume-block-gap) !important;
+  margin-bottom: calc(var(--resume-block-gap) * 2 + 8px) !important;
   padding-right: 0 !important;
   padding-left: 0 !important;
   border: 0 !important;
@@ -7864,7 +7866,8 @@ body:has(.editor-tutorial) .feedback-launcher {
 /* 섹션 제목: 굵은 제목 + 얇은 검정 선 */
 .minimal-template .resume-section>div:first-child[class~="border-b"] {
   padding-bottom: 6px !important;
-  border-bottom: 1px solid var(--minimal-rule-strong) !important;
+  /* 섹션 제목 밑줄에 테마 포인트 컬러를 쓴다. */
+  border-bottom: 1px solid var(--resume-blue, var(--minimal-rule-strong)) !important;
 }
 
 .minimal-template .resume-block-item h2 {
@@ -7942,10 +7945,20 @@ body:has(.editor-tutorial) .feedback-launcher {
   color: var(--minimal-muted);
 }
 
-/* 프로필 */
-.minimal-template [data-block-type="profile"] {
-  margin-bottom: calc(var(--resume-block-gap) + 8px) !important;
+/* 같은 블록이 같은 페이지에서 이어지는 조각 사이에는 섹션 간격 대신 항목 간격만 둔다. */
+.minimal-template .resume-block-fragment--continues-next {
+  margin-bottom: 22px !important;
 }
+
+.minimal-template [data-block-type="project"].resume-block-fragment--continues-next {
+  margin-bottom: var(--resume-project-divider-gap) !important;
+}
+
+.minimal-template [data-block-type="certification"].resume-block-fragment--continues-next {
+  margin-bottom: 14px !important;
+}
+
+/* 프로필 */
 
 .resume-minimal-profile {
   display: grid;
@@ -7974,7 +7987,7 @@ body:has(.editor-tutorial) .feedback-launcher {
 
 .minimal-template .resume-minimal-profile__role {
   margin-top: 6px;
-  color: var(--minimal-text);
+  color: var(--resume-blue);
   font-size: calc(var(--resume-item-title-size) - 2px);
   font-weight: 500;
 }
@@ -8119,7 +8132,7 @@ body:has(.editor-tutorial) .feedback-launcher {
   gap: 0;
   margin-top: 16px;
   margin-left: 2px;
-  padding-left: 18px;
+  padding-left: 32px;
 }
 
 .minimal-template [data-experience-project-start]:not([data-experience-project-start="0"]) .resume-experience-projects,
@@ -8129,7 +8142,7 @@ body:has(.editor-tutorial) .feedback-launcher {
 }
 
 .minimal-template .resume-experience-project+.resume-experience-project {
-  margin-top: 18px;
+  margin-top: var(--resume-project-divider-gap);
 }
 
 .minimal-template .resume-experience-project__header {

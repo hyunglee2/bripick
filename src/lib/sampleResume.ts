@@ -11,7 +11,7 @@ export const createSampleResume = (
         fontFamily: "'Pretendard', sans-serif",
         primaryColor: "#2f80c3",
         contentWidth: 800,
-        basePadding: 36,
+        basePadding: 48,
         blockGap: 18,
         projectDividerGap: 28,
         displayTitleFontSize: 24,

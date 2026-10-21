@@ -6,6 +6,9 @@ import {
     ResumeBlock,
     BlockStyle,
     BlockType,
+    GlobalStyle,
+    TemplateGlobalStyle,
+    TemplateStyle,
 } from "@/types/resume";
 import { createSampleResume } from "@/lib/sampleResume";
 import { formatBlockTitle } from "@/lib/blockTitles";
@@ -57,6 +60,46 @@ interface ResumeState {
 
 }
 
+const TEMPLATE_GLOBAL_STYLE_KEYS = [
+    "fontFamily",
+    "primaryColor",
+    "contentWidth",
+    "basePadding",
+    "blockGap",
+    "projectDividerGap",
+    "displayTitleFontSize",
+    "sectionTitleFontSize",
+    "itemTitleFontSize",
+    "bodyFontSize",
+    "captionFontSize",
+] as const satisfies readonly (keyof TemplateGlobalStyle)[];
+
+const pickTemplateGlobalStyle = (style: GlobalStyle): TemplateGlobalStyle => {
+    const picked: Record<string, unknown> = {};
+    TEMPLATE_GLOBAL_STYLE_KEYS.forEach((key) => {
+        if (style[key] !== undefined) picked[key] = style[key];
+    });
+    return picked as TemplateGlobalStyle;
+};
+
+// 전역 설정은 템플릿마다 따로 저장한다. 최상위 필드는 항상 현재 템플릿의 값이다.
+// 처음 고르는 템플릿은 직전 템플릿의 값을 이어받는다.
+const applyGlobalStyleChange = (current: GlobalStyle, change: Partial<GlobalStyle>): GlobalStyle => {
+    const currentTemplate: TemplateStyle = current.template || "modern";
+    const nextTemplate: TemplateStyle = change.template || currentTemplate;
+    const templateStyles = {
+        ...current.templateStyles,
+        [currentTemplate]: pickTemplateGlobalStyle(current),
+    };
+    const next: GlobalStyle = nextTemplate === currentTemplate
+        ? { ...current, ...change }
+        : { ...current, ...templateStyles[nextTemplate], ...change, template: nextTemplate };
+    return {
+        ...next,
+        templateStyles: { ...templateStyles, [nextTemplate]: pickTemplateGlobalStyle(next) },
+    };
+};
+
 const defaultResume: ResumeDocument = {
     id: "resume-default",
     versionName: "기본 이력서",
@@ -65,7 +108,7 @@ const defaultResume: ResumeDocument = {
         fontFamily: "'Pretendard', sans-serif",
         primaryColor: "#2f80c3",
         contentWidth: 800,
-        basePadding: 36,
+        basePadding: 48,
         blockGap: 18,
         projectDividerGap: 28,
         displayTitleFontSize: 24,
@@ -139,6 +182,11 @@ const migrateTypographyDefaults = (document: ResumeDocument): ResumeDocument => 
     ...document,
     globalStyle: {
         ...document.globalStyle,
+        // 36px과 44px은 이전 기본값이었습니다. 직접 조절한 값은 유지하면서
+        // 이전 기본값을 쓰던 문서만 새 기본 여백으로 맞춥니다.
+        basePadding: document.globalStyle.basePadding === 36 || document.globalStyle.basePadding === 44
+            ? 48
+            : (document.globalStyle.basePadding ?? 48),
         sectionTitleFontSize: document.globalStyle.sectionTitleFontSize === 25
             ? 24
             : document.globalStyle.sectionTitleFontSize,
@@ -501,7 +549,7 @@ export const useResumeStore = create<ResumeState>()(
                 set((state) => {
                     const newResume = {
                         ...state.resume,
-                        globalStyle: { ...state.resume.globalStyle, ...newStyle },
+                        globalStyle: applyGlobalStyleChange(state.resume.globalStyle, newStyle),
                         updatedAt: new Date().toISOString(),
                     };
 
@@ -679,7 +727,7 @@ export const useResumeStore = create<ResumeState>()(
         }),
         {
             name: "bripick-resume-storage:guest",
-            version: 8,
+            version: 10,
             migrate: (persistedState) => {
                 const state = persistedState as Partial<ResumeState>;
                 return {

@@ -39,7 +39,7 @@ const DEFAULT_GLOBAL_STYLE = {
     fontFamily: "'Pretendard', sans-serif",
     primaryColor: "#2f80c3",
     contentWidth: 800,
-    basePadding: 36,
+    basePadding: 48,
     blockGap: 18,
     projectDividerGap: 28,
     displayTitleFontSize: 24,
@@ -47,7 +47,6 @@ const DEFAULT_GLOBAL_STYLE = {
     itemTitleFontSize: 19,
     bodyFontSize: 14,
     captionFontSize: 14,
-    template: "modern" as const,
 };
 
 export default function InspectorPanel() {
@@ -159,7 +158,7 @@ export default function InspectorPanel() {
                             type="button"
                             onClick={() => updateGlobalStyle(DEFAULT_GLOBAL_STYLE)}
                             className="inspector-reset-button"
-                            data-tooltip="문서 전역 설정을 기본값으로 복원"
+                            data-tooltip="현재 템플릿의 전역 설정을 기본값으로 복원"
                         >
                             <RotateCcw size={12} aria-hidden="true" />
                             기본값 복원
@@ -265,14 +264,14 @@ export default function InspectorPanel() {
                     <div className="space-y-2">
                         <div className="flex justify-between text-xs">
                             <span className="text-neutral-300">용지 안쪽 여백</span>
-                            <span className="text-neutral-400 font-mono">{globalStyle?.basePadding || 36}px</span>
+                            <span className="text-neutral-400 font-mono">{globalStyle?.basePadding || 48}px</span>
                         </div>
                         <input
                             type="range"
                             min="20"
                             max="64"
                             step="4"
-                            value={globalStyle?.basePadding || 36}
+                            value={globalStyle?.basePadding || 48}
                             onChange={(e) => updateGlobalStyle({ basePadding: Number(e.target.value) })}
                             className="w-full accent-blue-500 cursor-pointer"
                         />
