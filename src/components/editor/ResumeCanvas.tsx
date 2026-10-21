@@ -16,41 +16,12 @@ import ServiceDialog from "@/components/ui/ServiceDialog";
 import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
 
 const A4_PAPER_HEIGHT = 1130;
-const PAGINATION_BOTTOM_SAFETY_GAP = 24;
-const DESCRIPTION_FIT_TOLERANCE = 12;
-const ITEM_HEADER_FIT_TOLERANCE = 72;
-const EDUCATION_ITEM_FIT_TOLERANCE = 160;
+// 배치는 실제로 그려 본 조각 높이로 다시 맞추므로 소수점 오차만큼만 남긴다.
+const PAGINATION_BOTTOM_SAFETY_GAP = 8;
 const PROJECT_ITEM_GAP = 26;
+// 배치 후 실제 조각 높이로 다시 계산하는 최대 횟수
+const MAX_PAGINATION_REFINE_PASSES = 6;
 
-type PaginationTuning = {
-    bottomSafetyGap: number;
-    descriptionFitTolerance: number;
-    itemHeaderFitTolerance: number;
-    educationItemFitTolerance: number;
-    projectItemGap: number;
-};
-
-// 위 상수들은 Modern 레이아웃 기준으로 맞춘 값이다.
-const MODERN_PAGINATION_TUNING: PaginationTuning = {
-    bottomSafetyGap: PAGINATION_BOTTOM_SAFETY_GAP,
-    descriptionFitTolerance: DESCRIPTION_FIT_TOLERANCE,
-    itemHeaderFitTolerance: ITEM_HEADER_FIT_TOLERANCE,
-    educationItemFitTolerance: EDUCATION_ITEM_FIT_TOLERANCE,
-    projectItemGap: PROJECT_ITEM_GAP,
-};
-
-// Minimal은 여백이 촘촘해 허용 오차만큼 하단을 넘치기 쉽다. 오차 없이 측정값 그대로 배치한다.
-const MINIMAL_MAX_OVERFLOW_COMPENSATION = 240;
-
-const getMinimalPaginationTuning = (projectDividerGap: number, overflowCompensation: number): PaginationTuning => ({
-    // 실제 렌더 결과가 넘치면 그만큼 사용 가능 높이를 줄여 다시 배치한다.
-    bottomSafetyGap: PAGINATION_BOTTOM_SAFETY_GAP + overflowCompensation,
-    descriptionFitTolerance: 0,
-    itemHeaderFitTolerance: 0,
-    educationItemFitTolerance: 0,
-    // Minimal CSS의 프로젝트 사이 margin-top과 같은 값
-    projectItemGap: projectDividerGap,
-});
 const FLOW_BLOCK_TYPES = new Set<ResumeBlock["type"]>([
     "experience",
     "project",
@@ -89,11 +60,14 @@ const getPlacementMeasurementKey = (blockIndex: number, placement: BlockPlacemen
     placement.itemHeaderContinuation === true ? "item-header-continuation" : "item-header-initial",
     placement.experienceProjectStart ?? "all",
     placement.experienceProjectEnd ?? "all",
+    placement.experienceProjectContinuation === true ? "project-continuation" : "project-initial",
     placement.experienceProjectDescriptionStart ?? "all",
     placement.experienceProjectDescriptionEnd ?? "all",
     placement.experienceCompanyOnly === true ? "company" : "content",
     placement.experienceProjectHeaderOnly === true ? "header" : "body",
     placement.experienceProjectTitleOnly === true ? "title" : "detail",
+    placement.experienceProjectHeaderContinuation === true ? "header-continuation" : "header-initial",
+    placement.experienceProjectTitleContinuation === true ? "title-continuation" : "title-initial",
 ].join(":");
 
 type CanvasViewMode = "custom" | "page" | "width" | "two-page";
@@ -102,6 +76,66 @@ function getFlowItemCount(block: ResumeBlock) {
     if (Array.isArray(block.data)) return block.data.length;
     if (block.type === "custom_text" && block.data?.content) return String(block.data.content).split("\n").length;
     return 0;
+}
+
+// 조각 위아래의 패딩·테두리와 아래 margin. [단독일 때, 같은 블록 조각과 이어질 때]
+type FragmentEdges = {
+    top: [number, number];
+    bottom: [number, number];
+    margin: [number, number];
+};
+
+const EMPTY_FRAGMENT_EDGES: FragmentEdges = { top: [0, 0], bottom: [0, 0], margin: [0, 0] };
+
+// 같은 페이지에서 같은 블록 조각이 이어지면 하나의 카드처럼 붙도록 패딩과 margin이 바뀐다.
+// 렌더된 조각의 클래스를 잠시 바꿔 두 상태의 값을 모두 읽은 뒤 원래대로 돌려놓는다.
+function measureFragmentEdges(element: HTMLElement): FragmentEdges {
+    const originalClassName = element.className;
+    const originalMarginBottom = element.style.marginBottom;
+    const originalTransition = element.style.transition;
+    // 잠깐 바꾼 클래스 때문에 카드 테두리·그림자 전환 효과가 재생되지 않게 한다.
+    element.style.transition = "none";
+    const read = (joined: boolean) => {
+        element.classList.toggle("resume-block-fragment--continues-previous", joined);
+        element.classList.toggle("resume-block-fragment--continues-next", joined);
+        element.style.marginBottom = joined ? "0px" : "var(--resume-block-gap)";
+        const style = window.getComputedStyle(element);
+        return {
+            top: Number.parseFloat(style.paddingTop || "0") + Number.parseFloat(style.borderTopWidth || "0"),
+            bottom: Number.parseFloat(style.paddingBottom || "0") + Number.parseFloat(style.borderBottomWidth || "0"),
+            margin: Number.parseFloat(style.marginBottom || "0"),
+        };
+    };
+    const standalone = read(false);
+    const joined = read(true);
+    element.className = originalClassName;
+    element.style.marginBottom = originalMarginBottom;
+    void window.getComputedStyle(element).paddingTop;
+    element.style.transition = originalTransition;
+    return {
+        top: [standalone.top, joined.top],
+        bottom: [standalone.bottom, joined.bottom],
+        margin: [standalone.margin, joined.margin],
+    };
+}
+
+// 페이지의 직전 조각 뒤에 이 조각을 붙였을 때 늘어나는 높이(페이지 마지막 margin은 제외).
+function getAppendedPlacementHeight(
+    previous: BlockPlacement | undefined,
+    placement: BlockPlacement,
+    coreHeight: number,
+    getEdges: (blockIndex: number) => FragmentEdges,
+) {
+    const edges = getEdges(placement.blockIndex);
+    const joinsPrevious = previous?.blockIndex === placement.blockIndex;
+    let height = coreHeight + edges.top[joinsPrevious ? 1 : 0] + edges.bottom[0];
+    if (previous) {
+        const previousEdges = getEdges(previous.blockIndex);
+        height += joinsPrevious
+            ? previousEdges.margin[1] + previousEdges.bottom[1] - previousEdges.bottom[0]
+            : previousEdges.margin[0];
+    }
+    return height;
 }
 
 function getInitialPlacements(blocks: ResumeBlock[]): BlockPlacement[][] {
@@ -152,7 +186,6 @@ export default function ResumeCanvas({
     } | null>(null);
     const [profilePhotoMenu, setProfilePhotoMenu] = useState<{ blockId: string; x: number; y: number } | null>(null);
     const [pagePlacements, setPagePlacements] = useState<BlockPlacement[][]>(() => getInitialPlacements(blocks));
-    const [minimalOverflowCompensation, setMinimalOverflowCompensation] = useState(0);
     const scrollContainerRef = useRef<HTMLElement>(null);
     const canvasRef = useRef<HTMLDivElement>(null);
     const zoomLevelRef = useRef(zoomLevel);
@@ -175,7 +208,8 @@ export default function ResumeCanvas({
         | null
     >(null);
     const paginationFrameRef = useRef<number | null>(null);
-    const latestPaginationSignatureRef = useRef<string | null>(null);
+    const appliedPaginationSignatureRef = useRef<string | null>(null);
+    const paginationRefineRef = useRef<(() => void) | null>(null);
     const paginationBlockSignaturesRef = useRef<string[]>([]);
     const dragScrollFrameRef = useRef<number | null>(null);
     const dragClientYRef = useRef<number | null>(null);
@@ -618,12 +652,27 @@ export default function ResumeCanvas({
         };
     }, [pages.length, viewMode, zoomLevel]);
 
+    // 새 배치가 화면에 반영되면 그 배치에서 잰 실제 조각 높이로 한 번 더 계산한다.
+    useLayoutEffect(() => {
+        appliedPaginationSignatureRef.current = JSON.stringify(pagePlacements);
+        paginationRefineRef.current?.();
+    }, [pagePlacements]);
+
     // 텍스트 줄바꿈과 사용자 패딩까지 반영된 실제 DOM 높이로 페이지를 다시 계산한다.
     useLayoutEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         let disposed = false;
         let observer: ResizeObserver | null = null;
+        let refinePasses = 0;
+        let paginationFinalized = false;
+        let latestPlacementCores = new Map<string, number>();
+        let latestBlockEdges = new Map<number, FragmentEdges>();
+        let latestAvailableHeight = 0;
+        const appliedLayouts = new Map<string, BlockPlacement[][]>();
+        // 이전 배치에서 잰 높이를 이어받아, 지금 화면에 없는 조각도 실제 높이로 추정한다.
+        const previousMeasurements: Map<string | number, number>[] = [];
+        let previousBlockEdges = new Map<number, FragmentEdges>();
         const currentBlockSignatures = blocks.map((block) => JSON.stringify(block));
         const previousBlockSignatures = paginationBlockSignaturesRef.current;
         const firstChangedBlockIndex = previousBlockSignatures.length === currentBlockSignatures.length
@@ -634,14 +683,15 @@ export default function ResumeCanvas({
 
         const repaginate = () => {
             if (disposed) return;
-            // DOM 높이는 소수점 단위 줄바꿈과 편집기 장식선 때문에 합산값보다
-            // 조금 커질 수 있다. 하단 여백을 침범하기 전에 다음 페이지로 넘긴다.
-            const tuning = templateType === "minimal"
-                ? getMinimalPaginationTuning(globalStyle?.projectDividerGap ?? 28, minimalOverflowCompensation)
-                : MODERN_PAGINATION_TUNING;
-            const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2) - tuning.bottomSafetyGap;
+            const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2) - PAGINATION_BOTTOM_SAFETY_GAP;
+            // 프로젝트 블록의 항목 사이 여백. Minimal은 CSS의 프로젝트 사이 margin-top과 같은 값이다.
+            const projectItemGap = templateType === "minimal"
+                ? (globalStyle?.projectDividerGap ?? 28)
+                : PROJECT_ITEM_GAP;
             const measuredBlockHeights = new Map<number, number>();
-            const measuredPlacementHeights = new Map<string, number>();
+            // 조각의 위아래 패딩·테두리·margin을 뺀 높이. 이어 붙는 상태와 관계없이 같다.
+            const measuredPlacementCores = new Map<string, number>();
+            const measuredBlockEdges = new Map<number, FragmentEdges>();
             const measuredItemHeights = new Map<string, number>();
             const measuredDescriptionHeights = new Map<string, number>();
             const measuredItemChromeHeights = new Map<string, number>();
@@ -667,9 +717,14 @@ export default function ResumeCanvas({
                 measuredBlockHeights.set(index, Math.max(measuredBlockHeights.get(index) || 0, outerHeight));
                 const placementKey = element.dataset.paginationPlacementKey;
                 if (placementKey) {
-                    measuredPlacementHeights.set(
+                    measuredPlacementCores.set(
                         placementKey,
-                        Math.max(measuredPlacementHeights.get(placementKey) || 0, outerHeight),
+                        element.offsetHeight
+                            + Number.parseFloat(style.marginTop || "0")
+                            - Number.parseFloat(style.paddingTop || "0")
+                            - Number.parseFloat(style.borderTopWidth || "0")
+                            - Number.parseFloat(style.paddingBottom || "0")
+                            - Number.parseFloat(style.borderBottomWidth || "0"),
                     );
                 }
                 const isDescriptionContinuation = Number(element.dataset.descriptionStart || "0") > 0
@@ -794,6 +849,39 @@ export default function ResumeCanvas({
                 }
             });
 
+            canvas.querySelectorAll<HTMLElement>("[data-resume-block-index]").forEach((element) => {
+                const index = Number(element.dataset.resumeBlockIndex);
+                if (!measuredBlockEdges.has(index)) measuredBlockEdges.set(index, measureFragmentEdges(element));
+            });
+            previousBlockEdges.forEach((edges, index) => {
+                if (!measuredBlockEdges.has(index)) measuredBlockEdges.set(index, edges);
+            });
+            previousBlockEdges = measuredBlockEdges;
+
+            [
+                measuredBlockHeights,
+                measuredPlacementCores,
+                measuredItemHeights,
+                measuredDescriptionHeights,
+                measuredItemChromeHeights,
+                measuredContinuationItemChromeHeights,
+                measuredExperienceCompanyHeights,
+                measuredExperienceProjectDescriptionHeights,
+                measuredExperienceProjectChromeHeights,
+                measuredExperienceContinuationProjectChromeHeights,
+                measuredExperienceProjectHeaderHeights,
+                measuredExperienceContinuationProjectHeaderHeights,
+                measuredExperienceProjectTitleHeights,
+                measuredExperienceContinuationBaseHeights,
+                measuredBaseHeights,
+                measuredContinuationBaseHeights,
+            ].forEach((measurements: Map<string | number, number>, mapIndex) => {
+                previousMeasurements[mapIndex]?.forEach((height, key) => {
+                    if (!measurements.has(key)) measurements.set(key, height);
+                });
+                previousMeasurements[mapIndex] = measurements;
+            });
+
             // 조각으로 렌더링된 항목도 전체 bullet 높이를 합산해 원래 항목 높이를 복원한다.
             blocks.forEach((block, blockIndex) => {
                 if (!Array.isArray(block.data)) return;
@@ -808,9 +896,15 @@ export default function ResumeCanvas({
                 });
             });
 
+            latestPlacementCores = measuredPlacementCores;
+            latestBlockEdges = measuredBlockEdges;
+            latestAvailableHeight = availableHeight;
+            const getEdges = (blockIndex: number) => measuredBlockEdges.get(blockIndex) || EMPTY_FRAGMENT_EDGES;
             const nextPages: BlockPlacement[][] = [[]];
             let usedHeight = 0;
 
+            // 바뀌지 않은 앞쪽 블록은 기존 배치를 유지하고, 마지막 페이지는 높이를 다시 쌓는다.
+            let lastLockedPage: BlockPlacement[] = [];
             if (lockedBlockCount > 0) {
                 const lockedPages = pagePlacements.map((page) => (
                     page.filter((placement) => placement.blockIndex < lockedBlockCount)
@@ -823,15 +917,10 @@ export default function ResumeCanvas({
                     nextPages.splice(
                         0,
                         nextPages.length,
-                        ...lockedPages.slice(0, lastLockedPageIndex + 1).map((page) => [...page]),
+                        ...lockedPages.slice(0, lastLockedPageIndex).map((page) => [...page]),
+                        [],
                     );
-                    usedHeight = nextPages.at(-1)!.reduce((height, placement) => (
-                        height + (
-                            measuredPlacementHeights.get(
-                                getPlacementMeasurementKey(placement.blockIndex, placement),
-                            ) || measuredBlockHeights.get(placement.blockIndex) || 0
-                        )
-                    ), 0);
+                    lastLockedPage = lockedPages[lastLockedPageIndex];
                 }
             }
 
@@ -840,12 +929,24 @@ export default function ResumeCanvas({
                 usedHeight = 0;
             };
 
-            const pushPlacement = (placement: BlockPlacement, estimatedHeight: number) => {
-                nextPages.at(-1)!.push(placement);
-                usedHeight += measuredPlacementHeights.get(
+            // 현재 페이지에 조각을 붙였을 때 늘어나는 높이. 같은 조각을 이전 배치에서
+            // 그려 봤다면 부분 높이 합 대신 실제 높이를 쓴다.
+            const getPlacementHeight = (placement: BlockPlacement, estimatedHeight: number) => {
+                const edges = getEdges(placement.blockIndex);
+                const coreHeight = measuredPlacementCores.get(
                     getPlacementMeasurementKey(placement.blockIndex, placement),
-                ) || estimatedHeight;
+                ) ?? Math.max(0, estimatedHeight - edges.top[0] - edges.bottom[0] - edges.margin[0]);
+                return getAppendedPlacementHeight(nextPages.at(-1)!.at(-1), placement, coreHeight, getEdges);
             };
+
+            const pushPlacement = (placement: BlockPlacement, estimatedHeight: number) => {
+                usedHeight += getPlacementHeight(placement, estimatedHeight);
+                nextPages.at(-1)!.push(placement);
+            };
+
+            lastLockedPage.forEach((placement) => (
+                pushPlacement(placement, measuredBlockHeights.get(placement.blockIndex) || 0)
+            ));
 
             blocks.forEach((block, index) => {
                 if (index < lockedBlockCount) return;
@@ -945,21 +1046,33 @@ export default function ResumeCanvas({
                                 const firstDescriptionHeight = firstProjectDescriptions.length > 0
                                     ? (measuredExperienceProjectDescriptionHeights.get(`${firstProjectKey}:0`) || 24)
                                     : 0;
-                                const companyFragmentHeight = baseHeight + companyHeight;
                                 const firstProjectMinimumHeight = firstProjectChromeHeight + firstDescriptionHeight;
+                                const placement: BlockPlacement = {
+                                    blockIndex: index,
+                                    itemStart,
+                                    itemEnd: itemStart + 1,
+                                    experienceProjectStart: 0,
+                                    experienceProjectEnd: 0,
+                                    experienceCompanyOnly: true,
+                                };
+                                const companyFragmentHeight = getPlacementHeight(placement, baseHeight + companyHeight);
+                                const companyWithFirstProjectHeight = getPlacementHeight({
+                                    blockIndex: index,
+                                    itemStart,
+                                    itemEnd: itemStart + 1,
+                                    experienceProjectStart: 0,
+                                    experienceProjectEnd: 1,
+                                    experienceProjectContinuation: false,
+                                    experienceProjectDescriptionStart: 0,
+                                    experienceProjectDescriptionEnd: firstProjectDescriptions.length > 0 ? 1 : 0,
+                                    experienceProjectHeaderContinuation: false,
+                                    experienceProjectTitleContinuation: false,
+                                }, baseHeight + companyHeight + firstProjectMinimumHeight);
 
                                 // 현재 페이지에 회사 정보는 들어가지만 첫 프로젝트 내용까지는
                                 // 들어가지 않으면 회사부터 배치하고 프로젝트만 다음 페이지로 잇는다.
                                 if (usedHeight + companyFragmentHeight <= availableHeight
-                                    && usedHeight + companyFragmentHeight + firstProjectMinimumHeight > availableHeight) {
-                                    const placement: BlockPlacement = {
-                                        blockIndex: index,
-                                        itemStart,
-                                        itemEnd: itemStart + 1,
-                                        experienceProjectStart: 0,
-                                        experienceProjectEnd: 0,
-                                        experienceCompanyOnly: true,
-                                    };
+                                    && usedHeight + companyWithFirstProjectHeight > availableHeight) {
                                     pushPlacement(placement, companyFragmentHeight);
                                     companyPending = false;
                                 }
@@ -1014,50 +1127,51 @@ export default function ResumeCanvas({
                                     const firstDescriptionHeight = measuredExperienceProjectDescriptionHeights.get(
                                         `${projectKey}:0`,
                                     ) || 24;
-                                    const projectHeaderHeight = fragmentBaseHeight
-                                        + fragmentCompanyHeight
-                                        + projectHeaderChromeHeight;
-                                    const projectWithFirstDescriptionHeight = fragmentBaseHeight
-                                        + fragmentCompanyHeight
-                                        + projectContentChromeHeight
-                                        + firstDescriptionHeight;
+                                    const projectFragment: BlockPlacement = {
+                                        blockIndex: index,
+                                        itemStart,
+                                        itemEnd: itemStart + 1,
+                                        experienceProjectStart: projectIndex,
+                                        experienceProjectEnd: projectIndex + 1,
+                                        experienceProjectContinuation: !companyPending,
+                                        experienceProjectDescriptionStart: 0,
+                                        experienceProjectDescriptionEnd: 0,
+                                    };
+                                    const headerPlacement: BlockPlacement = { ...projectFragment, experienceProjectHeaderOnly: true };
+                                    const titlePlacement: BlockPlacement = { ...projectFragment, experienceProjectTitleOnly: true };
+                                    const projectHeaderHeight = getPlacementHeight(
+                                        headerPlacement,
+                                        fragmentBaseHeight + fragmentCompanyHeight + projectHeaderChromeHeight,
+                                    );
+                                    const projectWithFirstDescriptionHeight = getPlacementHeight(
+                                        {
+                                            ...projectFragment,
+                                            experienceProjectDescriptionEnd: 1,
+                                            experienceProjectHeaderContinuation: false,
+                                            experienceProjectTitleContinuation: false,
+                                        },
+                                        fragmentBaseHeight
+                                            + fragmentCompanyHeight
+                                            + projectContentChromeHeight
+                                            + firstDescriptionHeight,
+                                    );
 
                                     if (usedHeight + projectHeaderHeight <= availableHeight
                                         && usedHeight + projectWithFirstDescriptionHeight > availableHeight) {
-                                        const placement: BlockPlacement = {
-                                            blockIndex: index,
-                                            itemStart,
-                                            itemEnd: itemStart + 1,
-                                            experienceProjectStart: projectIndex,
-                                            experienceProjectEnd: projectIndex + 1,
-                                            experienceProjectContinuation: !companyPending,
-                                            experienceProjectDescriptionStart: 0,
-                                            experienceProjectDescriptionEnd: 0,
-                                            experienceProjectHeaderOnly: true,
-                                        };
-                                        pushPlacement(placement, projectHeaderHeight);
+                                        pushPlacement(headerPlacement, projectHeaderHeight);
                                         companyPending = false;
                                         projectHeaderPlacedOnPreviousPage = true;
                                         startNewPage();
                                     } else {
-                                        const projectTitleHeight = (companyPending
-                                            ? fragmentBaseHeight + fragmentCompanyHeight
-                                            : 0)
-                                            + (measuredExperienceProjectTitleHeights.get(projectKey) || 22);
+                                        const projectTitleHeight = getPlacementHeight(
+                                            titlePlacement,
+                                            fragmentBaseHeight
+                                                + fragmentCompanyHeight
+                                                + (measuredExperienceProjectTitleHeights.get(projectKey) || 22),
+                                        );
                                         if (usedHeight + projectTitleHeight <= availableHeight
                                             && usedHeight + projectHeaderHeight > availableHeight) {
-                                            const placement: BlockPlacement = {
-                                                blockIndex: index,
-                                                itemStart,
-                                                itemEnd: itemStart + 1,
-                                                experienceProjectStart: projectIndex,
-                                                experienceProjectEnd: projectIndex + 1,
-                                                experienceProjectContinuation: !companyPending,
-                                                experienceProjectDescriptionStart: 0,
-                                                experienceProjectDescriptionEnd: 0,
-                                                experienceProjectTitleOnly: true,
-                                            };
-                                            pushPlacement(placement, projectTitleHeight);
+                                            pushPlacement(titlePlacement, projectTitleHeight);
                                             companyPending = false;
                                             projectTitlePlacedOnPreviousPage = true;
                                             startNewPage();
@@ -1088,21 +1202,34 @@ export default function ResumeCanvas({
                                     }
                                     let fragmentHeight = fragmentBaseHeight + fragmentCompanyHeight + projectChromeHeight;
                                     let descriptionEnd = descriptionStart;
+                                    const getFragmentPlacement = (end: number): BlockPlacement => ({
+                                        blockIndex: index,
+                                        itemStart,
+                                        itemEnd: itemStart + 1,
+                                        experienceProjectStart: projectIndex,
+                                        experienceProjectEnd: projectIndex + 1,
+                                        experienceProjectContinuation: isProjectContinuation,
+                                        experienceProjectDescriptionStart: descriptionStart,
+                                        experienceProjectDescriptionEnd: end,
+                                        experienceProjectHeaderContinuation: projectHeaderPlacedOnPreviousPage
+                                            && descriptionStart === 0,
+                                        experienceProjectTitleContinuation: projectTitlePlacedOnPreviousPage
+                                            && descriptionStart === 0,
+                                    });
 
                                     while (descriptionEnd < projectDescriptions.length) {
                                         const descriptionHeight = measuredExperienceProjectDescriptionHeights.get(
                                             `${index}:${itemStart}:${projectIndex}:${descriptionEnd}`,
                                         ) || 24;
-                                        const fitTolerance = descriptionEnd === projectDescriptions.length - 1
-                                            ? tuning.descriptionFitTolerance
-                                            : 0;
+                                        const candidateHeight = getPlacementHeight(
+                                            getFragmentPlacement(descriptionEnd + 1),
+                                            fragmentHeight + descriptionHeight,
+                                        );
                                         if (descriptionEnd > descriptionStart
-                                            && usedHeight + fragmentHeight + descriptionHeight
-                                                > availableHeight + fitTolerance) break;
+                                            && usedHeight + candidateHeight > availableHeight) break;
                                         if (descriptionEnd === descriptionStart
                                             && nextPages.at(-1)!.length > 0
-                                            && usedHeight + fragmentHeight + descriptionHeight
-                                                > availableHeight + fitTolerance) {
+                                            && usedHeight + candidateHeight > availableHeight) {
                                             startNewPage();
                                         }
                                         fragmentHeight += descriptionHeight;
@@ -1115,21 +1242,7 @@ export default function ResumeCanvas({
                                         startNewPage();
                                     }
 
-                                    const placement: BlockPlacement = {
-                                        blockIndex: index,
-                                        itemStart,
-                                        itemEnd: itemStart + 1,
-                                        experienceProjectStart: projectIndex,
-                                        experienceProjectEnd: projectIndex + 1,
-                                        experienceProjectContinuation: isProjectContinuation,
-                                        experienceProjectDescriptionStart: descriptionStart,
-                                        experienceProjectDescriptionEnd: descriptionEnd,
-                                        experienceProjectHeaderContinuation: projectHeaderPlacedOnPreviousPage
-                                            && descriptionStart === 0,
-                                        experienceProjectTitleContinuation: projectTitlePlacedOnPreviousPage
-                                            && descriptionStart === 0,
-                                    };
-                                    pushPlacement(placement, fragmentHeight);
+                                    pushPlacement(getFragmentPlacement(descriptionEnd), fragmentHeight);
                                     companyPending = false;
                                     descriptionStart = descriptionEnd;
 
@@ -1157,18 +1270,26 @@ export default function ResumeCanvas({
                                 const firstDescriptionHeight = measuredDescriptionHeights.get(
                                     `${index}:${itemStart}:0`,
                                 ) || 24;
-                                const itemHeaderHeight = baseHeight + itemChromeHeight;
-                                if (usedHeight + itemHeaderHeight
-                                        <= availableHeight + tuning.itemHeaderFitTolerance
-                                    && usedHeight + itemHeaderHeight + firstDescriptionHeight > availableHeight) {
-                                    pushPlacement({
-                                        blockIndex: index,
-                                        itemStart,
-                                        itemEnd: itemStart + 1,
-                                        descriptionStart: 0,
-                                        descriptionEnd: 0,
-                                        itemHeaderOnly: true,
-                                    }, itemHeaderHeight);
+                                const itemHeaderPlacement: BlockPlacement = {
+                                    blockIndex: index,
+                                    itemStart,
+                                    itemEnd: itemStart + 1,
+                                    descriptionStart: 0,
+                                    descriptionEnd: 0,
+                                    itemHeaderOnly: true,
+                                };
+                                const itemHeaderHeight = getPlacementHeight(itemHeaderPlacement, baseHeight + itemChromeHeight);
+                                const itemWithFirstDescriptionHeight = getPlacementHeight({
+                                    blockIndex: index,
+                                    itemStart,
+                                    itemEnd: itemStart + 1,
+                                    descriptionStart: 0,
+                                    descriptionEnd: 1,
+                                    itemHeaderContinuation: false,
+                                }, baseHeight + itemChromeHeight + firstDescriptionHeight);
+                                if (usedHeight + itemHeaderHeight <= availableHeight
+                                    && usedHeight + itemWithFirstDescriptionHeight > availableHeight) {
+                                    pushPlacement(itemHeaderPlacement, itemHeaderHeight);
                                     itemHeaderPlacedOnPreviousPage = true;
                                     startNewPage();
                                 }
@@ -1186,20 +1307,28 @@ export default function ResumeCanvas({
                                     : itemChromeHeight;
                                 let fragmentHeight = fragmentBaseHeight + fragmentChromeHeight;
                                 let descriptionEnd = descriptionStart;
+                                const getFragmentPlacement = (end: number): BlockPlacement => ({
+                                    blockIndex: index,
+                                    itemStart,
+                                    itemEnd: itemStart + 1,
+                                    descriptionStart,
+                                    descriptionEnd: end,
+                                    itemHeaderContinuation: itemHeaderPlacedOnPreviousPage
+                                        && descriptionStart === 0,
+                                });
 
                                 while (descriptionEnd < descriptions.length) {
                                     const descriptionHeight = measuredDescriptionHeights.get(
                                         `${index}:${itemStart}:${descriptionEnd}`
                                     ) || 24;
-                                    const fitTolerance = descriptionEnd === descriptions.length - 1
-                                        ? tuning.descriptionFitTolerance
-                                        : 0;
+                                    const candidateHeight = getPlacementHeight(
+                                        getFragmentPlacement(descriptionEnd + 1),
+                                        fragmentHeight + descriptionHeight,
+                                    );
                                     if (descriptionEnd > descriptionStart
-                                        && usedHeight + fragmentHeight + descriptionHeight
-                                            > availableHeight + fitTolerance) break;
+                                        && usedHeight + candidateHeight > availableHeight) break;
                                     if (descriptionEnd === descriptionStart && nextPages.at(-1)!.length > 0
-                                        && usedHeight + fragmentHeight + descriptionHeight
-                                            > availableHeight + fitTolerance) {
+                                        && usedHeight + candidateHeight > availableHeight) {
                                         startNewPage();
                                     }
                                     fragmentHeight += descriptionHeight;
@@ -1230,16 +1359,7 @@ export default function ResumeCanvas({
                                     ) || 24;
                                 }
 
-                                nextPages.at(-1)!.push({
-                                    blockIndex: index,
-                                    itemStart,
-                                    itemEnd: itemStart + 1,
-                                    descriptionStart,
-                                    descriptionEnd,
-                                    itemHeaderContinuation: itemHeaderPlacedOnPreviousPage
-                                        && descriptionStart === 0,
-                                });
-                                usedHeight += fragmentHeight;
+                                pushPlacement(getFragmentPlacement(descriptionEnd), fragmentHeight);
                                 descriptionStart = descriptionEnd;
                                 if (descriptionStart < descriptions.length) startNewPage();
                             }
@@ -1248,69 +1368,138 @@ export default function ResumeCanvas({
                             continue;
                         }
 
-                        const flowFitTolerance = block.type === "education" && !keepItemTogether
-                            ? tuning.educationItemFitTolerance
-                            : 0;
                         if (nextPages.at(-1)!.length > 0
-                            && usedHeight + baseHeight > availableHeight + flowFitTolerance) startNewPage();
+                            && usedHeight + baseHeight > availableHeight) startNewPage();
 
                         let sliceHeight = baseHeight;
                         let itemEnd = itemStart;
                         while (itemEnd < itemCount) {
                             const itemHeight = measuredItemHeights.get(`${index}:${itemEnd}`) || 80;
                             const interItemGap = block.type === "project" && itemEnd > itemStart
-                                ? tuning.projectItemGap
+                                ? projectItemGap
                                 : 0;
-                            if (itemEnd > itemStart && usedHeight + sliceHeight + interItemGap + itemHeight > availableHeight) break;
+                            const candidateHeight = getPlacementHeight(
+                                { blockIndex: index, itemStart, itemEnd: itemEnd + 1 },
+                                sliceHeight + interItemGap + itemHeight,
+                            );
+                            if (itemEnd > itemStart && usedHeight + candidateHeight > availableHeight) break;
                             if (itemEnd === itemStart && nextPages.at(-1)!.length > 0
-                                && usedHeight + sliceHeight + itemHeight
-                                    > availableHeight + flowFitTolerance) {
+                                && usedHeight + candidateHeight > availableHeight) {
                                 startNewPage();
                             }
                             sliceHeight += interItemGap + itemHeight;
                             itemEnd += 1;
                         }
 
-                        nextPages.at(-1)!.push({ blockIndex: index, itemStart, itemEnd });
-                        usedHeight += sliceHeight;
+                        pushPlacement({ blockIndex: index, itemStart, itemEnd }, sliceHeight);
                         itemStart = itemEnd;
                         if (itemStart < itemCount) startNewPage();
                     }
                     return;
                 }
 
-                const blockHeight = measuredBlockHeights.get(index) || 0;
+                const placement: BlockPlacement = { blockIndex: index };
+                const blockHeight = getPlacementHeight(placement, measuredBlockHeights.get(index) || 0);
                 if (nextPages.at(-1)!.length > 0 && usedHeight + blockHeight > availableHeight) startNewPage();
-                nextPages.at(-1)!.push({ blockIndex: index });
-                usedHeight += blockHeight;
+                pushPlacement(placement, measuredBlockHeights.get(index) || 0);
             });
 
             const nextSignature = JSON.stringify(nextPages);
-            latestPaginationSignatureRef.current = nextSignature;
             if (paginationFrameRef.current !== null) cancelAnimationFrame(paginationFrameRef.current);
             paginationFrameRef.current = requestAnimationFrame(() => {
                 paginationFrameRef.current = null;
                 if (disposed) return;
-                setPagePlacements((current) => {
-                    if (JSON.stringify(current) === nextSignature) return current;
-
-                    // 페이지 재배치 자체가 ResizeObserver를 다시 깨우면, 분할 전후의
-                    // 서로 다른 높이를 번갈아 측정하며 두 배치가 무한 반복될 수 있다.
-                    // 실제 콘텐츠/스타일 변경은 effect 의존성으로 다시 측정하므로,
-                    // 배치를 적용하기 직전에 현재 측정 observer를 종료한다.
+                const appliedSignature = appliedPaginationSignatureRef.current;
+                const applyLayout = (pages: BlockPlacement[][]) => {
+                    // 페이지 재배치 자체가 ResizeObserver를 다시 깨우면 측정이 끝없이 반복될 수 있다.
+                    // 이후 보정은 새 배치가 반영된 뒤 정해진 횟수만큼만 다시 계산한다.
                     observer?.disconnect();
-                    return nextPages;
-                });
+                    setPagePlacements(pages);
+                };
+
+                // 결과가 같거나, 이미 그려 본 배치로 되돌아가거나(두 배치가 번갈아 나오는 경우),
+                // 다시 계산할 횟수를 다 쓰면 그려 본 배치 중 가장 나은 것으로 확정한다.
+                if (appliedSignature === nextSignature
+                    || appliedLayouts.has(nextSignature)
+                    || refinePasses >= MAX_PAGINATION_REFINE_PASSES) {
+                    paginationFinalized = true;
+                    const best = pickBestLayout(appliedSignature);
+                    if (best && best.signature !== appliedSignature) applyLayout(best.pages);
+                    return;
+                }
+                paginationFinalized = false;
+                appliedLayouts.set(nextSignature, nextPages);
+                applyLayout(nextPages);
             });
         };
 
+        // 그려 본 배치들의 실제 페이지 높이를 비교해 넘치지 않으면서 페이지가 가장 적은 배치를 고른다.
+        const pickBestLayout = (appliedSignature: string | null) => {
+            const candidates = [...appliedLayouts.entries()];
+            if (appliedSignature && !appliedLayouts.has(appliedSignature)) {
+                candidates.push([appliedSignature, JSON.parse(appliedSignature) as BlockPlacement[][]]);
+            }
+            let best: { signature: string; pages: BlockPlacement[][]; overflow: number } | null = null;
+            candidates.forEach(([signature, pages]) => {
+                let overflow = 0;
+                const getEdges = (blockIndex: number) => latestBlockEdges.get(blockIndex) || EMPTY_FRAGMENT_EDGES;
+                for (const page of pages) {
+                    let pageHeight = 0;
+                    for (const [placementIndex, placement] of page.entries()) {
+                        const coreHeight = latestPlacementCores.get(
+                            getPlacementMeasurementKey(placement.blockIndex, placement),
+                        );
+                        // 아직 그려 보지 않은 조각이 있는 배치는 비교할 수 없다.
+                        if (coreHeight === undefined) return;
+                        pageHeight += getAppendedPlacementHeight(page[placementIndex - 1], placement, coreHeight, getEdges);
+                    }
+                    // 한 페이지에 조각 하나뿐이면 더 나눌 수 없으므로 넘침으로 보지 않는다.
+                    // 안전 여백 안쪽까지는 실제 하단 여백을 침범하지 않으므로 넘침이 아니다.
+                    if (page.length > 1) {
+                        overflow = Math.max(
+                            overflow,
+                            pageHeight - latestAvailableHeight - PAGINATION_BOTTOM_SAFETY_GAP,
+                        );
+                    }
+                }
+                const candidate = { signature, pages, overflow: Math.max(0, Math.ceil(overflow)) };
+                if (!best
+                    || candidate.overflow < best.overflow
+                    || (candidate.overflow === best.overflow && pages.length < best.pages.length)
+                    || (candidate.overflow === best.overflow
+                        && pages.length === best.pages.length
+                        && signature === appliedSignature)) {
+                    best = candidate;
+                }
+            });
+            return best as { signature: string; pages: BlockPlacement[][]; overflow: number } | null;
+        };
+
+        paginationRefineRef.current = () => {
+            if (disposed || paginationFinalized) return;
+            refinePasses += 1;
+            repaginate();
+        };
         repaginate();
         observer = new ResizeObserver(repaginate);
         canvas.querySelectorAll<HTMLElement>("[data-resume-block-index]").forEach((element) => observer.observe(element));
-        document.fonts.ready.then(repaginate);
+        // 웹 폰트가 늦게 적용되면 그 전에 잰 높이는 모두 틀리므로 처음부터 다시 잰다.
+        const restartPagination = () => {
+            if (disposed) return;
+            previousMeasurements.length = 0;
+            previousBlockEdges = new Map();
+            appliedLayouts.clear();
+            refinePasses = 0;
+            paginationFinalized = false;
+            repaginate();
+        };
+        document.fonts.ready.then(restartPagination);
+        document.fonts.addEventListener("loadingdone", restartPagination);
 
         return () => {
             disposed = true;
+            paginationRefineRef.current = null;
+            document.fonts.removeEventListener("loadingdone", restartPagination);
             observer?.disconnect();
             if (paginationFrameRef.current !== null) {
                 cancelAnimationFrame(paginationFrameRef.current);
@@ -1332,43 +1521,7 @@ export default function ResumeCanvas({
         canvasRef,
         paperPadding,
         templateType,
-        minimalOverflowCompensation,
     ]);
-
-    // Minimal은 측정 조각과 실제 조각의 높이 차이로 페이지 하단을 넘칠 수 있다.
-    // 배치가 화면에 반영된 뒤 실제로 넘친 만큼 여유 높이를 늘려 다시 배치한다.
-    useLayoutEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const frame = requestAnimationFrame(() => {
-            if (templateType !== "minimal") {
-                setMinimalOverflowCompensation((current) => (current === 0 ? current : 0));
-                return;
-            }
-            // 새 배치가 아직 반영되지 않은 화면은 측정하지 않는다.
-            if (latestPaginationSignatureRef.current !== JSON.stringify(pagePlacements)) return;
-            let maxOverflow = 0;
-            canvas.querySelectorAll<HTMLElement>(".resume-paper").forEach((paper) => {
-                const blocksOnPage = paper.querySelectorAll<HTMLElement>("[data-resume-block-index]");
-                // 블록 하나가 한 페이지보다 큰 경우는 다시 배치해도 줄어들지 않는다.
-                if (blocksOnPage.length < 2) return;
-                const paperRect = paper.getBoundingClientRect();
-                const scale = paper.offsetHeight > 0 ? paperRect.height / paper.offsetHeight : 1;
-                const contentLimit = paper.offsetHeight - Number.parseFloat(window.getComputedStyle(paper).paddingBottom || "0");
-                blocksOnPage.forEach((element) => {
-                    const bottom = (element.getBoundingClientRect().bottom - paperRect.top) / scale;
-                    maxOverflow = Math.max(maxOverflow, bottom - contentLimit);
-                });
-            });
-            if (maxOverflow > 1) {
-                setMinimalOverflowCompensation((current) => Math.min(
-                    MINIMAL_MAX_OVERFLOW_COMPENSATION,
-                    current + Math.ceil(maxOverflow),
-                ));
-            }
-        });
-        return () => cancelAnimationFrame(frame);
-    }, [canvasRef, pagePlacements, templateType]);
 
     // 단일 블록 렌더러 함수
     const renderBlockContent = (block: ResumeBlock, placement: BlockPlacement) => {
