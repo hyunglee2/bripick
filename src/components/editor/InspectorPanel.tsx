@@ -82,8 +82,6 @@ export default function InspectorPanel() {
     const [newSkillInputs, setNewSkillInputs] = useState<Record<string, string>>({});
     const [expandedSkillCategoryId, setExpandedSkillCategoryId] = useState<string | null>(null);
     const [draggedContactIndex, setDraggedContactIndex] = useState<number | null>(null);
-    const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
-    const [editingCertificationId, setEditingCertificationId] = useState<string | null>(null);
     const [pendingProfilePhoto, setPendingProfilePhoto] = useState<{
         blockId: string;
         file?: File;
@@ -94,8 +92,6 @@ export default function InspectorPanel() {
 
     useEffect(() => {
         blockPanelRef.current?.scrollTo({ top: 0 });
-        setEditingEducationId(null);
-        setEditingCertificationId(null);
     }, [selectedBlockId]);
 
     const currentIndex = blocks.findIndex((b) => b.id === selectedBlockId);
@@ -104,6 +100,11 @@ export default function InspectorPanel() {
     const setEditingExperienceId = setSelectedBlockItemId;
     const editingProjectId = currentBlock?.type === "project" ? selectedBlockItemId : null;
     const setEditingProjectId = setSelectedBlockItemId;
+    // 학력·기타 경험도 캔버스에서 고른 항목을 그대로 따라가도록 스토어의 선택 상태를 쓴다.
+    const editingEducationId = currentBlock?.type === "education" ? selectedBlockItemId : null;
+    const setEditingEducationId = setSelectedBlockItemId;
+    const editingCertificationId = currentBlock?.type === "certification" ? selectedBlockItemId : null;
+    const setEditingCertificationId = setSelectedBlockItemId;
     const expandedExperienceProjectId = currentBlock?.type === "experience"
         ? selectedBlockSubItemId
         : null;

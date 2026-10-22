@@ -9033,3 +9033,43 @@ body:has(.editor-tutorial) .feedback-launcher {
   bottom: calc(var(--resume-block-gap, 18px) * -1 - 4px);
   border-top-color: #e5e7eb;
 }
+
+/* 항목 상세를 편집할 때는 블록 전체에는 옅은 테두리만 두고, 편집 중인 항목을 띄운다. */
+.resume-block-item.resume-block-selected--item::after {
+  border-color: rgb(15 23 42 / 9%);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Modern도 옅은 테두리는 Minimal처럼 조각마다 둥근 테두리로 그린다(조각 연결 모양을 쓰지 않음). */
+.reference-template .resume-block-item.resume-block-selected--item::after {
+  inset: -3px -16px;
+  border-radius: 16px;
+}
+
+/* 항목 표시는 ::after를 쓴다. Modern은 항목의 ::before를 앞머리 사각형 표시로 쓰고 있다. */
+.resume-paper [data-resume-selected="true"] {
+  position: relative;
+}
+
+.resume-paper [data-resume-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -6px -10px;
+  top: calc(var(--resume-selected-top, 0px) - 6px);
+  z-index: -1;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--resume-blue, #2f80c3) 20%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--resume-blue, #2f80c3) 2.5%, white);
+  box-shadow: 0 2px 8px rgb(15 23 42 / 4%);
+}
+
+@media print {
+  .resume-paper [data-resume-selected="true"]::after {
+    display: none !important;
+  }
+}
+

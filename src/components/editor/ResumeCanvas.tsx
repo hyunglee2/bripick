@@ -208,6 +208,8 @@ export default function ResumeCanvas({
     const storedGlobalStyle = useResumeStore((state) => state.resume.globalStyle);
     const storedSelectedBlockId = useResumeStore((state) => state.selectedBlockId);
     const storeSetSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
+    const storedSelectedItemId = useResumeStore((state) => state.selectedBlockItemId);
+    const storedSelectedSubItemId = useResumeStore((state) => state.selectedBlockSubItemId);
     const storeSetSelectedBlockSelection = useResumeStore((state) => state.setSelectedBlockSelection);
     const storeUpdateBlockData = useResumeStore((state) => state.updateBlockData);
     const storeUpdateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
@@ -216,6 +218,8 @@ export default function ResumeCanvas({
     const blocks = resumeOverride?.blocks ?? storedBlocks;
     const globalStyle = resumeOverride?.globalStyle ?? storedGlobalStyle;
     const selectedBlockId = readOnly ? null : storedSelectedBlockId;
+    const selectedItemId = readOnly ? null : storedSelectedItemId;
+    const selectedSubItemId = readOnly ? null : storedSelectedSubItemId;
     const setSelectedBlockId = readOnly ? (() => undefined) : storeSetSelectedBlockId;
     const setSelectedBlockSelection = readOnly ? (() => undefined) : storeSetSelectedBlockSelection;
     const updateBlockData = readOnly ? (() => undefined) : storeUpdateBlockData;
@@ -710,6 +714,30 @@ export default function ResumeCanvas({
     // 내용·간격이 바뀌는 렌더마다 구분선 위치를 다시 맞춘다.
     useLayoutEffect(() => {
         if (canvasRef.current) positionBlockDividers(canvasRef.current);
+    });
+
+    // 오른쪽 패널에서 편집 중인 항목(회사·프로젝트 등)에만 진한 선택 표시를 한다.
+    useLayoutEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.querySelectorAll<HTMLElement>("[data-resume-selected]").forEach((element) => {
+            element.removeAttribute("data-resume-selected");
+            element.style.removeProperty("--resume-selected-top");
+        });
+        if (!selectedBlockId || !selectedItemId) return;
+        const selector = selectedSubItemId
+            ? `[data-resume-sub-child-id="${CSS.escape(selectedSubItemId)}"]`
+            : `[data-resume-child-id="${CSS.escape(selectedItemId)}"]`;
+        canvas.querySelectorAll<HTMLElement>(".resume-block-selected").forEach((block) => {
+            block.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+                element.setAttribute("data-resume-selected", "true");
+                // 항목 위쪽 구분선·여백은 조각마다 다르므로(페이지 첫 조각, 제목만 걸린 조각 등)
+                // 실제 값을 읽어 선택 카드가 내용 바로 위에서 시작하게 한다.
+                const style = window.getComputedStyle(element);
+                const topEdge = Number.parseFloat(style.paddingTop || "0") + Number.parseFloat(style.borderTopWidth || "0");
+                element.style.setProperty("--resume-selected-top", `${topEdge}px`);
+            });
+        });
     });
 
     useEffect(() => {
@@ -2609,7 +2637,7 @@ export default function ResumeCanvas({
                                     .map((edu: any, localIndex: number) => {
                                         const eduIdx = (placement.itemStart ?? 0) + localIndex;
                                         return (
-                                            <div key={edu.id} data-pagination-item-index={eduIdx} className="space-y-0.5">
+                                            <div key={edu.id} data-pagination-item-index={eduIdx} data-resume-child-id={edu.id} className="space-y-0.5">
                                                 <div className="flex justify-between items-baseline gap-2">
                                                     <div className="flex min-w-0 flex-1 items-center gap-2">
                                                         <EditableText
@@ -2712,6 +2740,7 @@ export default function ResumeCanvas({
                                             <div
                                                 key={cert.id}
                                                 data-pagination-item-index={certIdx}
+                                                data-resume-child-id={cert.id}
                                                 className={`resume-other-experience__item${isDescriptionContinuation ? " resume-other-experience__item--continuation" : ""}`}
                                                 style={{
                                                     gridTemplateColumns: isDescriptionContinuation
@@ -2997,6 +3026,7 @@ export default function ResumeCanvas({
                                                 ? "bg-neutral-50/70 border border-neutral-200/80 rounded-xl px-6 py-5 mb-4 shadow-xs hover:border-neutral-300 hover:shadow-sm"
                                                 : "px-4 mb-2 hover:bg-neutral-50/50 rounded"
                                                 } ${isSelected ? "resume-block-selected" : ""
+                                                } ${isSelected && selectedItemId ? "resume-block-selected--item" : ""
                                                 } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
                                                 } ${isHidden ? "opacity-40 grayscale border-dashed border-neutral-300 block-hidden" : ""
                                                 } ${continuesPreviousFragment ? "resume-block-fragment--continues-previous" : ""
