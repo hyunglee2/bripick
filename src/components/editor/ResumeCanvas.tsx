@@ -119,6 +119,61 @@ function measureFragmentEdges(element: HTMLElement): FragmentEdges {
     };
 }
 
+// 블록 상자가 아니라 실제로 보이는 글자·선·이미지의 위아래 끝을 잰다.
+function getVisibleInkBounds(root: HTMLElement): [number, number] | null {
+    let top = Infinity;
+    let bottom = -Infinity;
+    const include = (rect: DOMRect) => {
+        if (rect.width <= 0 || rect.height <= 0) return;
+        top = Math.min(top, rect.top);
+        bottom = Math.max(bottom, rect.bottom);
+    };
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => (
+            node instanceof HTMLElement && (node.classList.contains("resume-block-divider") || node.classList.contains("no-print"))
+                ? NodeFilter.FILTER_REJECT
+                : NodeFilter.FILTER_ACCEPT
+        ),
+    });
+    const range = document.createRange();
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            if (!node.textContent?.trim()) continue;
+            range.selectNodeContents(node);
+            Array.from(range.getClientRects()).forEach(include);
+            continue;
+        }
+        const element = node as HTMLElement;
+        const style = window.getComputedStyle(element);
+        if (style.visibility === "hidden" || style.display === "none") continue;
+        const hasBorder = (style.borderTopStyle !== "none" && style.borderTopWidth !== "0px")
+            || (style.borderBottomStyle !== "none" && style.borderBottomWidth !== "0px");
+        const hasBackground = style.backgroundColor !== "rgba(0, 0, 0, 0)" && style.backgroundColor !== "transparent";
+        if (element.tagName === "IMG" || element.tagName === "svg" || hasBorder || hasBackground) {
+            include(element.getBoundingClientRect());
+        }
+    }
+    return Number.isFinite(top) ? [top, bottom] : null;
+}
+
+// 하단 구분선을 위 블록의 마지막 내용과 아래 블록의 첫 내용 사이 정확히 가운데에 둔다.
+function positionBlockDividers(root: HTMLElement) {
+    root.querySelectorAll<HTMLElement>(".resume-block-divider").forEach((divider) => {
+        const block = divider.parentElement;
+        const nextBlock = block?.nextElementSibling;
+        if (!block || !(nextBlock instanceof HTMLElement)) return;
+        const above = getVisibleInkBounds(block);
+        const below = getVisibleInkBounds(nextBlock);
+        if (!above || !below) return;
+        const blockRect = block.getBoundingClientRect();
+        const scale = block.offsetHeight > 0 ? blockRect.height / block.offsetHeight : 1;
+        const middle = (above[1] + below[0]) / 2;
+        // 1px 선의 가운데가 정확히 중간 지점에 오도록 반 픽셀을 뺀다.
+        divider.style.top = `${(middle - blockRect.top) / scale - 0.5}px`;
+        divider.style.bottom = "auto";
+    });
+}
+
 // 페이지의 직전 조각 뒤에 이 조각을 붙였을 때 늘어나는 높이(페이지 마지막 margin은 제외).
 function getAppendedPlacementHeight(
     previous: BlockPlacement | undefined,
@@ -651,6 +706,20 @@ export default function ResumeCanvas({
             if (frameId !== null) cancelAnimationFrame(frameId);
         };
     }, [pages.length, viewMode, zoomLevel]);
+
+    // 내용·간격이 바뀌는 렌더마다 구분선 위치를 다시 맞춘다.
+    useLayoutEffect(() => {
+        if (canvasRef.current) positionBlockDividers(canvasRef.current);
+    });
+
+    useEffect(() => {
+        if (typeof document === "undefined" || !document.fonts) return;
+        const reposition = () => {
+            if (canvasRef.current) positionBlockDividers(canvasRef.current);
+        };
+        document.fonts.addEventListener("loadingdone", reposition);
+        return () => document.fonts.removeEventListener("loadingdone", reposition);
+    }, []);
 
     // 새 배치가 화면에 반영되면 그 배치에서 잰 실제 조각 높이로 한 번 더 계산한다.
     useLayoutEffect(() => {
@@ -2955,8 +3024,11 @@ export default function ResumeCanvas({
 
                                             {renderBlockContent(block, placement)}
 
-                                            {templateType === "minimal" && block.style.showDivider && (
-                                                <hr className="mt-4 border-neutral-200" />
+                                            {/* 블록 사이 간격 한가운데에 그려서 페이지 나눔 측정에는 영향을 주지 않는다. */}
+                                            {block.style.showBottomDivider === true
+                                                && !continuesNextFragment
+                                                && fragmentIndex < page.blocks.length - 1 && (
+                                                <div className="resume-block-divider" aria-hidden="true" />
                                             )}
                                         </div>
                                     );

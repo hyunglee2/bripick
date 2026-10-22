@@ -81,7 +81,7 @@ export default function RootLayout({
             __html: `(function(){try{var saved=localStorage.getItem('bripick-theme');var theme=saved==='light'||saved==='dark'?saved:'dark';document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;}catch(e){document.documentElement.dataset.theme='dark';}})();`,
           }}
         />
-        {/* 국문 웹폰트 로드: Pretendard, Noto Sans KR, Nanum Myeongjo */}
+        {/* 국문 웹폰트 로드: Pretendard, 나눔고딕, IBM Plex Sans KR, Noto Serif KR (Noto Sans KR, 나눔명조는 이전 문서 호환용) */}
         <link
           rel="stylesheet"
           as="style"
@@ -91,7 +91,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;700&family=Nanum+Myeongjo:wght@400;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
           rel="stylesheet"
         />
       </head>

@@ -16,7 +16,9 @@ export interface BlockStyle {
     paddingY: number;
     paddingX: number;
     columns: number;
+    // 예전 기본값이 항상 true라서 실제 구분선은 showBottomDivider로만 켠다.
     showDivider: boolean;
+    showBottomDivider?: boolean;
     keepTogether?: boolean;
     startOnNewPage?: boolean;
     useCustomPadding?: boolean;

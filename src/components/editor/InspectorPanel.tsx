@@ -10,6 +10,7 @@ import { formatBlockTitle } from "@/lib/blockTitles";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText, splitInlineRichTextLines } from "@/lib/richText";
 import ProjectBulletDocumentEditor from "@/components/editor/ProjectBulletDocumentEditor";
 import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
+import GlobalStylePanel, { DEFAULT_GLOBAL_STYLE } from "@/components/editor/GlobalStylePanel";
 import RichTextEditable from "@/components/editor/RichTextEditable";
 import { Kbd, KbdGroup } from "@/components/ui/Kbd";
 import {
@@ -17,17 +18,11 @@ import {
     ChevronUp,
     ChevronDown,
     ChevronLeft,
+    ChevronRight,
     Plus,
     X,
-    Sliders,
-    Palette,
-    Sparkles,
-    Layers,
-    Type,
     Eye,
     EyeOff,
-    Check,
-    RotateCcw,
     GripVertical,
     ImagePlus,
     Crop,
@@ -35,19 +30,36 @@ import {
     MoreHorizontal,
 } from "lucide-react";
 
-const DEFAULT_GLOBAL_STYLE = {
-    fontFamily: "'Pretendard', sans-serif",
-    primaryColor: "#2f80c3",
-    contentWidth: 800,
-    basePadding: 48,
-    blockGap: 18,
-    projectDividerGap: 28,
-    displayTitleFontSize: 24,
-    sectionTitleFontSize: 24,
-    itemTitleFontSize: 19,
-    bodyFontSize: 14,
-    captionFontSize: 14,
+const BLOCK_TYPE_LABELS: Record<string, string> = {
+    profile: "프로필",
+    skills: "스킬",
+    experience: "경력",
+    project: "프로젝트",
+    education: "학력",
+    certification: "기타 경험",
+    custom_text: "자유 텍스트",
 };
+
+type ContentStyle = "bullets" | "paragraph";
+
+// 불렛/줄글 표시 방식을 스위치 대신 두 칸짜리 선택지로 보여준다.
+function ContentStyleToggle({ value, onChange, label }: { value: ContentStyle; onChange: (value: ContentStyle) => void; label: string }) {
+    return (
+        <div className="block-settings__segmented" role="radiogroup" aria-label={label}>
+            {(["bullets", "paragraph"] as const).map((option) => (
+                <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={value === option}
+                    onClick={() => onChange(option)}
+                >
+                    {option === "bullets" ? "불렛" : "줄글"}
+                </button>
+            ))}
+        </div>
+    );
+}
 
 export default function InspectorPanel() {
     const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
@@ -57,7 +69,6 @@ export default function InspectorPanel() {
     const setSelectedBlockSubItemId = useResumeStore((state) => state.setSelectedBlockSubItemId);
     const blocks = useResumeStore((state) => state.resume.blocks);
     const globalStyle = useResumeStore((state) => state.resume.globalStyle);
-    const updateGlobalStyle = useResumeStore((state) => state.updateGlobalStyle);
     const updateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
     const updateBlockStyle = useResumeStore((state) => state.updateBlockStyle);
     const updateBlockData = useResumeStore((state) => state.updateBlockData);
@@ -116,253 +127,8 @@ export default function InspectorPanel() {
         ? currentBlock.data.find((certification: any) => certification.id === editingCertificationId)
         : undefined;
 
-    const fontOptions = [
-        { label: "Pretendard (기본 / 깔끔한 고딕)", value: "'Pretendard', -apple-system, sans-serif" },
-        { label: "Noto Sans KR (안정적인 본문용)", value: "'Noto Sans KR', sans-serif" },
-        { label: "Nanum Myeongjo (우아한 명조체)", value: "'Nanum Myeongjo', serif" },
-        { label: "System UI (애플/윈도우 기본)", value: "system-ui, sans-serif" },
-    ];
-
-    const typographyControls = [
-        { key: "displayTitleFontSize", label: "프로필 대표 제목", min: 20, max: 38, fallback: 24 },
-        { key: "sectionTitleFontSize", label: "섹션 제목", min: 16, max: 32, fallback: 24 },
-        { key: "itemTitleFontSize", label: "항목 제목", min: 14, max: 22, fallback: 19 },
-        { key: "bodyFontSize", label: "본문", min: 14, max: 20, fallback: 14 },
-        { key: "captionFontSize", label: "설명 · 보조 정보", min: 14, max: 18, fallback: 14 },
-    ] as const;
-
-    const accentColorPresets = [
-        { value: "#ac1c1c", label: "딥 레드" },
-        { value: "#fcc02c", label: "골든 옐로" },
-        { value: "#057e0e", label: "포레스트 그린" },
-        { value: "#1ca7ac", label: "아쿠아 틸" },
-        { value: "#2f80c3", label: "클래식 블루" },
-        { value: "#9c47b2", label: "오키드 퍼플" },
-        { value: "#f25f8c", label: "비비드 핑크" },
-        { value: "#334155", label: "슬레이트" },
-    ] as const;
-
     // 1. 블록 미선택 시: 문서 전역 설정 패널
-    if (!currentBlock) {
-        return (
-            <aside style={inspectorAccentStyle} className="inspector-panel inspector-panel--global h-full w-full border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
-                <div className="inspector-panel-stack">
-                    <div className="inspector-heading flex items-center justify-between gap-3 border-b border-neutral-800">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                            <Sliders size={14} className="text-blue-500" />
-                            <span>
-                                문서 전역 설정
-                            </span>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => updateGlobalStyle(DEFAULT_GLOBAL_STYLE)}
-                            className="inspector-reset-button"
-                            data-tooltip="현재 템플릿의 전역 설정을 기본값으로 복원"
-                        >
-                            <RotateCcw size={12} aria-hidden="true" />
-                            기본값 복원
-                        </button>
-                    </div>
-
-                    <div className="inspector-context-banner" role="note">
-                        <Sparkles size={15} aria-hidden="true" />
-                        <p>캔버스의 빈 영역을 클릭하면 언제든 전역 설정으로 돌아올 수 있어요.</p>
-                    </div>
-
-                    {/* 서체(폰트) 선택 */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
-                            <Type size={13} /> 국문/영문 서체
-                        </label>
-                        <select
-                            value={globalStyle?.fontFamily || fontOptions[0].value}
-                            onChange={(e) => updateGlobalStyle({ fontFamily: e.target.value })}
-                            className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500 cursor-pointer"
-                        >
-                            {fontOptions.map((f) => (
-                                <option key={f.value} value={f.value}>
-                                    {f.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {/* 문서 타이포그래피 크기 */}
-                    <details className="group border-t border-neutral-800 pt-4">
-                        <summary className="flex cursor-pointer list-none items-center justify-between rounded px-1 py-1.5 text-neutral-300 transition hover:bg-neutral-800/60 [&::-webkit-details-marker]:hidden">
-                            <span className="flex items-center gap-1.5 text-xs font-medium">
-                                <Type size={13} /> 글자 크기
-                            </span>
-                            <ChevronDown size={15} className="text-neutral-500 transition-transform group-open:rotate-180" />
-                        </summary>
-                        <div className="mt-3 space-y-3 px-1">
-                            <p className="text-[10px] text-neutral-500">문서 종류별 크기를 개별 조정합니다.</p>
-                            {typographyControls.map(({ key, label, min, max, fallback }) => {
-                                const value = globalStyle?.[key] ?? fallback;
-                                return (
-                                    <div key={key} className="space-y-1.5">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-neutral-300">{label}</span>
-                                            <span className="font-mono text-neutral-400">{value}px</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min={min}
-                                            max={max}
-                                            step="1"
-                                            value={value}
-                                            onChange={(e) => updateGlobalStyle({ [key]: Number(e.target.value) })}
-                                            className="w-full accent-blue-500 cursor-pointer"
-                                        />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </details>
-
-                    {/* 포인트 컬러 지정 */}
-                    <div className="space-y-2">
-                        <label className="text-xs font-medium text-neutral-300 flex items-center gap-1.5">
-                            <Palette size={13} /> 테마 포인트 컬러
-                        </label>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <input
-                                type="color"
-                                value={globalStyle?.primaryColor || "#2f80c3"}
-                                onChange={(e) => updateGlobalStyle({ primaryColor: e.target.value })}
-                                className="h-8 w-8 shrink-0 cursor-pointer rounded border border-neutral-700 bg-transparent"
-                                aria-label="사용자 지정 포인트 컬러"
-                            />
-                            <span className="text-xs text-neutral-400 font-mono">
-                                {globalStyle?.primaryColor || "#2f80c3"}
-                            </span>
-                            <div className="ml-auto flex items-center gap-1.5" aria-label="추천 포인트 컬러">
-                                {accentColorPresets.map((color) => {
-                                    const isSelected = (globalStyle?.primaryColor || "#2f80c3").toLowerCase() === color.value;
-                                    return (
-                                        <button
-                                            key={color.value}
-                                            type="button"
-                                            onClick={() => updateGlobalStyle({ primaryColor: color.value })}
-                                            data-tooltip={`${color.label} ${color.value}`}
-                                            aria-label={`${color.label} ${color.value}`}
-                                            aria-pressed={isSelected}
-                                            className={`inspector-color-swatch h-5 w-5 rounded-full border-2 transition hover:scale-110 focus:outline-none focus:ring-2 focus:ring-[#2f80c3]/70 ${isSelected
-                                                ? "border-white shadow-[0_0_0_2px_rgba(47,128,195,0.55)]"
-                                                : "border-neutral-700 hover:border-neutral-400"
-                                                }`}
-                                            style={{ backgroundColor: color.value }}
-                                        />
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 캔버스 기본 여백 */}
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-neutral-300">용지 안쪽 여백</span>
-                            <span className="text-neutral-400 font-mono">{globalStyle?.basePadding || 48}px</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="20"
-                            max="64"
-                            step="4"
-                            value={globalStyle?.basePadding || 48}
-                            onChange={(e) => updateGlobalStyle({ basePadding: Number(e.target.value) })}
-                            className="w-full accent-blue-500 cursor-pointer"
-                        />
-                    </div>
-
-                    {/* 블록 사이 간격 */}
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-neutral-300">블록 사이 간격</span>
-                            <span className="text-neutral-400 font-mono">{globalStyle?.blockGap ?? 18}px</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="40"
-                            step="2"
-                            value={globalStyle?.blockGap ?? 18}
-                            onChange={(e) => updateGlobalStyle({ blockGap: Number(e.target.value) })}
-                            className="w-full accent-blue-500 cursor-pointer"
-                        />
-                    </div>
-
-                    {/* 프로젝트 구분선 위아래 간격 */}
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-neutral-300">프로젝트 구분선 간격</span>
-                            <span className="text-neutral-400 font-mono">{globalStyle?.projectDividerGap ?? 28}px</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="0"
-                            max="120"
-                            step="2"
-                            value={globalStyle?.projectDividerGap ?? 28}
-                            onChange={(e) => updateGlobalStyle({ projectDividerGap: Number(e.target.value) })}
-                            className="w-full accent-blue-500 cursor-pointer"
-                        />
-                    </div>
-
-                    {/* 캔버스 최대 가로폭 */}
-                    <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                            <span className="text-neutral-300">캔버스 가로 너비</span>
-                            <span className="text-neutral-400 font-mono">{globalStyle?.contentWidth || 800}px</span>
-                        </div>
-                        <input
-                            type="range"
-                            min="720"
-                            max="900"
-                            step="20"
-                            value={globalStyle?.contentWidth || 800}
-                            onChange={(e) => updateGlobalStyle({ contentWidth: Number(e.target.value) })}
-                            className="w-full accent-blue-500 cursor-pointer"
-                        />
-                    </div>
-
-                    {/* 템플릿 스타일 선택 */}
-                    <div className="space-y-2 border-t border-neutral-800 pt-4">
-                        <label className="text-xs font-medium text-neutral-300 block">
-                            이력서 레이아웃 템플릿
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                            <button
-                                onClick={() => updateGlobalStyle({ template: "modern" })}
-                                aria-pressed={(globalStyle?.template || "modern") === "modern"}
-                                className="inspector-template-card"
-                            >
-                                <span className="inspector-template-card__copy">
-                                    <span className="inspector-template-card__title">Modern</span>
-                                    <span className="inspector-template-card__description">Bripick 시그니처 디자인</span>
-                                </span>
-                                <Check className="inspector-template-card__check" aria-hidden="true" />
-                            </button>
-                            <button
-                                onClick={() => updateGlobalStyle({ template: "minimal" })}
-                                aria-pressed={globalStyle?.template === "minimal"}
-                                className="inspector-template-card"
-                            >
-                                <span className="inspector-template-card__copy">
-                                    <span className="inspector-template-card__title">Minimal</span>
-                                    <span className="inspector-template-card__description">군더더기 없는 선형</span>
-                                </span>
-                                <Check className="inspector-template-card__check" aria-hidden="true" />
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-            </aside>
-        );
-    }
+    if (!currentBlock) return <GlobalStylePanel />;
 
     // --- 공통 블록 조작 ---
     const handleProfilePhotoUpload = (file?: File) => {
@@ -818,254 +584,144 @@ export default function InspectorPanel() {
     };
 
     return (
-        <aside ref={blockPanelRef} style={inspectorAccentStyle} className="inspector-panel inspector-panel--block h-full w-full border-l border-neutral-800 bg-[#12131a] p-6 flex flex-col justify-between overflow-y-auto">
-            <div className="inspector-panel-stack">
-                {/* 상단 블록 타이틀 및 액션 버튼들 (눈 모양 토글 버튼 포함) */}
-                {editingExperience || editingProject || editingEducation || editingCertification ? (
-                    <div className="inspector-heading inspector-heading--experience-detail border-b border-neutral-800">
-                        <div className="inspector-heading__detail-title">
-                            <button
-                                type="button"
-                                className="inspector-heading__back"
-                                onClick={() => {
-                                    if (editingExperienceProject) {
-                                        setExpandedExperienceProjectId(null);
-                                        blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                        return;
-                                    }
-                                    setEditingExperienceId(null);
-                                    setEditingEducationId(null);
-                                    setEditingCertificationId(null);
-                                    setEditingProjectId(null);
-                                    setExpandedExperienceProjectId(null);
-                                    blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                }}
-                                data-tooltip={editingExperienceProject
-                                    ? "회사 설정으로 돌아가기"
-                                    : editingExperience
-                                    ? "경력(회사) 목록으로 돌아가기"
-                                    : editingProject
-                                        ? "프로젝트 목록으로 돌아가기"
-                                    : editingEducation
-                                        ? "학력 목록으로 돌아가기"
-                                        : "기타 경험 목록으로 돌아가기"}
-                                aria-label={editingExperienceProject
-                                    ? "회사 설정으로 돌아가기"
-                                    : editingExperience
-                                    ? "경력(회사) 목록으로 돌아가기"
-                                    : editingProject
-                                        ? "프로젝트 목록으로 돌아가기"
-                                    : editingEducation
-                                        ? "학력 목록으로 돌아가기"
-                                        : "기타 경험 목록으로 돌아가기"}
-                            >
-                                <ChevronLeft size={14} />
-                            </button>
-                            <span>
-                                {editingExperienceProject
-                                    ? (editingExperienceProject.title || "제목 없는 프로젝트")
-                                    : editingExperience
-                                    ? (editingExperience.company || "회사명 없음")
-                                    : editingProject
-                                        ? (editingProject.title || "제목 없는 프로젝트")
-                                    : editingEducation
-                                        ? (editingEducation.school || "학교명 없음")
-                                        : (editingCertification?.title || "활동명 없음")}
-                            </span>
-                        </div>
+        <aside ref={blockPanelRef} style={inspectorAccentStyle} className="inspector-panel inspector-panel--block block-settings h-full w-full overflow-y-auto">
+            {editingExperience || editingProject || editingEducation || editingCertification ? (
+                <header className="block-settings__header block-settings__header--detail">
+                    <button
+                        type="button"
+                        className="block-settings__back"
+                        onClick={() => {
+                            if (editingExperienceProject) {
+                                setExpandedExperienceProjectId(null);
+                                blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                return;
+                            }
+                            setEditingExperienceId(null);
+                            setEditingEducationId(null);
+                            setEditingCertificationId(null);
+                            setEditingProjectId(null);
+                            setExpandedExperienceProjectId(null);
+                            blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        aria-label={editingExperienceProject
+                            ? "회사 설정으로 돌아가기"
+                            : editingExperience
+                            ? "경력(회사) 목록으로 돌아가기"
+                            : editingProject
+                                ? "프로젝트 목록으로 돌아가기"
+                            : editingEducation
+                                ? "학력 목록으로 돌아가기"
+                                : "기타 경험 목록으로 돌아가기"}
+                    >
+                        <ChevronLeft size={16} aria-hidden="true" />
+                    </button>
+                    <div className="block-settings__heading">
+                        <p className="block-settings__eyebrow">
+                            {editingExperienceProject
+                                ? `${editingExperience?.company || "회사명 없음"} · 프로젝트`
+                                : editingExperience
+                                ? "경력 · 회사"
+                                : editingProject
+                                    ? "프로젝트"
+                                : editingEducation
+                                    ? "학력"
+                                    : "기타 경험"}
+                        </p>
+                        <h2 className="doc-settings__title block-settings__title">
+                            {editingExperienceProject
+                                ? (editingExperienceProject.title || "제목 없는 프로젝트")
+                                : editingExperience
+                                ? (editingExperience.company || "회사명 없음")
+                                : editingProject
+                                    ? (editingProject.title || "제목 없는 프로젝트")
+                                : editingEducation
+                                    ? (editingEducation.school || "학교명 없음")
+                                    : (editingCertification?.title || "활동명 없음")}
+                        </h2>
                     </div>
-                ) : (
-                    <div className="inspector-heading flex items-center justify-between border-b border-neutral-800 pb-3">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                            <Layers size={14} className="text-blue-500" />
-                            <span>{currentBlock.type === "certification" ? "OTHER EXPERIENCE" : currentBlock.type} 설정</span>
-                            {currentBlock.isVisible === false && (
-                                <span className="text-[10px] bg-red-950/60 text-red-400 px-1.5 py-0.5 rounded border border-red-900/60 lowercase font-normal">
-                                    숨김
-                                </span>
-                            )}
-                        </div>
-                        <div className="inspector-actions flex items-center gap-1">
-                            {/* 눈 모양 숨기기/보이기 토글 버튼 */}
-                            <button
-                                onClick={() => toggleBlockVisibility(currentBlock.id)}
-                                className={`p-1 rounded transition ${currentBlock.isVisible === false
-                                    ? "text-red-400 hover:text-red-300 hover:bg-red-950/40"
-                                    : "text-neutral-400 hover:text-white hover:bg-neutral-800"
-                                    }`}
-                                data-tooltip={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
-                            >
-                                {currentBlock.isVisible === false ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-
-                            <button
-                                onClick={handleMoveUp}
-                                disabled={currentIndex === 0}
-                                className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                                data-tooltip="위로 이동"
-                            >
-                                <ChevronUp size={16} />
-                            </button>
-                            <button
-                                onClick={handleMoveDown}
-                                disabled={currentIndex === blocks.length - 1}
-                                className="p-1 text-neutral-400 hover:text-white disabled:opacity-30 transition"
-                                data-tooltip="아래로 이동"
-                            >
-                                <ChevronDown size={16} />
-                            </button>
-                            <button
-                                onClick={() => removeBlock(currentBlock.id)}
-                                className="p-1 text-neutral-500 hover:text-red-400 transition ml-1"
-                                data-tooltip="블록 삭제"
-                            >
-                                <Trash2 size={15} />
-                            </button>
-                        </div>
+                </header>
+            ) : (
+                <header className="block-settings__header">
+                    <div className="block-settings__heading">
+                        <h2 className="doc-settings__title block-settings__title">
+                            {BLOCK_TYPE_LABELS[currentBlock.type] ?? "블록"}
+                            {currentBlock.isVisible === false && <span className="block-settings__badge">숨김</span>}
+                        </h2>
+                        <p className="doc-settings__subtitle">
+                            {currentBlock.isVisible === false
+                                ? "이력서에 표시되지 않아요"
+                                : `${blocks.length}개 블록 중 ${currentIndex + 1}번째`}
+                        </p>
                     </div>
-                )}
+                    <div className="block-settings__actions">
+                        <button
+                            type="button"
+                            onClick={() => toggleBlockVisibility(currentBlock.id)}
+                            aria-pressed={currentBlock.isVisible === false}
+                            data-tooltip={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
+                            aria-label={currentBlock.isVisible === false ? "블록 표시하기" : "블록 숨기기"}
+                        >
+                            {currentBlock.isVisible === false ? <EyeOff size={15} /> : <Eye size={15} />}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleMoveUp}
+                            disabled={currentIndex === 0}
+                            data-tooltip="위로 이동"
+                            aria-label="블록 위로 이동"
+                        >
+                            <ChevronUp size={15} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleMoveDown}
+                            disabled={currentIndex === blocks.length - 1}
+                            data-tooltip="아래로 이동"
+                            aria-label="블록 아래로 이동"
+                        >
+                            <ChevronDown size={15} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => removeBlock(currentBlock.id)}
+                            className="is-danger"
+                            data-tooltip="블록 삭제"
+                            aria-label="블록 삭제"
+                        >
+                            <Trash2 size={15} />
+                        </button>
+                    </div>
+                </header>
+            )}
 
+            <div className="inspector-panel-stack block-settings__body">
                 {!editingExperience && !editingProject && !editingEducation && !editingCertification && (
-                    <>
-                        <div className="inspector-field space-y-1.5">
-                            <label className="inspector-label-inset block text-xs font-medium text-neutral-300">블록 제목</label>
-                            <input
-                                type="text"
-                                value={formatBlockTitle(currentBlock.type === "certification" && currentBlock.title === "CERTIFICATIONS & AWARDS"
-                                    ? "Other Experience"
-                                    : currentBlock.title || "")}
-                                placeholder="블록 제목을 입력하세요"
-                                onChange={(e) => updateBlockTitle(currentBlock.id, formatBlockTitle(e.target.value))}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-
-                        <section className="inspector-options-section space-y-2">
-                            <h3 className="inspector-section-heading">블록 옵션</h3>
-                            <div className="inspector-options-card space-y-4">
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="min-w-0 flex-1">
-                                        <span className="block text-xs text-neutral-300">개별 간격 사용</span>
-                                        <span className="mt-0.5 block text-[10px] text-neutral-500">전역 블록 간격에 내부 여백을 추가합니다.</span>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        checked={currentBlock.style.useCustomPadding === true}
-                                        onChange={(e) => updateBlockStyle(currentBlock.id, { useCustomPadding: e.target.checked })}
-                                        className="h-4 w-4 cursor-pointer accent-blue-500"
-                                    />
-                                </div>
-
-                                {currentBlock.style.useCustomPadding === true && (
-                                    <div className="space-y-2 rounded-lg bg-neutral-950/40 p-3">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-neutral-300">내부 상하 여백</span>
-                                            <span className="font-mono text-neutral-400">{currentBlock.style.paddingY}px</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="4"
-                                            max="48"
-                                            step="4"
-                                            value={currentBlock.style.paddingY}
-                                            onChange={(e) => updateBlockStyle(currentBlock.id, { paddingY: Number(e.target.value) })}
-                                            className="w-full cursor-pointer accent-blue-500"
-                                        />
-                                    </div>
-                                )}
-
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs text-neutral-300">하단 구분선 표시</span>
-                                    <input
-                                        type="checkbox"
-                                        checked={currentBlock.style.showDivider}
-                                        onChange={(e) => updateBlockStyle(currentBlock.id, { showDivider: e.target.checked })}
-                                        className="h-4 w-4 cursor-pointer accent-blue-500"
-                                    />
-                                </div>
-
-                                {currentBlock.type === "certification" && (
-                                    <div className="space-y-2 rounded-lg bg-neutral-950/40 p-3">
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-neutral-300">왼쪽 영역 비율</span>
-                                            <span className="font-mono text-neutral-400">
-                                                {currentBlock.style.otherExperienceLeftColumnRatio ?? 34}%
-                                            </span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="24"
-                                            max="48"
-                                            step="1"
-                                            value={currentBlock.style.otherExperienceLeftColumnRatio ?? 34}
-                                            onChange={(event) => updateBlockStyle(currentBlock.id, {
-                                                otherExperienceLeftColumnRatio: Number(event.target.value),
-                                            })}
-                                            aria-label="기타 경험 왼쪽 영역 비율"
-                                            className="w-full cursor-pointer accent-blue-500"
-                                        />
-                                    </div>
-                                )}
-
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="min-w-0 flex-1">
-                                        <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
-                                        <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
-                                            이 블록 앞에서 페이지를 나눕니다.
-                                        </span>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        checked={currentBlock.style.startOnNewPage === true}
-                                        onChange={(event) => updateBlockStyle(currentBlock.id, {
-                                            startOnNewPage: event.target.checked,
-                                        })}
-                                        aria-label="블록을 새 페이지에서 시작"
-                                        className="h-4 w-4 cursor-pointer accent-blue-500"
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between gap-3">
-                                    <div className="min-w-0 flex-1">
-                                        <span className="block text-xs text-neutral-300">
-                                            페이지 경계에서 항목 자동 이동
-                                        </span>
-                                        <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
-                                            {currentBlock.type === "project"
-                                                ? "한 페이지에 들어갈 수 있는 프로젝트가 페이지 끝에 걸리면, 프로젝트 전체를 다음 페이지로 옮깁니다."
-                                                : "한 페이지에 들어갈 수 있는 항목이 페이지 끝에 걸리면, 항목 전체를 다음 페이지로 옮깁니다."}
-                                        </span>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        checked={currentBlock.style.keepTogether === true}
-                                        onChange={(e) => {
-                                            const keepTogether = e.target.checked;
-                                            updateBlockStyle(currentBlock.id, { keepTogether });
-                                            if (currentBlock.type === "project" && Array.isArray(currentBlock.data)) {
-                                                updateBlockData(
-                                                    currentBlock.id,
-                                                    currentBlock.data.map((project: any) => ({ ...project, keepTogether })),
-                                                );
-                                            }
-                                        }}
-                                        className="h-4 w-4 cursor-pointer accent-blue-500"
-                                    />
-                                </div>
-                            </div>
-                        </section>
-                    </>
+                    <section className="block-settings__section">
+                        <h3 className="doc-settings__section-title">섹션 제목</h3>
+                        <input
+                            type="text"
+                            value={formatBlockTitle(currentBlock.type === "certification" && currentBlock.title === "CERTIFICATIONS & AWARDS"
+                                ? "Other Experience"
+                                : currentBlock.title || "")}
+                            placeholder="이력서에 보일 섹션 제목"
+                            aria-label="섹션 제목"
+                            onChange={(e) => updateBlockTitle(currentBlock.id, formatBlockTitle(e.target.value))}
+                            className="w-full border"
+                        />
+                    </section>
                 )}
 
                 {/* 블록별 데이터 입력 폼 */}
 
                 {/* [프로필 폼] */}
                 {currentBlock.type === "profile" && (
-                    <div className="inspector-section inspector-form-stack border-t border-neutral-800 pt-4">
+                    <>
+                    <div className="inspector-form-stack">
+                        <h3 className="doc-settings__section-title">기본 정보</h3>
                         <div className="inspector-field">
-                            <div className="flex items-center justify-between">
-                                <label className="text-xs text-neutral-400">프로필 사진</label>
-                                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
+                            <div className="block-settings__field-head">
+                                <label className="inspector-field-label">프로필 사진</label>
+                                <label className="block-settings__inline-switch">
                                     <input
                                         type="checkbox"
                                         checked={currentBlock.data.showPhoto !== false}
@@ -1073,9 +729,9 @@ export default function InspectorPanel() {
                                             ...currentBlock.data,
                                             showPhoto: event.target.checked,
                                         })}
-                                        className="h-3.5 w-3.5 accent-[#2f80c3]"
+                                        aria-label="프로필 사진 표시"
                                     />
-                                    사진 표시
+                                    표시
                                 </label>
                             </div>
                             <div className={`inspector-photo-row${currentBlock.data.showPhoto === false ? " opacity-45" : ""}`}>
@@ -1145,9 +801,9 @@ export default function InspectorPanel() {
                             </div>
                         </div>
                         <div className="inspector-field">
-                            <div className="flex items-baseline justify-between gap-2">
-                                <label className="text-xs text-neutral-400">한 줄 소개</label>
-                                <span className="text-[10px] text-neutral-500">이름·직무 앞에 표시</span>
+                            <div className="block-settings__field-head">
+                                <label className="inspector-field-label">한 줄 소개</label>
+                                <span className="block-settings__field-hint">이름 위에 표시</span>
                             </div>
                             <RichTextEditable
                                 html={currentBlock.data.bioHtml || escapeHtml(currentBlock.data.bio || "")}
@@ -1161,7 +817,7 @@ export default function InspectorPanel() {
                             />
                         </div>
                         <div className="inspector-field">
-                            <label className="text-xs text-neutral-400 block">직무</label>
+                            <label className="inspector-field-label">직무</label>
                             <input
                                 type="text"
                                 value={currentBlock.data.role || ""}
@@ -1172,7 +828,7 @@ export default function InspectorPanel() {
                             />
                         </div>
                         <div className="inspector-field">
-                            <label className="text-xs text-neutral-400 block">이름</label>
+                            <label className="inspector-field-label">이름</label>
                             <input
                                 type="text"
                                 value={currentBlock.data.name || ""}
@@ -1182,10 +838,12 @@ export default function InspectorPanel() {
                                 className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
                             />
                         </div>
+                    </div>
+                    <div className="inspector-form-stack">
                         <div className="inspector-field inspector-contact-list">
-                            <div>
-                                <label className="text-xs text-neutral-400">연락처</label>
-                            </div>
+                            <h3 className="doc-settings__section-title">
+                                연락처 <span className="block-settings__count">{profileContacts.length}</span>
+                            </h3>
                             {profileContacts.length === 0 && (
                                 <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
                                     표시할 연락처 항목을 추가해 주세요.
@@ -1347,21 +1005,19 @@ export default function InspectorPanel() {
                                 <Plus size={14} /> 연락처 항목 추가
                             </button>
                         </div>
+                    </div>
+                    <div className="inspector-form-stack">
                         <div className="inspector-field">
-                            <div className="flex items-center justify-between gap-3">
-                                <label className="text-xs text-neutral-400">자기소개</label>
-                                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
-                                    <input
-                                        type="checkbox"
-                                        checked={(currentBlock.data.introductionStyle || "bullets") === "bullets"}
-                                        onChange={(event) => updateBlockData(currentBlock.id, {
-                                            ...currentBlock.data,
-                                            introductionStyle: event.target.checked ? "bullets" : "paragraph",
-                                        })}
-                                        aria-label="자기소개를 불렛형으로 표시"
-                                    />
-                                    {(currentBlock.data.introductionStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
-                                </label>
+                            <div className="block-settings__field-head">
+                                <h3 className="doc-settings__section-title">자기소개</h3>
+                                <ContentStyleToggle
+                                    value={currentBlock.data.introductionStyle || "bullets"}
+                                    onChange={(value) => updateBlockData(currentBlock.id, {
+                                        ...currentBlock.data,
+                                        introductionStyle: value,
+                                    })}
+                                    label="자기소개 표시 방식"
+                                />
                             </div>
                             {(currentBlock.data.introductionStyle || "bullets") === "bullets" ? (
                                 <>
@@ -1401,15 +1057,16 @@ export default function InspectorPanel() {
                             )}
                         </div>
                     </div>
+                    </>
                 )}
 
                 {/* [경력 폼] */}
                 {currentBlock.type === "experience" && (
-                    <div className={`inspector-list-section${editingExperience ? " inspector-list-section--experience-detail" : " border-t border-neutral-800 pt-4"}`}>
+                    <div className={`inspector-list-section${editingExperience ? " inspector-list-section--experience-detail" : ""}`}>
                         {!editingExperience && (
-                            <div>
-                                <span className="text-xs font-semibold text-neutral-300">경력(회사) 목록</span>
-                            </div>
+                            <h3 className="doc-settings__section-title">
+                                회사 <span className="block-settings__count">{Array.isArray(currentBlock.data) ? currentBlock.data.length : 0}</span>
+                            </h3>
                         )}
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
@@ -1442,7 +1099,7 @@ export default function InspectorPanel() {
                                                     <span className="inspector-project-card__summary-copy">
                                                         <strong>{exp.company || "회사명 없음"}</strong>
                                                     </span>
-                                                    <span className="inspector-project-card__edit-action" aria-hidden="true">편집</span>
+                                                    <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
                                                 </button>
                                                 <details className="inspector-contact-menu inspector-project-menu">
                                                     <summary
@@ -1476,13 +1133,11 @@ export default function InspectorPanel() {
 
                                         {editingExperience?.id === exp.id && editingExperienceProject && (
                                             <div className="inspector-project-card__body">
-                                                <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
-                                                    <div className="min-w-0 flex-1">
-                                                        <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
-                                                        <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
-                                                            이 프로젝트 앞에서 페이지를 나눕니다.
-                                                        </span>
-                                                    </div>
+                                                <label className="block-settings__option block-settings__option--page">
+                                                    <span className="block-settings__option-copy">
+<span className="block-settings__option-label">새 페이지에서 시작</span>
+<span className="block-settings__option-hint">이 프로젝트 앞에서 페이지를 나눠요.</span>
+</span>
                                                     <input
                                                         type="checkbox"
                                                         checked={editingExperienceProject.startOnNewPage === true}
@@ -1492,9 +1147,9 @@ export default function InspectorPanel() {
                                                             { startOnNewPage: event.target.checked },
                                                         )}
                                                         aria-label="프로젝트를 새 페이지에서 시작"
-                                                        className="h-4 w-4 cursor-pointer accent-blue-500"
+                                                        
                                                     />
-                                                </div>
+                                                </label>
                                                 <div className="inspector-field">
                                                     <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
                                                     <input
@@ -1564,13 +1219,11 @@ export default function InspectorPanel() {
                                         {editingExperience?.id === exp.id && !editingExperienceProject && (
                                             <div className="inspector-project-card__body">
 
-                                                <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
-                                                    <div className="min-w-0 flex-1">
-                                                        <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
-                                                        <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
-                                                            이 회사 경력 앞에서 페이지를 나눕니다.
-                                                        </span>
-                                                    </div>
+                                                <label className="block-settings__option block-settings__option--page">
+                                                    <span className="block-settings__option-copy">
+<span className="block-settings__option-label">새 페이지에서 시작</span>
+<span className="block-settings__option-hint">이 회사 경력 앞에서 페이지를 나눠요.</span>
+</span>
                                                     <input
                                                         type="checkbox"
                                                         checked={exp.startOnNewPage === true}
@@ -1580,9 +1233,9 @@ export default function InspectorPanel() {
                                                             event.target.checked,
                                                         )}
                                                         aria-label="회사 경력을 새 페이지에서 시작"
-                                                        className="h-4 w-4 cursor-pointer accent-blue-500"
+                                                        
                                                     />
-                                                </div>
+                                                </label>
 
                                                 <div className="inspector-field">
                                                     <label className="inspector-label-inset inspector-field-label block">회사명</label>
@@ -1685,22 +1338,14 @@ export default function InspectorPanel() {
                                                     </div>
                                                 )}
 
-                                                <div className="inspector-field border-t border-neutral-800 pt-3">
-                                                    <div className="flex items-center justify-between gap-3">
-                                                        <label className="text-xs text-neutral-400">회사 소개 및 주요 성과</label>
-                                                        <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={(exp.descriptionStyle || "bullets") === "bullets"}
-                                                                onChange={(event) => handleUpdateExpField(
-                                                                    exp.id,
-                                                                    "descriptionStyle",
-                                                                    event.target.checked ? "bullets" : "paragraph",
-                                                                )}
-                                                                aria-label="회사 소개와 주요 성과를 불렛형으로 표시"
-                                                            />
-                                                            {(exp.descriptionStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
-                                                        </label>
+                                                <div className="inspector-field block-settings__divided">
+                                                    <div className="block-settings__field-head">
+                                                        <label className="inspector-field-label">회사 소개 및 주요 성과</label>
+                                                        <ContentStyleToggle
+                                                            value={exp.descriptionStyle || "bullets"}
+                                                            onChange={(value) => handleUpdateExpField(exp.id, "descriptionStyle", value)}
+                                                            label="회사 소개와 주요 성과 표시 방식"
+                                                        />
                                                     </div>
                                                     {(exp.descriptionStyle || "bullets") === "bullets" ? (
                                                         <ProjectBulletDocumentEditor
@@ -1739,8 +1384,10 @@ export default function InspectorPanel() {
                                                     )}
                                                 </div>
 
-                                                <div className="space-y-3 border-t border-neutral-800 pt-3">
-                                                    <h3 className="inspector-section-heading">회사 내 프로젝트</h3>
+                                                <div className="inspector-list-section block-settings__divided">
+                                                    <h3 className="doc-settings__section-title">
+                                                        회사 내 프로젝트 <span className="block-settings__count">{(exp.projects || []).length}</span>
+                                                    </h3>
                                                     {(!Array.isArray(exp.projects) || exp.projects.length === 0) && (
                                                         <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
                                                             프로젝트 항목을 추가해 주세요.
@@ -1760,9 +1407,7 @@ export default function InspectorPanel() {
                                                                     <span className="inspector-project-card__summary-copy">
                                                                         <strong>{project.title || "제목 없는 프로젝트"}</strong>
                                                                     </span>
-                                                                    <span className="inspector-project-card__edit-action" aria-hidden="true">
-                                                                        편집
-                                                                    </span>
+                                                                    <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
                                                                 </button>
                                                                 <details className="inspector-contact-menu inspector-project-menu">
                                                                     <summary
@@ -1895,8 +1540,12 @@ export default function InspectorPanel() {
 
                 {/* [프로젝트 폼] */}
                 {currentBlock.type === "project" && (
-                    <div className={`inspector-list-section${editingProject ? " inspector-list-section--experience-detail" : " border-t border-neutral-800 pt-4"}`}>
-                        {!editingProject && <h3 className="inspector-section-heading">프로젝트 목록</h3>}
+                    <div className={`inspector-list-section${editingProject ? " inspector-list-section--experience-detail" : ""}`}>
+                        {!editingProject && (
+                            <h3 className="doc-settings__section-title">
+                                프로젝트 <span className="block-settings__count">{Array.isArray(currentBlock.data) ? currentBlock.data.length : 0}</span>
+                            </h3>
+                        )}
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
                                 프로젝트 항목을 추가해 주세요.
@@ -1926,7 +1575,7 @@ export default function InspectorPanel() {
                                             <span className="inspector-project-card__summary-copy">
                                                 <strong>{proj.title || "제목 없는 프로젝트"}</strong>
                                             </span>
-                                            <span className="inspector-project-card__edit-action" aria-hidden="true">편집</span>
+                                            <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
                                         </button>
                                         <details className="inspector-contact-menu inspector-project-menu">
                                             <summary
@@ -1977,13 +1626,11 @@ export default function InspectorPanel() {
 
                                     {editingProject?.id === proj.id && (
                                         <div className="inspector-project-card__body">
-                                            <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
-                                                <div className="min-w-0 flex-1">
-                                                    <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
-                                                    <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
-                                                        이 프로젝트 앞에서 페이지를 나눕니다.
-                                                    </span>
-                                                </div>
+                                            <label className="block-settings__option block-settings__option--page">
+                                                <span className="block-settings__option-copy">
+<span className="block-settings__option-label">새 페이지에서 시작</span>
+<span className="block-settings__option-hint">이 프로젝트 앞에서 페이지를 나눠요.</span>
+</span>
                                                 <input
                                                     type="checkbox"
                                                     checked={proj.startOnNewPage === true}
@@ -1993,9 +1640,9 @@ export default function InspectorPanel() {
                                                         event.target.checked,
                                                     )}
                                                     aria-label="프로젝트를 새 페이지에서 시작"
-                                                    className="h-4 w-4 cursor-pointer accent-blue-500"
+                                                    
                                                 />
-                                            </div>
+                                            </label>
                                             <div className="inspector-field">
                                                 <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
                                                 <input
@@ -2093,13 +1740,10 @@ export default function InspectorPanel() {
 
                 {/* [스킬 폼] */}
                 {currentBlock.type === "skills" && (
-                    <div className="inspector-list-section border-t border-neutral-800 pt-4">
-                        <div>
-                            <div>
-                                <span className="block text-xs font-semibold text-neutral-300">스킬 카테고리</span>
-                                <span className="mt-0.5 block text-[10px] text-neutral-500">직무 영역별로 기술을 묶어 표시합니다.</span>
-                            </div>
-                        </div>
+                    <div className="inspector-list-section">
+                        <h3 className="doc-settings__section-title">
+                            스킬 카테고리 <span className="block-settings__count">{skillCategories.length}</span>
+                        </h3>
 
                         {skillCategories.length === 0 && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
@@ -2195,11 +1839,11 @@ export default function InspectorPanel() {
 
                 {/* [학력(Education) 폼] */}
                 {currentBlock.type === "education" && (
-                    <div className={`inspector-list-section${editingEducation ? " inspector-list-section--experience-detail" : " border-t border-neutral-800 pt-4"}`}>
+                    <div className={`inspector-list-section${editingEducation ? " inspector-list-section--experience-detail" : ""}`}>
                         {!editingEducation && (
-                            <div>
-                                <span className="text-xs font-semibold text-neutral-300">학력 목록</span>
-                            </div>
+                            <h3 className="doc-settings__section-title">
+                                학력 <span className="block-settings__count">{Array.isArray(currentBlock.data) ? currentBlock.data.length : 0}</span>
+                            </h3>
                         )}
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
@@ -2231,7 +1875,7 @@ export default function InspectorPanel() {
                                                 <span className="inspector-project-card__summary-copy">
                                                     <strong>{edu.school || "학교명 없음"}</strong>
                                                 </span>
-                                                <span className="inspector-project-card__edit-action" aria-hidden="true">편집</span>
+                                                <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
                                             </button>
                                             <details className="inspector-contact-menu inspector-project-menu">
                                                 <summary
@@ -2265,13 +1909,11 @@ export default function InspectorPanel() {
 
                                     {editingEducation?.id === edu.id && (
                                     <div className="inspector-project-card__body">
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
-                                        <div className="min-w-0 flex-1">
-                                            <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
-                                            <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
-                                                이 학력 항목 앞에서 페이지를 나눕니다.
-                                            </span>
-                                        </div>
+                                    <label className="block-settings__option block-settings__option--page">
+                                        <span className="block-settings__option-copy">
+<span className="block-settings__option-label">새 페이지에서 시작</span>
+<span className="block-settings__option-hint">이 학력 항목 앞에서 페이지를 나눠요.</span>
+</span>
                                         <input
                                             type="checkbox"
                                             checked={edu.startOnNewPage === true}
@@ -2281,9 +1923,9 @@ export default function InspectorPanel() {
                                                 event.target.checked,
                                             )}
                                             aria-label="학력 항목을 새 페이지에서 시작"
-                                            className="h-4 w-4 cursor-pointer accent-blue-500"
+                                            
                                         />
-                                    </div>
+                                    </label>
                                     <div className="inspector-field">
                                         <label className="inspector-label-inset inspector-field-label block">학교명</label>
                                         <input
@@ -2365,11 +2007,11 @@ export default function InspectorPanel() {
 
                 {/* [기타 경험(Other Experience) 폼] */}
                 {currentBlock.type === "certification" && (
-                    <div className={`inspector-list-section${editingCertification ? " inspector-list-section--experience-detail" : " border-t border-neutral-800 pt-4"}`}>
+                    <div className={`inspector-list-section${editingCertification ? " inspector-list-section--experience-detail" : ""}`}>
                         {!editingCertification && (
-                            <div>
-                                <span className="text-xs font-semibold text-neutral-300">기타 경험 목록</span>
-                            </div>
+                            <h3 className="doc-settings__section-title">
+                                기타 경험 <span className="block-settings__count">{Array.isArray(currentBlock.data) ? currentBlock.data.length : 0}</span>
+                            </h3>
                         )}
                         {(!Array.isArray(currentBlock.data) || currentBlock.data.length === 0) && (
                             <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 text-center text-[11px] text-neutral-500">
@@ -2401,7 +2043,7 @@ export default function InspectorPanel() {
                                                 <span className="inspector-project-card__summary-copy">
                                                     <strong>{cert.title || "활동명 없음"}</strong>
                                                 </span>
-                                                <span className="inspector-project-card__edit-action" aria-hidden="true">편집</span>
+                                                <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
                                             </button>
                                             <details className="inspector-contact-menu inspector-project-menu">
                                                 <summary
@@ -2435,13 +2077,11 @@ export default function InspectorPanel() {
 
                                     {editingCertification?.id === cert.id && (
                                     <div className="inspector-project-card__body">
-                                    <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-950/40 px-3 py-2.5">
-                                        <div className="min-w-0 flex-1">
-                                            <span className="block text-xs text-neutral-300">새 페이지에서 시작</span>
-                                            <span className="mt-1 block text-[10px] leading-[1.45] text-neutral-500">
-                                                이 기타 경험 항목 앞에서 페이지를 나눕니다.
-                                            </span>
-                                        </div>
+                                    <label className="block-settings__option block-settings__option--page">
+                                        <span className="block-settings__option-copy">
+<span className="block-settings__option-label">새 페이지에서 시작</span>
+<span className="block-settings__option-hint">이 기타 경험 항목 앞에서 페이지를 나눠요.</span>
+</span>
                                         <input
                                             type="checkbox"
                                             checked={cert.startOnNewPage === true}
@@ -2451,9 +2091,9 @@ export default function InspectorPanel() {
                                                 event.target.checked,
                                             )}
                                             aria-label="기타 경험 항목을 새 페이지에서 시작"
-                                            className="h-4 w-4 cursor-pointer accent-blue-500"
+                                            
                                         />
-                                    </div>
+                                    </label>
                                     <div className="inspector-field">
                                         <label className="inspector-label-inset inspector-field-label block">활동명</label>
                                         <textarea
@@ -2545,31 +2185,18 @@ export default function InspectorPanel() {
 
                 {/* [자유 텍스트 폼] */}
                 {currentBlock.type === "custom_text" && (
-                    <div className="inspector-form-stack border-t border-neutral-800 pt-4">
+                    <div className="inspector-form-stack">
                         <div className="inspector-field">
-                            <label className="text-xs text-neutral-400 block">섹션 제목</label>
-                            <input
-                                type="text"
-                                value={currentBlock.title}
-                                onChange={(e) => updateBlockStyle(currentBlock.id, { ...currentBlock.style })}
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-                        <div className="inspector-field">
-                            <div className="flex items-center justify-between gap-3">
-                                <label className="text-xs text-neutral-400">내용</label>
-                                <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-neutral-400">
-                                    <input
-                                        type="checkbox"
-                                        checked={(currentBlock.data?.contentStyle || "bullets") === "bullets"}
-                                        onChange={(event) => updateBlockData(currentBlock.id, {
-                                            ...currentBlock.data,
-                                            contentStyle: event.target.checked ? "bullets" : "paragraph",
-                                        })}
-                                        aria-label="추가 정보 내용을 불렛형으로 표시"
-                                    />
-                                    {(currentBlock.data?.contentStyle || "bullets") === "bullets" ? "불렛형" : "줄글형"}
-                                </label>
+                            <div className="block-settings__field-head">
+                                <h3 className="doc-settings__section-title">내용</h3>
+                                <ContentStyleToggle
+                                    value={currentBlock.data?.contentStyle || "bullets"}
+                                    onChange={(value) => updateBlockData(currentBlock.id, {
+                                        ...currentBlock.data,
+                                        contentStyle: value,
+                                    })}
+                                    label="내용 표시 방식"
+                                />
                             </div>
                             {(currentBlock.data?.contentStyle || "bullets") === "bullets" ? (
                                 <ProjectBulletDocumentEditor
@@ -2609,6 +2236,116 @@ export default function InspectorPanel() {
                     </div>
                 )}
 
+                {!editingExperience && !editingProject && !editingEducation && !editingCertification && (
+                    <section className="block-settings__section">
+                        <h3 className="doc-settings__section-title">페이지와 간격</h3>
+                        <div className="block-settings__options">
+                            <label className="block-settings__option">
+                                <span className="block-settings__option-copy">
+                                    <span className="block-settings__option-label">새 페이지에서 시작</span>
+                                    <span className="block-settings__option-hint">이 블록 앞에서 페이지를 나눠요.</span>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    checked={currentBlock.style.startOnNewPage === true}
+                                    onChange={(event) => updateBlockStyle(currentBlock.id, {
+                                        startOnNewPage: event.target.checked,
+                                    })}
+                                    aria-label="블록을 새 페이지에서 시작"
+                                />
+                            </label>
+                            <label className="block-settings__option">
+                                <span className="block-settings__option-copy">
+                                    <span className="block-settings__option-label">항목을 쪼개지 않기</span>
+                                    <span className="block-settings__option-hint">
+                                        {currentBlock.type === "project"
+                                            ? "페이지 끝에 걸린 프로젝트를 통째로 다음 페이지로 옮겨요."
+                                            : "페이지 끝에 걸린 항목을 통째로 다음 페이지로 옮겨요."}
+                                    </span>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    checked={currentBlock.style.keepTogether === true}
+                                    onChange={(e) => {
+                                        const keepTogether = e.target.checked;
+                                        updateBlockStyle(currentBlock.id, { keepTogether });
+                                        if (currentBlock.type === "project" && Array.isArray(currentBlock.data)) {
+                                            updateBlockData(
+                                                currentBlock.id,
+                                                currentBlock.data.map((project: any) => ({ ...project, keepTogether })),
+                                            );
+                                        }
+                                    }}
+                                    aria-label="페이지 경계에서 항목 자동 이동"
+                                />
+                            </label>
+                            <label className="block-settings__option">
+                                <span className="block-settings__option-copy">
+                                    <span className="block-settings__option-label">하단 구분선 표시</span>
+                                    <span className="block-settings__option-hint">다음 블록과의 사이에 얇은 선을 그어요.</span>
+                                </span>
+                                <input
+                                    type="checkbox"
+                                    checked={currentBlock.style.showBottomDivider === true}
+                                    onChange={(e) => updateBlockStyle(currentBlock.id, { showBottomDivider: e.target.checked })}
+                                    aria-label="하단 구분선 표시"
+                                />
+                            </label>
+                            <div className="block-settings__option-group">
+                                <label className="block-settings__option">
+                                    <span className="block-settings__option-copy">
+                                        <span className="block-settings__option-label">위아래 여백 직접 지정</span>
+                                        <span className="block-settings__option-hint">전역 섹션 간격에 이 블록만 여백을 더해요.</span>
+                                    </span>
+                                    <input
+                                        type="checkbox"
+                                        checked={currentBlock.style.useCustomPadding === true}
+                                        onChange={(e) => updateBlockStyle(currentBlock.id, { useCustomPadding: e.target.checked })}
+                                        aria-label="개별 간격 사용"
+                                    />
+                                </label>
+                                {currentBlock.style.useCustomPadding === true && (
+                                    <label className="doc-settings__slider block-settings__option-slider">
+                                        <span className="doc-settings__slider-head">
+                                            <span>위아래 여백</span>
+                                            <output>{currentBlock.style.paddingY}px</output>
+                                        </span>
+                                        <input
+                                            type="range"
+                                            min="4"
+                                            max="48"
+                                            step="4"
+                                            value={currentBlock.style.paddingY}
+                                            onChange={(e) => updateBlockStyle(currentBlock.id, { paddingY: Number(e.target.value) })}
+                                            style={{ "--doc-settings-fill": `${((currentBlock.style.paddingY - 4) / 44) * 100}%` } as CSSProperties}
+                                        />
+                                    </label>
+                                )}
+                            </div>
+                        </div>
+
+                        {currentBlock.type === "certification" && (
+                            <label className="doc-settings__slider block-settings__slider">
+                                <span className="doc-settings__slider-head">
+                                    <span>왼쪽 영역 비율</span>
+                                    <output>{currentBlock.style.otherExperienceLeftColumnRatio ?? 34}%</output>
+                                </span>
+                                <input
+                                    type="range"
+                                    min="24"
+                                    max="48"
+                                    step="1"
+                                    value={currentBlock.style.otherExperienceLeftColumnRatio ?? 34}
+                                    onChange={(event) => updateBlockStyle(currentBlock.id, {
+                                        otherExperienceLeftColumnRatio: Number(event.target.value),
+                                    })}
+                                    aria-label="기타 경험 왼쪽 영역 비율"
+                                    style={{ "--doc-settings-fill": `${(((currentBlock.style.otherExperienceLeftColumnRatio ?? 34) - 24) / 24) * 100}%` } as CSSProperties}
+                                />
+                            </label>
+                        )}
+                    </section>
+                )}
             </div>
             <ProfilePhotoCropDialog
                 file={pendingProfilePhoto?.file ?? null}
