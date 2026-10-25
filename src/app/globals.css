@@ -890,32 +890,44 @@ body,
     overflow: visible !important;
   }
 
+  /* 한 장 = A4 한 페이지. 다음 장은 항상 새 페이지에서 시작하고 마지막 장 뒤에는 빈 페이지를 만들지 않는다. */
   .resume-page {
     display: block !important;
     width: 210mm !important;
     height: 297mm !important;
     min-height: 297mm !important;
-    overflow: visible !important;
-    break-after: page !important;
-    page-break-after: always !important;
-  }
-
-  .resume-page:last-child {
+    overflow: hidden !important;
+    break-inside: avoid !important;
     break-after: auto !important;
     page-break-after: auto !important;
   }
 
+  .resume-page+.resume-page {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  /* 종이는 화면과 같은 px 크기로 배치한 뒤 통째로 줄인다. 폭을 A4에 맞춰 다시 배치하면 줄바꿈이 달라진다. */
   .resume-paper {
     box-shadow: none !important;
     border: none !important;
-    margin: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: 297mm !important;
-    min-height: 297mm !important;
+    border-radius: 0 !important;
+    margin: 0 auto !important;
+    zoom: var(--resume-print-zoom, 1);
+    transition: none !important;
     box-sizing: border-box !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* 편집용 오버레이. 특히 fixed 요소는 인쇄 시 모든 페이지에 반복해서 찍힌다. */
+  .feedback-launcher,
+  .feedback-overlay,
+  .editor-panel-resizer,
+  .rich-text-bubble-toolbar,
+  .editor-tutorial,
+  .profile-crop-backdrop {
+    display: none !important;
   }
 
   .resume-paper * {
