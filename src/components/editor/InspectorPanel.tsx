@@ -1083,7 +1083,7 @@ export default function InspectorPanel() {
                                     key={exp.id}
                                     className={editingExperience?.id === exp.id
                                         ? "inspector-experience-editor__card"
-                                        : "inspector-repeat-card inspector-project-card"}
+                                        : `inspector-repeat-card inspector-project-card${exp.isHidden ? " is-hidden" : ""}`}
                                 >
                                         {!editingExperience && (
                                             <div className="inspector-project-card__summary">
@@ -1099,8 +1099,19 @@ export default function InspectorPanel() {
                                                 >
                                                     <span className="inspector-project-card__summary-copy">
                                                         <strong>{exp.company || "회사명 없음"}</strong>
+                                                        {exp.isHidden && <em className="inspector-hidden-badge">숨김</em>}
                                                     </span>
                                                     <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="inspector-project-card__visibility"
+                                                    onClick={() => handleUpdateExpField(exp.id, "isHidden", !exp.isHidden)}
+                                                    aria-pressed={exp.isHidden === true}
+                                                    data-tooltip={exp.isHidden ? "다시 표시하기" : "이력서에서 숨기기"}
+                                                    aria-label={`${exp.company || "경력"} ${exp.isHidden ? "표시하기" : "숨기기"}`}
+                                                >
+                                                    {exp.isHidden ? <EyeOff size={15} /> : <Eye size={15} />}
                                                 </button>
                                                 <details className="inspector-contact-menu inspector-project-menu">
                                                     <summary
@@ -1395,7 +1406,7 @@ export default function InspectorPanel() {
                                                         </p>
                                                     )}
                                                     {(exp.projects || []).map((project: any, experienceProjectIndex: number) => (
-                                                        <div key={project.id} className="inspector-repeat-card inspector-project-card">
+                                                        <div key={project.id} className={`inspector-repeat-card inspector-project-card${project.isHidden ? " is-hidden" : ""}`}>
                                                             <div className="inspector-project-card__summary">
                                                                 <button
                                                                     type="button"
@@ -1407,8 +1418,19 @@ export default function InspectorPanel() {
                                                                 >
                                                                     <span className="inspector-project-card__summary-copy">
                                                                         <strong>{project.title || "제목 없는 프로젝트"}</strong>
+                                                                        {project.isHidden && <em className="inspector-hidden-badge">숨김</em>}
                                                                     </span>
                                                                     <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="inspector-project-card__visibility"
+                                                                    onClick={() => handleUpdateExperienceProject(exp.id, project.id, { isHidden: !project.isHidden })}
+                                                                    aria-pressed={project.isHidden === true}
+                                                                    data-tooltip={project.isHidden ? "다시 표시하기" : "이력서에서 숨기기"}
+                                                                    aria-label={`${project.title || "프로젝트"} ${project.isHidden ? "표시하기" : "숨기기"}`}
+                                                                >
+                                                                    {project.isHidden ? <EyeOff size={15} /> : <Eye size={15} />}
                                                                 </button>
                                                                 <details className="inspector-contact-menu inspector-project-menu">
                                                                     <summary
@@ -1561,7 +1583,7 @@ export default function InspectorPanel() {
                                     key={proj.id}
                                     className={editingProject?.id === proj.id
                                         ? "inspector-experience-editor__card"
-                                        : "inspector-repeat-card inspector-project-card"}
+                                        : `inspector-repeat-card inspector-project-card${proj.isHidden ? " is-hidden" : ""}`}
                                 >
                                     {!editingProject && <div className="inspector-project-card__summary">
                                         <button
@@ -1575,8 +1597,19 @@ export default function InspectorPanel() {
                                         >
                                             <span className="inspector-project-card__summary-copy">
                                                 <strong>{proj.title || "제목 없는 프로젝트"}</strong>
+                                                {proj.isHidden && <em className="inspector-hidden-badge">숨김</em>}
                                             </span>
                                             <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="inspector-project-card__visibility"
+                                            onClick={() => handleUpdateProjectField(proj.id, "isHidden", !proj.isHidden)}
+                                            aria-pressed={proj.isHidden === true}
+                                            data-tooltip={proj.isHidden ? "다시 표시하기" : "이력서에서 숨기기"}
+                                            aria-label={`${proj.title || "프로젝트"} ${proj.isHidden ? "표시하기" : "숨기기"}`}
+                                        >
+                                            {proj.isHidden ? <EyeOff size={15} /> : <Eye size={15} />}
                                         </button>
                                         <details className="inspector-contact-menu inspector-project-menu">
                                             <summary

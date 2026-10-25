@@ -25,6 +25,8 @@ import {
     Check,
     CheckCircle2,
     CircleHelp,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import { BlockType, ResumeDocument } from "@/types/resume";
 import AuthMenu from "@/components/auth/AuthMenu";
@@ -79,12 +81,16 @@ function collectContentStrings(value: unknown): string[] {
 export default function EditorHeader() {
     const [theme, setTheme] = useState<"dark" | "light">("dark");
     const [dialog, setDialog] = useState<DialogState | null>(null);
-    const [openMenu, setOpenMenu] = useState<"document" | "blocks" | "more" | null>(null);
+    const [openMenu, setOpenMenu] = useState<"document" | "blocks" | "hidden" | "more" | null>(null);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
     const addBlock = useResumeStore((state) => state.addBlock);
     const setSelectedBlockId = useResumeStore((state) => state.setSelectedBlockId);
+    const selectedBlockId = useResumeStore((state) => state.selectedBlockId);
+    const toggleBlockVisibility = useResumeStore((state) => state.toggleBlockVisibility);
     const resume = useResumeStore((state) => state.resume);
+    // 숨긴 블록은 종이에 그리지 않으니 여기서 모아 보여주고 다시 표시하거나 편집할 수 있게 한다.
+    const hiddenBlocks = resume.blocks.filter((block) => block.isVisible === false);
     const resumeList = useResumeStore((state) => state.resumeList);
     const loadResume = useResumeStore((state) => state.loadResume);
 
@@ -826,6 +832,53 @@ export default function EditorHeader() {
                             </div>
                         )}
                     </div>
+
+                    {hiddenBlocks.length > 0 && (
+                        <div className="relative hidden shrink-0 sm:block">
+                            <button
+                                type="button"
+                                onClick={() => setOpenMenu(openMenu === "hidden" ? null : "hidden")}
+                                className="header-button header-button--hidden flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition"
+                                aria-expanded={openMenu === "hidden"}
+                            >
+                                <EyeOff size={14} /> 숨긴 블록 {hiddenBlocks.length}
+                            </button>
+                            {openMenu === "hidden" && (
+                                <div className="header-menu editor-hidden-blocks absolute left-0 top-10 flex w-64 flex-col gap-0.5 rounded-xl border border-neutral-700 bg-neutral-900 p-1.5 shadow-2xl">
+                                    <p className="editor-hidden-blocks__hint">PDF와 공개 링크에도 나오지 않아요.</p>
+                                    {hiddenBlocks.map((block) => {
+                                        const typeLabel = blockButtons.find((button) => button.type === block.type)?.label ?? "블록";
+                                        const title = block.title?.trim() || typeLabel;
+                                        return (
+                                            <div
+                                                key={block.id}
+                                                className={`editor-hidden-blocks__row${selectedBlockId === block.id ? " is-selected" : ""}`}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className="editor-hidden-blocks__name"
+                                                    onClick={() => {
+                                                        setSelectedBlockId(block.id);
+                                                        setOpenMenu(null);
+                                                    }}
+                                                >
+                                                    <strong>{title}</strong>
+                                                    <small>{title !== typeLabel ? `${typeLabel} · 눌러서 편집` : "눌러서 편집"}</small>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    className="editor-hidden-blocks__show"
+                                                    onClick={() => toggleBlockVisibility(block.id)}
+                                                >
+                                                    <Eye size={13} /> 표시
+                                                </button>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="header-actions flex shrink-0 items-center gap-2">

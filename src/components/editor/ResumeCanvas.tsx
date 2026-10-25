@@ -9,6 +9,7 @@ import { ProfileData, ResumeBlock, ResumeDocument, SkillsData } from "@/types/re
 import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import { formatBlockTitle } from "@/lib/blockTitles";
+import { mergeHiddenItems, stripHiddenBlocks } from "@/lib/resumeVisibility";
 import { escapeHtml, richTextToPlainText, sanitizeInlineRichText, splitInlineRichTextLines } from "@/lib/richText";
 import RichTextEditable from "@/components/editor/RichTextEditable";
 import ProjectBulletDocumentEditor from "@/components/editor/ProjectBulletDocumentEditor";
@@ -218,16 +219,45 @@ export default function ResumeCanvas({
     const storeUpdateBlockTitle = useResumeStore((state) => state.updateBlockTitle);
     const storeReorderBlocks = useResumeStore((state) => state.reorderBlocks);
     const storeRemoveBlock = useResumeStore((state) => state.removeBlock);
-    const blocks = resumeOverride?.blocks ?? storedBlocks;
+    const sourceBlocks = resumeOverride?.blocks ?? storedBlocks;
+    // 숨긴 블록·회사·프로젝트는 종이에 그리지 않는다. 화면 그대로 PDF가 되므로 자리도 차지하지 않는다.
+    const blocks = useMemo(() => stripHiddenBlocks(sourceBlocks), [sourceBlocks]);
     const globalStyle = resumeOverride?.globalStyle ?? storedGlobalStyle;
     const selectedBlockId = readOnly ? null : storedSelectedBlockId;
     const selectedItemId = readOnly ? null : storedSelectedItemId;
     const selectedSubItemId = readOnly ? null : storedSelectedSubItemId;
     const setSelectedBlockId = readOnly ? (() => undefined) : storeSetSelectedBlockId;
     const setSelectedBlockSelection = readOnly ? (() => undefined) : storeSetSelectedBlockSelection;
-    const updateBlockData = readOnly ? (() => undefined) : storeUpdateBlockData;
+    const updateBlockData = readOnly
+        ? (() => undefined)
+        : (blockId: string, data: unknown) => {
+            // 캔버스가 넘기는 목록에는 숨긴 항목이 빠져 있으니 원래 자리에 되돌려 넣는다.
+            const current = useResumeStore.getState().resume.blocks.find((block) => block.id === blockId);
+            const merged = current && Array.isArray(current.data) && Array.isArray(data)
+                ? mergeHiddenItems(current.data as unknown[], data)
+                : data;
+            storeUpdateBlockData(blockId, merged);
+        };
     const updateBlockTitle = readOnly ? (() => undefined) : storeUpdateBlockTitle;
-    const reorderBlocks = readOnly ? (() => undefined) : storeReorderBlocks;
+    const reorderBlocks = readOnly
+        ? (() => undefined)
+        : (startIndex: number, endIndex: number) => {
+            // 화면 순서(숨긴 블록 제외)를 저장된 블록 순서로 바꿔서 옮긴다.
+            const all = useResumeStore.getState().resume.blocks;
+            const moved = blocks[startIndex];
+            const from = moved ? all.findIndex((block) => block.id === moved.id) : -1;
+            if (from < 0) return;
+            const visibleAfter = blocks.filter((_, index) => index !== startIndex);
+            const rest = all.filter((_, index) => index !== from);
+            const next = visibleAfter[endIndex];
+            let to = next ? rest.findIndex((block) => block.id === next.id) : -1;
+            if (to < 0) {
+                const prev = visibleAfter[endIndex - 1];
+                const prevIndex = prev ? rest.findIndex((block) => block.id === prev.id) : -1;
+                to = prevIndex >= 0 ? prevIndex + 1 : rest.length;
+            }
+            if (from !== to) storeReorderBlocks(from, to);
+        };
     const removeBlock = readOnly ? (() => undefined) : storeRemoveBlock;
 
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -783,6 +813,7 @@ export default function ResumeCanvas({
         const lockedBlockCount = paginationSettledRef.current && firstChangedBlockIndex > 0 ? firstChangedBlockIndex : 0;
         paginationBlockSignaturesRef.current = currentBlockSignatures;
         paginationSettledRef.current = false;
+        delete canvas.dataset.paginationSettled;
 
         const repaginate = () => {
             if (disposed) return;
@@ -1527,12 +1558,14 @@ export default function ResumeCanvas({
                     || refinePasses >= MAX_PAGINATION_REFINE_PASSES) {
                     paginationFinalized = true;
                     paginationSettledRef.current = true;
+                    canvas.dataset.paginationSettled = "true";
                     const best = pickBestLayout(appliedSignature);
                     if (best && best.signature !== appliedSignature) applyLayout(best.pages);
                     return;
                 }
                 paginationFinalized = false;
                 paginationSettledRef.current = false;
+                delete canvas.dataset.paginationSettled;
                 appliedLayouts.set(nextSignature, nextPages);
                 applyLayout(nextPages);
             });
@@ -1597,6 +1630,7 @@ export default function ResumeCanvas({
             refinePasses = 0;
             paginationFinalized = false;
             paginationSettledRef.current = false;
+            delete canvas.dataset.paginationSettled;
             repaginate();
         };
         document.fonts.ready.then(restartPagination);
@@ -2983,8 +3017,7 @@ export default function ResumeCanvas({
                                     const isTargeted = dragOverIndex === globalIdx
                                         && dragOverFragmentKey === fragmentKey
                                         && draggedIndex !== globalIdx;
-                                    const isHidden = block.isVisible === false;
-                                    const continuesPreviousFragment = page.blocks[fragmentIndex - 1]?.globalIdx === globalIdx;
+                                                                        const continuesPreviousFragment = page.blocks[fragmentIndex - 1]?.globalIdx === globalIdx;
                                     const continuesNextFragment = page.blocks[fragmentIndex + 1]?.globalIdx === globalIdx;
                                     const isGenericDescriptionContinuation = (placement.descriptionStart ?? 0) > 0
                                         || placement.itemHeaderContinuation === true;
@@ -3044,8 +3077,7 @@ export default function ResumeCanvas({
                                                 } ${isSelected ? "resume-block-selected" : ""
                                                 } ${isSelected && selectedItemId ? "resume-block-selected--item" : ""
                                                 } ${isBeingDragged ? "opacity-30 scale-[0.98] border-dashed border-neutral-400" : ""
-                                                } ${isHidden ? "opacity-40 grayscale border-dashed border-neutral-300 block-hidden" : ""
-                                                } ${continuesPreviousFragment ? "resume-block-fragment--continues-previous" : ""
+                                                                                                } ${continuesPreviousFragment ? "resume-block-fragment--continues-previous" : ""
                                                 } ${continuesNextFragment ? "resume-block-fragment--continues-next" : ""
                                                 } group`}
                                         >
@@ -3054,11 +3086,6 @@ export default function ResumeCanvas({
                                                     className={`resume-drop-indicator resume-drop-indicator--${dragOverPosition}`}
                                                     aria-hidden="true"
                                                 />
-                                            )}
-                                            {isHidden && (
-                                                <div className="no-print absolute top-2 right-3 flex items-center gap-1 text-[10px] font-semibold text-neutral-500 bg-neutral-200/80 px-2 py-0.5 rounded-full select-none">
-                                                    숨김 블록
-                                                </div>
                                             )}
 
                                             <div

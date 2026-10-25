@@ -70,6 +70,8 @@ export interface ExperienceItem {
     techStack?: string[];
     projects?: ExperienceProject[];
     startOnNewPage?: boolean;
+    // 숨기면 편집 화면에는 흐리게 남고, PDF와 공개 링크에서는 빠진다.
+    isHidden?: boolean;
 }
 
 export interface ExperienceProject {
@@ -82,6 +84,7 @@ export interface ExperienceProject {
     descriptionLevels?: number[];
     descriptionHtml?: string[];
     startOnNewPage?: boolean;
+    isHidden?: boolean;
 }
 
 export interface ProjectItem {
@@ -96,6 +99,7 @@ export interface ProjectItem {
     descriptionHtml?: string[];
     keepTogether?: boolean;
     startOnNewPage?: boolean;
+    isHidden?: boolean;
 }
 
 export interface EducationItem {
