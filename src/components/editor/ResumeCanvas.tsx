@@ -16,6 +16,9 @@ import ServiceDialog from "@/components/ui/ServiceDialog";
 import ProfilePhotoCropDialog from "@/components/editor/ProfilePhotoCropDialog";
 
 const A4_PAPER_HEIGHT = 1130;
+// 인쇄용 A4 한 장의 CSS 픽셀 크기(210mm × 297mm, 96dpi). 반올림으로 넘치지 않게 살짝 내림한다.
+const A4_PRINT_WIDTH_PX = 793.7;
+const A4_PRINT_HEIGHT_PX = 1122;
 // 배치는 실제로 그려 본 조각 높이로 다시 맞추므로 소수점 오차만큼만 남긴다.
 const PAGINATION_BOTTOM_SAFETY_GAP = 8;
 const PROJECT_ITEM_GAP = 26;
@@ -270,6 +273,8 @@ export default function ResumeCanvas({
     const appliedPaginationSignatureRef = useRef<string | null>(null);
     const paginationRefineRef = useRef<(() => void) | null>(null);
     const paginationBlockSignaturesRef = useRef<string[]>([]);
+    // 직전 배치가 실제 높이로 확정됐는지. 확정 전(처음 그린 한 장짜리 배치 등)을 고정하면 넘친 페이지가 그대로 남는다.
+    const paginationSettledRef = useRef(false);
     const dragScrollFrameRef = useRef<number | null>(null);
     const dragClientYRef = useRef<number | null>(null);
     const profilePhotoMenuRef = useRef<HTMLDivElement>(null);
@@ -775,8 +780,9 @@ export default function ResumeCanvas({
         const firstChangedBlockIndex = previousBlockSignatures.length === currentBlockSignatures.length
             ? currentBlockSignatures.findIndex((signature, index) => signature !== previousBlockSignatures[index])
             : -1;
-        const lockedBlockCount = firstChangedBlockIndex > 0 ? firstChangedBlockIndex : 0;
+        const lockedBlockCount = paginationSettledRef.current && firstChangedBlockIndex > 0 ? firstChangedBlockIndex : 0;
         paginationBlockSignaturesRef.current = currentBlockSignatures;
+        paginationSettledRef.current = false;
 
         const repaginate = () => {
             if (disposed) return;
@@ -1520,11 +1526,13 @@ export default function ResumeCanvas({
                     || appliedLayouts.has(nextSignature)
                     || refinePasses >= MAX_PAGINATION_REFINE_PASSES) {
                     paginationFinalized = true;
+                    paginationSettledRef.current = true;
                     const best = pickBestLayout(appliedSignature);
                     if (best && best.signature !== appliedSignature) applyLayout(best.pages);
                     return;
                 }
                 paginationFinalized = false;
+                paginationSettledRef.current = false;
                 appliedLayouts.set(nextSignature, nextPages);
                 applyLayout(nextPages);
             });
@@ -1588,6 +1596,7 @@ export default function ResumeCanvas({
             appliedLayouts.clear();
             refinePasses = 0;
             paginationFinalized = false;
+            paginationSettledRef.current = false;
             repaginate();
         };
         document.fonts.ready.then(restartPagination);
@@ -2912,6 +2921,12 @@ export default function ResumeCanvas({
         }
     };
 
+    // PDF는 화면과 같은 폭으로 배치한 종이를 그대로 줄여 A4에 넣는다. 다시 배치하지 않으므로 줄바꿈과 쪽 나눔이 화면과 같다.
+    const printPaperZoom = Math.min(
+        A4_PRINT_WIDTH_PX / (globalStyle?.contentWidth || 800),
+        A4_PRINT_HEIGHT_PX / A4_PAPER_HEIGHT,
+    );
+
     return (
         <>
             <main
@@ -2957,6 +2972,7 @@ export default function ResumeCanvas({
                                     padding: `${paperPadding}px`,
                                     fontFamily: fontFamily,
                                     ...typographyStyle,
+                                    ["--resume-print-zoom" as string]: printPaperZoom,
                                 }}
                                 className={`resume-paper relative bg-white text-neutral-900 shadow-2xl rounded-sm flex flex-col transition-all ${templateType === "modern" ? "reference-template" : templateType === "minimal" ? "minimal-template" : ""}`}
                             >
