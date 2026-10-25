@@ -5,7 +5,8 @@ import {
   ArrowUpRight,
   Check,
   CloudUpload,
-  FileDown,
+  Eye,
+  EyeOff,
   GripVertical,
   LayoutTemplate,
   Link2,
@@ -33,25 +34,25 @@ const BLOCK_NAMES = ["프로필", "경력", "프로젝트", "기술 스택", "�
 const STEPS = [
   {
     no: "01",
-    title: "블록을 고르세요",
-    body: "프로필, 경력, 프로젝트처럼 필요한 블록만 꺼내 쌓습니다. 빈 문서 앞에서 막막할 일이 없어요.",
+    title: "필요한 블록 추가",
+    body: "프로필, 경력, 프로젝트 중 필요한 블록을 추가하세요. 예시가 미리 채워져 있어서 어디에 뭘 쓸지 바로 보여요.",
   },
   {
     no: "02",
-    title: "내용만 채우세요",
-    body: "여백, 정렬, 서체는 템플릿이 맞춥니다. 당신은 무엇을 해냈는지에만 집중하면 됩니다.",
+    title: "내 경력 채워넣기",
+    body: "내용을 입력하면 이력서에 바로 반영됩니다. 분량과 페이지가 나뉘는 위치도 함께 확인할 수 있어요.",
   },
   {
     no: "03",
-    title: "내보내고 공유하세요",
-    body: "화면에 보이는 그대로 PDF로 저장하거나, 공개 링크로 바로 보내세요.",
+    title: "PDF 저장 또는 링크 공유",
+    body: "화면에 보이는 그대로 PDF로 저장하거나 링크로 내 이력서를 공유하세요.",
   },
 ];
 
 const FAQS = [
   {
     q: "가입해야 쓸 수 있나요?",
-    a: "아니요. 가입 없이 바로 작성을 시작할 수 있어요. 나중에 Google이나 카카오로 로그인하면 작성하던 이력서를 계정으로 그대로 가져옵니다.",
+    a: "아니요. 가입 없이 바로 작성을 시작할 수 있어요. 나중에 Google이나 카카오로 로그인하면 작성하던 이력서를 계정으로 그대로 불러올 수 있습니다. 계정간 이동은 JSON 백업 기능을 활용해보세요.",
   },
   {
     q: "PDF로 저장하면 레이아웃이 깨지지 않나요?",
@@ -262,7 +263,7 @@ export default function LandingPage() {
             <h2 className={styles.sectionTitle}>
               이력서 작성에 필요한 건
               <br />
-              Bripick이 모두 준비했어요
+              <span className={styles.gradientText}>Bripick</span>이 모두 준비했어요
             </h2>
           </div>
 
@@ -275,7 +276,7 @@ export default function LandingPage() {
                 <h3>블록 단위 편집</h3>
                 <p>
                   섹션을 통째로 끌어 순서를 바꾸고, 필요 없는 블록은 빼거나 숨김처리 하세요. 지원하는 회사마다 구성을 바꾸는 데
-                  몇 초면 충분합니다.
+                  몇 초면 충분해요.
                 </p>
               </div>
               <div className={styles.blockStack} aria-hidden="true">
@@ -299,7 +300,7 @@ export default function LandingPage() {
                   <Link2 size={18} aria-hidden="true" />
                 </span>
                 <h3>링크 하나로 공유</h3>
-                <p>게시 버튼을 누르면 공개 링크가 생겨요. 첨부 파일 대신 URL을 보내세요.</p>
+                <p>게시 버튼을 눌러 내 이력서를 첨부 파일 대신 URL로 보낼 수 있어요.</p>
               </div>
               <div className={styles.urlPill} aria-hidden="true">
                 <span className={styles.urlLock} />
@@ -313,15 +314,26 @@ export default function LandingPage() {
             <article className={`${styles.card} ${styles.reveal}`} data-reveal>
               <div className={styles.cardText}>
                 <span className={styles.cardIcon}>
-                  <FileDown size={18} aria-hidden="true" />
+                  <EyeOff size={18} aria-hidden="true" />
                 </span>
-                <h3>보이는 그대로 PDF화</h3>
-                <p>저장하기 전에 분량과 페이지가 나뉘는 위치를 미리 확인할 수 있어요. 보이는 페이지 그대로 저장돼요.</p>
+                <h3>지우지 말고 숨기기</h3>
+                <p>지원하는 곳에 맞지 않는 경력이나 프로젝트는 숨겨 두세요. 숨긴 항목은 자리를 차지하지 않고, 필요할 때 다시 꺼내 쓰면 돼요.</p>
               </div>
-              <div className={styles.pages} aria-hidden="true">
-                <span />
-                <span />
-                <span className={styles.pagesBreak}>페이지 나누기</span>
+              <div className={styles.hideList} aria-hidden="true">
+                <div className={styles.hideRow}>
+                  <span>쇼핑몰 결제 개선</span>
+                  <Eye size={14} />
+                </div>
+                <div className={`${styles.hideRow} ${styles.hideRowHidden}`}>
+                  <span>
+                    사내 해커톤 <em>숨김</em>
+                  </span>
+                  <EyeOff size={14} />
+                </div>
+                <div className={styles.hideRow}>
+                  <span>디자인 시스템 구축</span>
+                  <Eye size={14} />
+                </div>
               </div>
             </article>
 
@@ -330,12 +342,26 @@ export default function LandingPage() {
                 <span className={styles.cardIcon}>
                   <LayoutTemplate size={18} aria-hidden="true" />
                 </span>
-                <h3>템플릿 2종</h3>
-                <p>모던과 미니멀. 내용은 그대로 두고 분위기만 바꾸세요.</p>
+                <h3>마음에 드는 템플릿 선택</h3>
+                <p>내 이력서의 내용은 그대로 두고 스타일만 손쉽게 바꿔요.</p>
               </div>
               <div className={styles.swatches} aria-hidden="true">
-                <span data-kind="modern">Modern</span>
-                <span data-kind="minimal">Minimal</span>
+                <div className={styles.swatch} data-kind="modern">
+                  <div className={styles.swatchSheet}>
+                    <i className={styles.swatchHead} />
+                    <i className={styles.swatchBox} />
+                    <i className={styles.swatchBox} />
+                  </div>
+                  <span>Modern</span>
+                </div>
+                <div className={styles.swatch} data-kind="minimal">
+                  <div className={styles.swatchSheet}>
+                    <i className={styles.swatchHead} />
+                    <i className={styles.swatchRule} />
+                    <i className={styles.swatchRule} />
+                  </div>
+                  <span>Minimal</span>
+                </div>
               </div>
             </article>
 
@@ -345,7 +371,7 @@ export default function LandingPage() {
                   <CloudUpload size={18} aria-hidden="true" />
                 </span>
                 <h3>어디서든 이어 쓰기</h3>
-                <p>로그인하면 비로그인으로 쓰던 이력서도 계정으로 옮겨져요. 다른 기기에서 그대로 이어 쓰세요.</p>
+                <p>로그인하면 다른 기기에서도 이력서를 이어 쓸 수 있어요. 로그인 전에 작성한 이력서도 계정으로 간편하게 가져오세요.</p>
               </div>
               <div className={styles.syncDemo} aria-hidden="true">
                 <span>임시 초안</span>
@@ -385,7 +411,9 @@ export default function LandingPage() {
         <section id="how" className={styles.section}>
           <div className={`${styles.sectionHead} ${styles.reveal}`} data-reveal>
             <p className={styles.eyebrow}>How it works</p>
-            <h2 className={styles.sectionTitle}>세 단계면 제출 준비 끝.</h2>
+            <h2 className={styles.sectionTitle}>
+              <span className={styles.gradientText}>세 단계</span>면 이력서 완성!
+            </h2>
           </div>
           <ol className={styles.steps}>
             {STEPS.map((step) => (
