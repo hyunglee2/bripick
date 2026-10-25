@@ -443,7 +443,7 @@
   background: linear-gradient(135deg, #1fc77b, #18b0a0);
 }
 
-.floatAts {
+.floatPdf {
   top: 150px;
   right: -6px;
 }
@@ -466,7 +466,7 @@
 
 /* ───────── Hero intro ─────────
    첫 화면은 스크롤 감지 없이 CSS만으로 순서대로 등장한다.
-   제목이 올라오고 → 이력서가 놓이고 → 스캔 → ATS 통과 → 공개 링크 순서. */
+   제목이 올라오고 → 이력서가 놓이고 → 스캔 → PDF 저장 → 공개 링크 순서. */
 
 .backdrop {
   animation: backdropIn 1600ms ease both;
@@ -627,7 +627,7 @@
   }
 }
 
-/* ATS 스캔: 종이 위를 한 번 훑는 빛 띠 */
+/* 스캔: 종이 위를 한 번 훑는 빛 띠 */
 .paperScan {
   position: absolute;
   z-index: 2;
@@ -807,6 +807,197 @@
   letter-spacing: -0.04em;
 }
 
+.sectionHook {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: clamp(16px, 1.6vw, 19px);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.sectionLead {
+  max-width: 640px;
+  margin: 22px 0 0;
+  color: var(--ink-2);
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.75;
+}
+
+/* ───────── Why: 문서 도구 PDF와 비교 ───────── */
+
+.compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.compareCard {
+  display: flex;
+  margin: 0;
+  padding: 28px;
+  flex-direction: column;
+  gap: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.compareCard[data-kind="after"] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: var(--shadow), 0 30px 80px -40px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+.compareLabel {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.compareCard[data-kind="after"] .compareLabel {
+  color: var(--accent);
+}
+
+.sheets {
+  display: grid;
+  padding: 28px 24px;
+  grid-template-columns: repeat(2, minmax(0, 150px));
+  justify-content: center;
+  gap: 18px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+/* 종이는 테마와 관계없이 흰색 */
+.sheet {
+  position: relative;
+  display: flex;
+  padding: 14px 12px;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  flex-direction: column;
+  gap: 6px;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 10px 24px -12px rgb(13 16 32 / 40%);
+}
+
+.sheetHead,
+.sheetLine {
+  display: block;
+  flex: none;
+  height: 5px;
+  border-radius: 3px;
+  background: #e3e6ee;
+}
+
+.sheetHead {
+  width: 46%;
+  height: 7px;
+  margin-top: 6px;
+  background: #b9c3dc;
+}
+
+.sheetHead:first-child {
+  margin-top: 0;
+}
+
+.compareCard[data-kind="after"] .sheetHead {
+  background: color-mix(in srgb, #3d6bff 55%, #fff);
+}
+
+.sheetLine[data-short] {
+  width: 64%;
+}
+
+/* 낭비되는 여백: 남은 높이를 빗금으로 채운다 */
+.sheetWaste {
+  display: grid;
+  margin: 6px -4px 0;
+  flex: 1;
+  place-items: center;
+  border: 1.5px dashed #f2a3a3;
+  border-radius: 4px;
+  color: #d65a5a;
+  background: repeating-linear-gradient(135deg, rgb(229 83 83 / 7%) 0 6px, transparent 6px 12px);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* 앞 장에서 잘려 넘어온 항목: 제목 없이 본문만 이어진다 */
+.sheetCut {
+  position: relative;
+  display: flex;
+  margin: -14px -12px 2px;
+  padding: 14px 12px 8px;
+  flex-direction: column;
+  gap: 6px;
+  border-bottom: 1.5px dashed #f2a3a3;
+  background: rgb(229 83 83 / 6%);
+}
+
+.sheetCut::after {
+  content: "잘린 항목";
+  position: absolute;
+  right: 6px;
+  bottom: -9px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #fff;
+  background: #e05555;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.sheetPage {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #fff;
+  background: #3d6bff;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.compareList {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  gap: 10px;
+  list-style: none;
+}
+
+.compareList li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-2);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.compareList svg {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 4px;
+  border-radius: 50%;
+  color: #e05555;
+  background: rgb(229 83 83 / 12%);
+}
+
+.compareCard[data-kind="after"] .compareList li {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.compareCard[data-kind="after"] .compareList svg {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
 /* ───────── Bento ───────── */
 
 .bento {
@@ -840,6 +1031,10 @@
   grid-column: span 2;
   flex-direction: row;
   align-items: center;
+}
+
+.cardFull {
+  grid-column: 1 / -1;
 }
 
 .cardWide .cardText {
@@ -925,90 +1120,6 @@
   border-style: dashed;
   color: var(--muted);
   background: transparent;
-}
-
-/* ATS */
-.atsBox {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.atsScore {
-  position: relative;
-  display: grid;
-  width: 92px;
-  height: 92px;
-  flex: none;
-  place-items: center;
-}
-
-.atsScore svg {
-  position: absolute;
-  inset: 0;
-  transform: rotate(-90deg);
-}
-
-.atsScore circle {
-  fill: none;
-  stroke-width: 3.2;
-  stroke-linecap: round;
-}
-
-.atsTrack {
-  stroke: var(--surface-2);
-}
-
-.atsValue {
-  stroke: #1fc77b;
-  stroke-dasharray: 0 100;
-  transition: stroke-dasharray 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) 200ms;
-}
-
-.page:not([data-motion]) .atsValue,
-.card[data-shown] .atsValue {
-  stroke-dasharray: 80 100;
-}
-
-.atsScore strong {
-  font-size: 26px;
-  font-weight: 800;
-}
-
-.atsList {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  gap: 6px;
-  list-style: none;
-  font-size: 12.5px;
-  font-weight: 600;
-}
-
-.atsList li {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--ink-2);
-}
-
-.atsList li span {
-  display: inline-grid;
-  width: 16px;
-  height: 16px;
-  place-items: center;
-  border: 1.5px solid var(--line-strong);
-  border-radius: 50%;
-}
-
-.atsList li[data-done="true"] span {
-  border-color: #1fc77b;
-  color: #fff;
-  background: #1fc77b;
-}
-
-.atsList li[data-done="false"] {
-  color: var(--muted);
 }
 
 /* URL */
@@ -1542,12 +1653,6 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .bento .cardWide:last-child {
-    grid-column: auto;
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .faqSection {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
@@ -1581,7 +1686,7 @@
     transform: none;
   }
 
-  .floatAts {
+  .floatPdf {
     top: 70px;
     right: -4px;
   }
@@ -1600,8 +1705,13 @@
   }
 
   .bento,
-  .steps {
+  .steps,
+  .compare {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .compareCard {
+    padding: 22px;
   }
 
   .cardWide {

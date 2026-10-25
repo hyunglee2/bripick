@@ -76,10 +76,10 @@ export default function FeedbackWidget() {
                 type="button"
                 onClick={open}
                 className="feedback-launcher print:hidden"
-                aria-label="피드백 보내기"
+                aria-label="문의 사항 보내기"
             >
                 <MessageCircle size={17} aria-hidden="true" />
-                <span>피드백</span>
+                <span>문의하기</span>
             </button>
 
             {isOpen && (

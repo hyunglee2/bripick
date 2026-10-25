@@ -10,9 +10,9 @@ import {
   LayoutTemplate,
   Link2,
   LogIn,
-  ShieldCheck,
   Type,
   UserRound,
+  X,
 } from "lucide-react";
 import LandingMotion from "./LandingMotion";
 import TemplatePreview from "./TemplatePreview";
@@ -21,7 +21,7 @@ import styles from "./landing.module.css";
 export const metadata: Metadata = {
   title: "블록으로 쌓는 개발자 이력서",
   description:
-    "경력, 프로젝트, 기술 스택을 블록처럼 쌓아 이력서를 완성하세요. PDF 저장, 공개 링크, ATS 검사까지 Bripick 한 곳에서.",
+    "경력, 프로젝트, 기술 스택을 블록처럼 쌓아 이력서를 완성하세요. PDF 저장과 공개 링크까지 Bripick 한 곳에서.",
   alternates: { canonical: "/" },
 };
 
@@ -29,14 +29,6 @@ const START_HREF = "/editor";
 const LOGIN_HREF = "/login?next=%2Feditor";
 
 const BLOCK_NAMES = ["프로필", "경력", "프로젝트", "기술 스택", "학력", "자격증", "자유 텍스트", "페이지 나누기"];
-
-const ATS_CHECKS = [
-  { label: "이름 · 직무 · 연락처", done: true },
-  { label: "핵심 소개 30자 이상", done: true },
-  { label: "기술 키워드 3개 이상", done: true },
-  { label: "숫자로 증명한 성과", done: true },
-  { label: "학력 정보", done: false },
-];
 
 const STEPS = [
   {
@@ -52,7 +44,7 @@ const STEPS = [
   {
     no: "03",
     title: "내보내고 공유하세요",
-    body: "제출 전 ATS 검사로 빠진 곳을 확인하고, PDF로 저장하거나 공개 링크로 바로 보내세요.",
+    body: "화면에 보이는 그대로 PDF로 저장하거나, 공개 링크로 바로 보내세요.",
   },
 ];
 
@@ -64,10 +56,6 @@ const FAQS = [
   {
     q: "PDF로 저장하면 레이아웃이 깨지지 않나요?",
     a: "화면에서 보이는 페이지 그대로 저장됩니다. 페이지 나누기 블록과 블록 묶어두기 옵션으로 원하는 위치에서 페이지를 넘길 수 있어요.",
-  },
-  {
-    q: "ATS 검사는 무엇을 확인하나요?",
-    a: "기본 인적 사항, 핵심 소개, 기술 키워드, 숫자로 표현한 성과, 학력 정보를 점검해 100점 만점으로 알려 드리고, 보완할 부분을 짚어 줍니다.",
   },
   {
     q: "공유 링크는 언제든 내릴 수 있나요?",
@@ -118,12 +106,12 @@ export default function LandingPage() {
                 <span>끝까지 읽히는</span>
               </span>
               <span className={styles.titleLine}>
-                <span className={styles.gradientText}>이력서를 쌓다.</span>
+                <span className={styles.gradientText}>이력서<span className="font-light">를 쌓다.</span></span>
               </span>
             </h1>
             <p className={`${styles.heroLead} ${styles.intro}`}>
-              경력, 프로젝트, 기술 스택을 블록처럼 쌓고 옮기세요. 디자인은 Bripick이 맞춰 드릴게요.
-              PDF 저장부터 공개 링크, ATS 검사까지 한 화면에서 끝납니다.
+              {/* 경력, 프로젝트, 기술 스택을 원하는 순서대로 쌓아보세요.<br /> */}
+              Bripick의 템플릿으로 경험을 더 돋보이게 정리하고, 완성한 이력서는 PDF나 링크로 바로 공유할 수 있어요.
             </p>
             <div className={`${styles.heroActions} ${styles.intro}`}>
               <Link href={START_HREF} className={styles.primaryButton}>
@@ -140,10 +128,10 @@ export default function LandingPage() {
                 <Check size={15} aria-hidden="true" /> 가입 없이 시작
               </li>
               <li>
-                <Check size={15} aria-hidden="true" /> 템플릿 2종
+                <Check size={15} aria-hidden="true" /> 이력서 링크 공유
               </li>
               <li>
-                <Check size={15} aria-hidden="true" /> PDF · 링크 공유
+                <Check size={15} aria-hidden="true" /> 화면 그대로 PDF로 저장
               </li>
             </ul>
           </div>
@@ -169,6 +157,104 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Why: A4 위에서 쓰는 편집기 */}
+        <section id="why" className={styles.section}>
+          <div className={`${styles.sectionHead} ${styles.reveal}`} data-reveal>
+            <h2 className={styles.sectionTitle}>
+              내 이력서 분량,
+              <br />
+              <span className={styles.gradientText}>쓰면서 바로</span> 확인하세요.
+            </h2>
+            <p className={styles.sectionLead}>
+              PDF로 저장했더니 생각보다 페이지가 늘어나서 당황한 적, 있으시죠?<br />
+              Bripick에서는 항목 하나가 얼마나 차지하는지, 어디서 다음 장으로 넘어가는지
+              작성하는 동시에 확인하고, 보이는 그대로 PDF화 할 수 있어요.
+            </p>
+          </div>
+
+          <div className={styles.compare}>
+            <figure className={`${styles.compareCard} ${styles.reveal}`} data-kind="before" data-reveal>
+              <figcaption className={styles.compareLabel}>다른 곳에서 작성하고 PDF로 저장하면</figcaption>
+              <div className={styles.sheets} aria-hidden="true">
+                <div className={styles.sheet}>
+                  <span className={styles.sheetHead} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetHead} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetWaste}>빈 공간</span>
+                </div>
+                <div className={styles.sheet}>
+                  <span className={styles.sheetCut}>
+                    <span className={styles.sheetLine} />
+                    <span className={styles.sheetLine} data-short />
+                  </span>
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetWaste}>빈 공간</span>
+                </div>
+              </div>
+              <ul className={styles.compareList}>
+                <li>
+                  <X size={14} aria-hidden="true" /> 저장해 보기 전엔 몇 장이 될지 몰라요
+                </li>
+                <li>
+                  <X size={14} aria-hidden="true" /> 항목이 애매한 곳에서 다음 장으로 잘려요
+                </li>
+                <li>
+                  <X size={14} aria-hidden="true" /> 쓸모없는 여백 때문에 분량만 늘어나요
+                </li>
+              </ul>
+            </figure>
+
+            <figure className={`${styles.compareCard} ${styles.reveal}`} data-kind="after" data-reveal>
+              <figcaption className={styles.compareLabel}>Bripick에서 작성하는 이력서는</figcaption>
+              <div className={styles.sheets} aria-hidden="true">
+                <div className={styles.sheet}>
+                  <span className={styles.sheetHead} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetHead} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetHead} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetHead} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetPage}>1 / 2</span>
+                </div>
+                <div className={styles.sheet}>
+                  <span className={styles.sheetHead} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetHead} />
+                  <span className={styles.sheetLine} />
+                  <span className={styles.sheetLine} data-short />
+                  <span className={styles.sheetPage}>2 / 2</span>
+                </div>
+              </div>
+              <ul className={styles.compareList}>
+                <li>
+                  <Check size={14} aria-hidden="true" /> 쓰는 동안 A4 기준으로 페이지가 나뉘어요
+                </li>
+                <li>
+                  <Check size={14} aria-hidden="true" /> 어디서 넘어갈지 보고, 원하면 항목을 통째로 묶어 둬요
+                </li>
+                <li>
+                  <Check size={14} aria-hidden="true" /> 화면의 페이지가 그대로 PDF가 돼요
+                </li>
+              </ul>
+            </figure>
+          </div>
+        </section>
+
         {/* Features */}
         <section id="features" className={styles.section}>
           <div className={`${styles.sectionHead} ${styles.reveal}`} data-reveal>
@@ -176,19 +262,19 @@ export default function LandingPage() {
             <h2 className={styles.sectionTitle}>
               이력서 작성에 필요한 건
               <br />
-              전부 여기 있어요.
+              Bripick이 모두 준비했어요
             </h2>
           </div>
 
           <div className={styles.bento}>
-            <article className={`${styles.card} ${styles.cardWide} ${styles.reveal}`} data-reveal>
+            <article className={`${styles.card} ${styles.cardWide} ${styles.cardFull} ${styles.reveal}`} data-reveal>
               <div className={styles.cardText}>
                 <span className={styles.cardIcon}>
                   <GripVertical size={18} aria-hidden="true" />
                 </span>
                 <h3>블록 단위 편집</h3>
                 <p>
-                  섹션을 통째로 끌어 순서를 바꾸고, 필요 없는 블록은 빼세요. 지원하는 회사마다 구성을 바꾸는 데
+                  섹션을 통째로 끌어 순서를 바꾸고, 필요 없는 블록은 빼거나 숨김처리 하세요. 지원하는 회사마다 구성을 바꾸는 데
                   몇 초면 충분합니다.
                 </p>
               </div>
@@ -198,39 +284,12 @@ export default function LandingPage() {
                 </div>
                 <div className={`${styles.stackItem} ${styles.stackItemLifted}`}>
                   <GripVertical size={14} /> 프로젝트
-                  <span className={styles.stackHint}>드래그 중</span>
+                  <span className={styles.stackHint}>순서 변경하기</span>
                 </div>
                 <div className={styles.stackItem}>
                   <GripVertical size={14} /> 경력
                 </div>
                 <div className={`${styles.stackItem} ${styles.stackItemGhost}`}>+ 블록 추가</div>
-              </div>
-            </article>
-
-            <article className={`${styles.card} ${styles.reveal}`} data-reveal>
-              <div className={styles.cardText}>
-                <span className={styles.cardIcon}>
-                  <ShieldCheck size={18} aria-hidden="true" />
-                </span>
-                <h3>ATS 검사</h3>
-                <p>채용 시스템이 놓치기 쉬운 항목을 제출 전에 점검해요.</p>
-              </div>
-              <div className={styles.atsBox} aria-label="ATS 검사 예시 결과">
-                <div className={styles.atsScore}>
-                  <svg viewBox="0 0 36 36" aria-hidden="true">
-                    <circle cx="18" cy="18" r="15.5" className={styles.atsTrack} />
-                    <circle cx="18" cy="18" r="15.5" className={styles.atsValue} pathLength={100} />
-                  </svg>
-                  <strong>80</strong>
-                </div>
-                <ul className={styles.atsList}>
-                  {ATS_CHECKS.map((item) => (
-                    <li key={item.label} data-done={item.done}>
-                      <span>{item.done ? <Check size={11} aria-hidden="true" /> : null}</span>
-                      {item.label}
-                    </li>
-                  ))}
-                </ul>
               </div>
             </article>
 
@@ -256,8 +315,8 @@ export default function LandingPage() {
                 <span className={styles.cardIcon}>
                   <FileDown size={18} aria-hidden="true" />
                 </span>
-                <h3>보이는 그대로 PDF</h3>
-                <p>페이지 나누기와 블록 묶어두기로 인쇄 레이아웃까지 직접 다듬을 수 있어요.</p>
+                <h3>보이는 그대로 PDF화</h3>
+                <p>저장하기 전에 분량과 페이지가 나뉘는 위치를 미리 확인할 수 있어요. 보이는 페이지 그대로 저장돼요.</p>
               </div>
               <div className={styles.pages} aria-hidden="true">
                 <span />
@@ -362,11 +421,18 @@ export default function LandingPage() {
         <section className={styles.section}>
           <div className={`${styles.cta} ${styles.reveal}`} data-reveal>
             <h2>
-              다음 지원서는
-              <br />
-              Bripick으로.
+              <span className="block font-light">
+                내 <span className="font-bold">다음 이력서</span>는
+              </span>
+
+              <span className="block">
+                Bripick
+                <span className="font-light">
+                  으로 <span className="font-bold">간편</span>하게
+                </span>
+              </span>
             </h2>
-            <p>쓰던 이력서를 블록으로 옮겨 보세요. 가입 없이 바로 시작할 수 있어요.</p>
+            <p>당신의 경험을 설득력 있는 이력서로 바꿔보세요.</p>
             <Link href={START_HREF} className={styles.ctaButton}>
               무료로 시작하기
               <ArrowUpRight size={18} aria-hidden="true" />

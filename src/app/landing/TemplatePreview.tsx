@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Check, GripVertical, Link2, MousePointer2 } from "lucide-react";
+import { FileDown, GripVertical, Link2, MousePointer2 } from "lucide-react";
 import styles from "./landing.module.css";
 
 // 이미지는 에디터의 기본 샘플 이력서 첫 페이지를 템플릿별로 캡처한 것이다.
@@ -72,17 +72,17 @@ export default function TemplatePreview() {
 
       <div className={styles.dragChip} aria-hidden="true">
         <GripVertical size={14} />
-        <span>프로젝트 블록</span>
+        <span>블록 단위로 관리</span>
         <MousePointer2 size={24} strokeWidth={1.75} className={styles.dragCursor} />
       </div>
 
-      <div className={`${styles.floatCard} ${styles.floatAts}`} aria-hidden="true">
+      <div className={`${styles.floatCard} ${styles.floatPdf}`} aria-hidden="true">
         <span className={styles.floatIcon}>
-          <Check size={14} />
+          <FileDown size={14} />
         </span>
         <div>
-          <p>ATS 검사</p>
-          <strong>합격 안정권</strong>
+          <p>PDF 저장</p>
+          <strong>보이는 그대로</strong>
         </div>
       </div>
 
@@ -91,8 +91,8 @@ export default function TemplatePreview() {
           <Link2 size={14} />
         </span>
         <div>
-          <p>공개 링크</p>
-          <strong>/r/jiwon-kim</strong>
+          <p>게시하기</p>
+          <strong>이력서를 링크로 공유</strong>
         </div>
       </div>
     </div>

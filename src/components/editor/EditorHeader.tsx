@@ -4,7 +4,6 @@
 import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import { useResumeStore } from "@/store/useResumeStore";
-import AtsCheckerModal from "@/components/editor/AtsCheckerModal";
 import ServiceDialog, { ServiceDialogVariant } from "@/components/ui/ServiceDialog";
 import PublishResumeButton from "@/components/editor/PublishResumeButton";
 import { EDITOR_TUTORIAL_EVENT } from "@/components/editor/EditorTutorial";
@@ -19,7 +18,6 @@ import {
     Copy,
     Trash2,
     FileText,
-    ShieldCheck,
     Sun,
     Moon,
     ChevronDown,
@@ -79,7 +77,6 @@ function collectContentStrings(value: unknown): string[] {
 }
 
 export default function EditorHeader() {
-    const [isAtsModalOpen, setIsAtsModalOpen] = useState(false);
     const [theme, setTheme] = useState<"dark" | "light">("dark");
     const [dialog, setDialog] = useState<DialogState | null>(null);
     const [openMenu, setOpenMenu] = useState<"document" | "blocks" | "more" | null>(null);
@@ -858,16 +855,6 @@ export default function EditorHeader() {
                                     type="button"
                                     onClick={() => {
                                         setOpenMenu(null);
-                                        setIsAtsModalOpen(true);
-                                    }}
-                                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
-                                >
-                                    <ShieldCheck size={14} /> ATS 검사
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setOpenMenu(null);
                                         toggleTheme();
                                     }}
                                     className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs text-neutral-300 transition hover:bg-neutral-800 hover:text-white"
@@ -935,11 +922,6 @@ export default function EditorHeader() {
                 </div>
             </header>
 
-            {/* ATS 진단 모달 */}
-            <AtsCheckerModal
-                isOpen={isAtsModalOpen}
-                onClose={() => setIsAtsModalOpen(false)}
-            />
             {toastMessage && (
                 <div className="pointer-events-none fixed inset-x-0 top-16 z-[80] flex justify-center px-4">
                     <div
