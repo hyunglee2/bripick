@@ -607,12 +607,12 @@ export default function InspectorPanel() {
                         aria-label={editingExperienceProject
                             ? "회사 설정으로 돌아가기"
                             : editingExperience
-                            ? "경력(회사) 목록으로 돌아가기"
-                            : editingProject
-                                ? "프로젝트 목록으로 돌아가기"
-                            : editingEducation
-                                ? "학력 목록으로 돌아가기"
-                                : "기타 경험 목록으로 돌아가기"}
+                                ? "경력(회사) 목록으로 돌아가기"
+                                : editingProject
+                                    ? "프로젝트 목록으로 돌아가기"
+                                    : editingEducation
+                                        ? "학력 목록으로 돌아가기"
+                                        : "기타 경험 목록으로 돌아가기"}
                     >
                         <ChevronLeft size={16} aria-hidden="true" />
                     </button>
@@ -621,23 +621,23 @@ export default function InspectorPanel() {
                             {editingExperienceProject
                                 ? `${editingExperience?.company || "회사명 없음"} · 프로젝트`
                                 : editingExperience
-                                ? "경력 · 회사"
-                                : editingProject
-                                    ? "프로젝트"
-                                : editingEducation
-                                    ? "학력"
-                                    : "기타 경험"}
+                                    ? "경력 · 회사"
+                                    : editingProject
+                                        ? "프로젝트"
+                                        : editingEducation
+                                            ? "학력"
+                                            : "기타 경험"}
                         </p>
                         <h2 className="doc-settings__title block-settings__title">
                             {editingExperienceProject
                                 ? (editingExperienceProject.title || "제목 없는 프로젝트")
                                 : editingExperience
-                                ? (editingExperience.company || "회사명 없음")
-                                : editingProject
-                                    ? (editingProject.title || "제목 없는 프로젝트")
-                                : editingEducation
-                                    ? (editingEducation.school || "학교명 없음")
-                                    : (editingCertification?.title || "활동명 없음")}
+                                    ? (editingExperience.company || "회사명 없음")
+                                    : editingProject
+                                        ? (editingProject.title || "제목 없는 프로젝트")
+                                        : editingEducation
+                                            ? (editingEducation.school || "학교명 없음")
+                                            : (editingCertification?.title || "활동명 없음")}
                         </h2>
                     </div>
                 </header>
@@ -717,45 +717,31 @@ export default function InspectorPanel() {
                 {/* [프로필 폼] */}
                 {currentBlock.type === "profile" && (
                     <>
-                    <div className="inspector-form-stack">
-                        <h3 className="doc-settings__section-title">기본 정보</h3>
-                        <div className="inspector-field">
-                            <div className="block-settings__field-head">
-                                <label className="inspector-field-label">프로필 사진</label>
-                                <label className="block-settings__inline-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={currentBlock.data.showPhoto !== false}
-                                        onChange={(event) => updateBlockData(currentBlock.id, {
-                                            ...currentBlock.data,
-                                            showPhoto: event.target.checked,
-                                        })}
-                                        aria-label="프로필 사진 표시"
-                                    />
-                                    표시
-                                </label>
-                            </div>
-                            <div className={`inspector-photo-row${currentBlock.data.showPhoto === false ? " opacity-45" : ""}`}>
-                                <label className="inspector-photo-thumbnail" aria-label="프로필 사진 선택">
-                                    {currentBlock.data.photo ? (
-                                        <img src={currentBlock.data.photo} alt="프로필 미리보기" />
-                                    ) : (
-                                        <ImagePlus size={18} aria-hidden="true" />
-                                    )}
-                                    <input
-                                        type="file"
-                                        accept="image/png,image/jpeg,image/webp"
-                                        className="hidden"
-                                        onChange={(event) => {
-                                            handleProfilePhotoUpload(event.target.files?.[0]);
-                                            event.currentTarget.value = "";
-                                        }}
-                                    />
-                                </label>
-                                <div className="inspector-photo-actions">
-                                    <label className="inspector-photo-action inspector-photo-action--select">
-                                        <ImagePlus size={14} aria-hidden="true" />
-                                        {currentBlock.data.photo ? "사진 변경" : "사진 선택"}
+                        <div className="inspector-form-stack">
+                            <h3 className="doc-settings__section-title">기본 정보</h3>
+                            <div className="inspector-field">
+                                <div className="block-settings__field-head">
+                                    <label className="inspector-field-label">프로필 사진</label>
+                                    <label className="block-settings__inline-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={currentBlock.data.showPhoto !== false}
+                                            onChange={(event) => updateBlockData(currentBlock.id, {
+                                                ...currentBlock.data,
+                                                showPhoto: event.target.checked,
+                                            })}
+                                            aria-label="프로필 사진 표시"
+                                        />
+                                        표시
+                                    </label>
+                                </div>
+                                <div className={`inspector-photo-row${currentBlock.data.showPhoto === false ? " opacity-45" : ""}`}>
+                                    <label className="inspector-photo-thumbnail" aria-label="프로필 사진 선택">
+                                        {currentBlock.data.photo ? (
+                                            <img src={currentBlock.data.photo} alt="프로필 미리보기" />
+                                        ) : (
+                                            <ImagePlus size={18} aria-hidden="true" />
+                                        )}
                                         <input
                                             type="file"
                                             accept="image/png,image/jpeg,image/webp"
@@ -766,298 +752,312 @@ export default function InspectorPanel() {
                                             }}
                                         />
                                     </label>
-                                    {currentBlock.data.photo && (
-                                        <button
-                                            type="button"
-                                            className="inspector-photo-action inspector-photo-action--edit"
-                                            onClick={() => setPendingProfilePhoto({
-                                                blockId: currentBlock.id,
-                                                source: currentBlock.data.photoSource || currentBlock.data.photo,
-                                                crop: currentBlock.data.photoSource
-                                                    ? currentBlock.data.photoCrop
-                                                    : { focusX: 0.5, focusY: 0.5, zoom: 1 },
-                                            })}
-                                        >
-                                            <Crop size={14} aria-hidden="true" />
-                                            사진 편집
-                                        </button>
-                                    )}
-                                    {currentBlock.data.photo && (
-                                        <button
-                                            type="button"
-                                            className="inspector-photo-action inspector-photo-action--remove"
-                                            onClick={() => updateBlockData(currentBlock.id, {
-                                                ...currentBlock.data,
-                                                photo: "",
-                                                photoSource: "",
-                                                photoCrop: undefined,
-                                            })}
-                                            data-tooltip="사진 제거"
-                                            aria-label="프로필 사진 제거"
-                                        >
-                                            <Trash2 size={14} aria-hidden="true" />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="inspector-field">
-                            <div className="block-settings__field-head">
-                                <label className="inspector-field-label">한 줄 소개</label>
-                                <span className="block-settings__field-hint">이름 위에 표시</span>
-                            </div>
-                            <RichTextEditable
-                                html={currentBlock.data.bioHtml || escapeHtml(currentBlock.data.bio || "")}
-                                placeholder="예: 사용자 중심의 서비스를 만드는"
-                                onChange={(bioHtml) => updateBlockData(currentBlock.id, {
-                                    ...currentBlock.data,
-                                    bio: richTextToPlainText(bioHtml),
-                                    bioHtml,
-                                })}
-                                className="inspector-rich-text-editor min-h-14"
-                            />
-                        </div>
-                        <div className="inspector-field">
-                            <label className="inspector-field-label">직무</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.role || ""}
-                                onChange={(e) =>
-                                    updateBlockData(currentBlock.id, { ...currentBlock.data, role: e.target.value })
-                                }
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-                        <div className="inspector-field">
-                            <label className="inspector-field-label">이름</label>
-                            <input
-                                type="text"
-                                value={currentBlock.data.name || ""}
-                                onChange={(e) =>
-                                    updateBlockData(currentBlock.id, { ...currentBlock.data, name: e.target.value })
-                                }
-                                className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                            />
-                        </div>
-                    </div>
-                    <div className="inspector-form-stack">
-                        <div className="inspector-field inspector-contact-list">
-                            <h3 className="doc-settings__section-title">
-                                연락처 <span className="block-settings__count">{profileContacts.length}</span>
-                            </h3>
-                            {profileContacts.length === 0 && (
-                                <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
-                                    표시할 연락처 항목을 추가해 주세요.
-                                </p>
-                            )}
-                            {profileContacts.map((contact, contactIndex) => (
-                                <div
-                                    key={contact.id}
-                                    className={`inspector-repeat-card inspector-contact-row${contactIndex === 0 ? " is-first" : ""}${draggedContactIndex === contactIndex ? " is-dragging" : ""}`}
-                                    draggable
-                                    onDragStart={(event) => {
-                                        if (!(event.target as HTMLElement).closest(".inspector-contact-drag")) {
-                                            event.preventDefault();
-                                            return;
-                                        }
-                                        setDraggedContactIndex(contactIndex);
-                                    }}
-                                    onDragEnd={() => setDraggedContactIndex(null)}
-                                    onDragOver={(event) => event.preventDefault()}
-                                    onDrop={(event) => {
-                                        event.preventDefault();
-                                        if (draggedContactIndex === null || draggedContactIndex === contactIndex) return;
-                                        const nextContacts = [...profileContacts];
-                                        const [movedContact] = nextContacts.splice(draggedContactIndex, 1);
-                                        nextContacts.splice(contactIndex, 0, movedContact);
-                                        nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
-                                        updateBlockData(
-                                            currentBlock.id,
-                                            withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                        );
-                                        setDraggedContactIndex(null);
-                                    }}
-                                >
-                                    <div className="inspector-contact-main">
-                                        <span
-                                            className="inspector-contact-drag tooltip-anchor"
-                                            data-tooltip="드래그하여 순서 변경"
-                                            aria-label={`${contact.label || "연락처"} 항목 순서 변경`}
-                                        >
-                                            <GripVertical size={15} />
-                                        </span>
-                                        <input
-                                            type="text"
-                                            value={contact.label}
-                                            placeholder="항목명"
-                                            aria-label="연락처 항목명"
-                                            onChange={(event) => {
-                                                const nextContacts = profileContacts.map((item) => (
-                                                    item.id === contact.id ? { ...item, label: event.target.value } : item
-                                                ));
-                                                updateBlockData(
-                                                    currentBlock.id,
-                                                    withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                                );
-                                            }}
-                                            className="inspector-contact-label w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={contact.value}
-                                            placeholder="내용 또는 URL"
-                                            aria-label={`${contact.label || "연락처"} 내용`}
-                                            onChange={(event) => {
-                                                const nextContacts = profileContacts.map((item) => (
-                                                    item.id === contact.id ? { ...item, value: event.target.value } : item
-                                                ));
-                                                updateBlockData(
-                                                    currentBlock.id,
-                                                    withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                                );
-                                            }}
-                                            className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                        />
-                                        {contactIndex > 0 ? (
+                                    <div className="inspector-photo-actions">
+                                        <label className="inspector-photo-action inspector-photo-action--select">
+                                            <ImagePlus size={14} aria-hidden="true" />
+                                            {currentBlock.data.photo ? "사진 변경" : "사진 선택"}
+                                            <input
+                                                type="file"
+                                                accept="image/png,image/jpeg,image/webp"
+                                                className="hidden"
+                                                onChange={(event) => {
+                                                    handleProfilePhotoUpload(event.target.files?.[0]);
+                                                    event.currentTarget.value = "";
+                                                }}
+                                            />
+                                        </label>
+                                        {currentBlock.data.photo && (
                                             <button
                                                 type="button"
-                                                aria-pressed={Boolean(contact.inlineWithPrevious)}
-                                                onClick={() => {
+                                                className="inspector-photo-action inspector-photo-action--edit"
+                                                onClick={() => setPendingProfilePhoto({
+                                                    blockId: currentBlock.id,
+                                                    source: currentBlock.data.photoSource || currentBlock.data.photo,
+                                                    crop: currentBlock.data.photoSource
+                                                        ? currentBlock.data.photoCrop
+                                                        : { focusX: 0.5, focusY: 0.5, zoom: 1 },
+                                                })}
+                                            >
+                                                <Crop size={14} aria-hidden="true" />
+                                                사진 편집
+                                            </button>
+                                        )}
+                                        {currentBlock.data.photo && (
+                                            <button
+                                                type="button"
+                                                className="inspector-photo-action inspector-photo-action--remove"
+                                                onClick={() => updateBlockData(currentBlock.id, {
+                                                    ...currentBlock.data,
+                                                    photo: "",
+                                                    photoSource: "",
+                                                    photoCrop: undefined,
+                                                })}
+                                                data-tooltip="사진 제거"
+                                                aria-label="프로필 사진 제거"
+                                            >
+                                                <Trash2 size={14} aria-hidden="true" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="inspector-field">
+                                <div className="block-settings__field-head">
+                                    <label className="inspector-field-label">한 줄 소개</label>
+                                    <span className="block-settings__field-hint">이름 위에 표시</span>
+                                </div>
+                                <RichTextEditable
+                                    html={currentBlock.data.bioHtml || escapeHtml(currentBlock.data.bio || "")}
+                                    placeholder="예: 사용자 중심의 서비스를 만드는"
+                                    onChange={(bioHtml) => updateBlockData(currentBlock.id, {
+                                        ...currentBlock.data,
+                                        bio: richTextToPlainText(bioHtml),
+                                        bioHtml,
+                                    })}
+                                    className="inspector-rich-text-editor min-h-14"
+                                />
+                            </div>
+                            <div className="inspector-field">
+                                <label className="inspector-field-label">직무</label>
+                                <input
+                                    type="text"
+                                    value={currentBlock.data.role || ""}
+                                    onChange={(e) =>
+                                        updateBlockData(currentBlock.id, { ...currentBlock.data, role: e.target.value })
+                                    }
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                            <div className="inspector-field">
+                                <label className="inspector-field-label">이름</label>
+                                <input
+                                    type="text"
+                                    value={currentBlock.data.name || ""}
+                                    onChange={(e) =>
+                                        updateBlockData(currentBlock.id, { ...currentBlock.data, name: e.target.value })
+                                    }
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded px-2.5 py-1.5 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                />
+                            </div>
+                        </div>
+                        <div className="inspector-form-stack">
+                            <div className="inspector-field inspector-contact-list">
+                                <h3 className="doc-settings__section-title">
+                                    연락처 <span className="block-settings__count">{profileContacts.length}</span>
+                                </h3>
+                                {profileContacts.length === 0 && (
+                                    <p className="inspector-empty-state rounded-lg border border-dashed border-neutral-700 px-3 py-3 text-center text-[11px] text-neutral-500">
+                                        표시할 연락처 항목을 추가해 주세요.
+                                    </p>
+                                )}
+                                {profileContacts.map((contact, contactIndex) => (
+                                    <div
+                                        key={contact.id}
+                                        className={`inspector-repeat-card inspector-contact-row${contactIndex === 0 ? " is-first" : ""}${draggedContactIndex === contactIndex ? " is-dragging" : ""}`}
+                                        draggable
+                                        onDragStart={(event) => {
+                                            if (!(event.target as HTMLElement).closest(".inspector-contact-drag")) {
+                                                event.preventDefault();
+                                                return;
+                                            }
+                                            setDraggedContactIndex(contactIndex);
+                                        }}
+                                        onDragEnd={() => setDraggedContactIndex(null)}
+                                        onDragOver={(event) => event.preventDefault()}
+                                        onDrop={(event) => {
+                                            event.preventDefault();
+                                            if (draggedContactIndex === null || draggedContactIndex === contactIndex) return;
+                                            const nextContacts = [...profileContacts];
+                                            const [movedContact] = nextContacts.splice(draggedContactIndex, 1);
+                                            nextContacts.splice(contactIndex, 0, movedContact);
+                                            nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
+                                            updateBlockData(
+                                                currentBlock.id,
+                                                withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                            );
+                                            setDraggedContactIndex(null);
+                                        }}
+                                    >
+                                        <div className="inspector-contact-main">
+                                            <span
+                                                className="inspector-contact-drag tooltip-anchor"
+                                                data-tooltip="드래그하여 순서 변경"
+                                                aria-label={`${contact.label || "연락처"} 항목 순서 변경`}
+                                            >
+                                                <GripVertical size={15} />
+                                            </span>
+                                            <input
+                                                type="text"
+                                                value={contact.label}
+                                                placeholder="항목명"
+                                                aria-label="연락처 항목명"
+                                                onChange={(event) => {
                                                     const nextContacts = profileContacts.map((item) => (
-                                                        item.id === contact.id
-                                                            ? { ...item, inlineWithPrevious: !item.inlineWithPrevious }
-                                                            : item
+                                                        item.id === contact.id ? { ...item, label: event.target.value } : item
                                                     ));
                                                     updateBlockData(
                                                         currentBlock.id,
                                                         withProfileContacts(currentBlock.data as ProfileData, nextContacts),
                                                     );
                                                 }}
-                                                className="inspector-contact-link"
-                                                data-tooltip={contact.inlineWithPrevious ? "앞 항목과 줄 연결 해제" : "앞 항목과 같은 줄에 표시"}
-                                                aria-label={contact.inlineWithPrevious ? "앞 항목과 줄 연결 해제" : "앞 항목과 같은 줄에 표시"}
-                                            >
-                                                <Link2 size={14} />
-                                            </button>
-                                        ) : (
-                                            <span className="inspector-contact-link-spacer" aria-hidden="true" />
-                                        )}
-                                        <details className="inspector-contact-menu">
-                                            <summary
-                                                data-tooltip={`${contact.label || "연락처"} 항목 메뉴`}
-                                                aria-label={`${contact.label || "연락처"} 항목 메뉴`}
-                                            >
-                                                <MoreHorizontal size={16} />
-                                            </summary>
-                                            <div className="inspector-contact-menu__popover">
+                                                className="inspector-contact-label w-20 shrink-0 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                            />
+                                            <input
+                                                type="text"
+                                                value={contact.value}
+                                                placeholder="내용 또는 URL"
+                                                aria-label={`${contact.label || "연락처"} 내용`}
+                                                onChange={(event) => {
+                                                    const nextContacts = profileContacts.map((item) => (
+                                                        item.id === contact.id ? { ...item, value: event.target.value } : item
+                                                    ));
+                                                    updateBlockData(
+                                                        currentBlock.id,
+                                                        withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                                    );
+                                                }}
+                                                className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-950 px-2 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                            />
+                                            {contactIndex > 0 ? (
                                                 <button
                                                     type="button"
-                                                    disabled={contactIndex === 0}
+                                                    aria-pressed={Boolean(contact.inlineWithPrevious)}
                                                     onClick={() => {
-                                                        const nextContacts = [...profileContacts];
-                                                        [nextContacts[contactIndex - 1], nextContacts[contactIndex]] = [nextContacts[contactIndex], nextContacts[contactIndex - 1]];
-                                                        nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
-                                                        updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
+                                                        const nextContacts = profileContacts.map((item) => (
+                                                            item.id === contact.id
+                                                                ? { ...item, inlineWithPrevious: !item.inlineWithPrevious }
+                                                                : item
+                                                        ));
+                                                        updateBlockData(
+                                                            currentBlock.id,
+                                                            withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                                        );
                                                     }}
+                                                    className="inspector-contact-link"
+                                                    data-tooltip={contact.inlineWithPrevious ? "앞 항목과 줄 연결 해제" : "앞 항목과 같은 줄에 표시"}
+                                                    aria-label={contact.inlineWithPrevious ? "앞 항목과 줄 연결 해제" : "앞 항목과 같은 줄에 표시"}
                                                 >
-                                                    <ChevronUp size={13} /> 위로 이동
+                                                    <Link2 size={14} />
                                                 </button>
-                                                <button
-                                                    type="button"
-                                                    disabled={contactIndex === profileContacts.length - 1}
-                                                    onClick={() => {
-                                                        const nextContacts = [...profileContacts];
-                                                        [nextContacts[contactIndex], nextContacts[contactIndex + 1]] = [nextContacts[contactIndex + 1], nextContacts[contactIndex]];
-                                                        nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
-                                                        updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
-                                                    }}
+                                            ) : (
+                                                <span className="inspector-contact-link-spacer" aria-hidden="true" />
+                                            )}
+                                            <details className="inspector-contact-menu">
+                                                <summary
+                                                    data-tooltip={`${contact.label || "연락처"} 항목 메뉴`}
+                                                    aria-label={`${contact.label || "연락처"} 항목 메뉴`}
                                                 >
-                                                    <ChevronDown size={13} /> 아래로 이동
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="is-danger"
-                                                    onClick={() => {
-                                                        const nextContacts = profileContacts.filter((item) => item.id !== contact.id);
-                                                        updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
-                                                    }}
-                                                >
-                                                    <Trash2 size={13} /> 삭제
-                                                </button>
-                                            </div>
-                                        </details>
+                                                    <MoreHorizontal size={16} />
+                                                </summary>
+                                                <div className="inspector-contact-menu__popover">
+                                                    <button
+                                                        type="button"
+                                                        disabled={contactIndex === 0}
+                                                        onClick={() => {
+                                                            const nextContacts = [...profileContacts];
+                                                            [nextContacts[contactIndex - 1], nextContacts[contactIndex]] = [nextContacts[contactIndex], nextContacts[contactIndex - 1]];
+                                                            nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
+                                                            updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
+                                                        }}
+                                                    >
+                                                        <ChevronUp size={13} /> 위로 이동
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        disabled={contactIndex === profileContacts.length - 1}
+                                                        onClick={() => {
+                                                            const nextContacts = [...profileContacts];
+                                                            [nextContacts[contactIndex], nextContacts[contactIndex + 1]] = [nextContacts[contactIndex + 1], nextContacts[contactIndex]];
+                                                            nextContacts[0] = { ...nextContacts[0], inlineWithPrevious: false };
+                                                            updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
+                                                        }}
+                                                    >
+                                                        <ChevronDown size={13} /> 아래로 이동
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="is-danger"
+                                                        onClick={() => {
+                                                            const nextContacts = profileContacts.filter((item) => item.id !== contact.id);
+                                                            updateBlockData(currentBlock.id, withProfileContacts(currentBlock.data as ProfileData, nextContacts));
+                                                        }}
+                                                    >
+                                                        <Trash2 size={13} /> 삭제
+                                                    </button>
+                                                </div>
+                                            </details>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    const nextContacts = [
-                                        ...profileContacts,
-                                        { id: `contact-${Date.now()}`, label: "", value: "" },
-                                    ];
-                                    updateBlockData(
-                                        currentBlock.id,
-                                        withProfileContacts(currentBlock.data as ProfileData, nextContacts),
-                                    );
-                                }}
-                                className="inspector-contact-add"
-                            >
-                                <Plus size={14} /> 연락처 항목 추가
-                            </button>
-                        </div>
-                    </div>
-                    <div className="inspector-form-stack">
-                        <div className="inspector-field">
-                            <div className="block-settings__field-head">
-                                <h3 className="doc-settings__section-title">자기소개</h3>
-                                <ContentStyleToggle
-                                    value={currentBlock.data.introductionStyle || "bullets"}
-                                    onChange={(value) => updateBlockData(currentBlock.id, {
-                                        ...currentBlock.data,
-                                        introductionStyle: value,
-                                    })}
-                                    label="자기소개 표시 방식"
-                                />
+                                ))}
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const nextContacts = [
+                                            ...profileContacts,
+                                            { id: `contact-${Date.now()}`, label: "", value: "" },
+                                        ];
+                                        updateBlockData(
+                                            currentBlock.id,
+                                            withProfileContacts(currentBlock.data as ProfileData, nextContacts),
+                                        );
+                                    }}
+                                    className="inspector-contact-add"
+                                >
+                                    <Plus size={14} /> 연락처 항목 추가
+                                </button>
                             </div>
-                            {(currentBlock.data.introductionStyle || "bullets") === "bullets" ? (
-                                <>
-                                    <ProjectBulletDocumentEditor
-                                        descriptions={currentBlock.data.highlights || []}
-                                        levels={(currentBlock.data.highlights || []).map(() => 1)}
-                                        html={currentBlock.data.highlightsHtml || []}
-                                        onChange={(highlights, _levels, highlightsHtml) => updateBlockData(currentBlock.id, {
-                                            ...currentBlock.data,
-                                            highlights,
-                                            highlightsHtml,
-                                        })}
-                                        maxLevel={1}
-                                        placeholder="핵심 경험이나 강점을 입력하세요"
-                                        ariaLabel="자기소개 불렛 목록"
-                                    />
-                                </>
-                            ) : (
-                                <>
-                                    <RichTextEditable
-                                        html={(currentBlock.data.highlightsHtml || currentBlock.data.highlights?.map(escapeHtml) || []).join("<br>")}
-                                        placeholder="자기소개를 입력하세요"
-                                        onChange={(html) => {
-                                            const highlightsHtml = splitInlineRichTextLines(html);
-                                            updateBlockData(currentBlock.id, {
-                                            ...currentBlock.data,
-                                                highlights: highlightsHtml.map(richTextToPlainText),
-                                                highlightsHtml,
-                                            });
-                                        }}
-                                        className="inspector-rich-text-editor"
-                                    />
-                                    <p className="text-[10px] text-neutral-500">
-                                        문장별로 줄을 나눠 입력하면 미리보기에서는 자연스럽게 이어서 표시됩니다.
-                                    </p>
-                                </>
-                            )}
                         </div>
-                    </div>
+                        <div className="inspector-form-stack">
+                            <div className="inspector-field">
+                                <div className="block-settings__field-head">
+                                    <h3 className="doc-settings__section-title">자기소개</h3>
+                                    <ContentStyleToggle
+                                        value={currentBlock.data.introductionStyle || "bullets"}
+                                        onChange={(value) => updateBlockData(currentBlock.id, {
+                                            ...currentBlock.data,
+                                            introductionStyle: value,
+                                        })}
+                                        label="자기소개 표시 방식"
+                                    />
+                                </div>
+                                {(currentBlock.data.introductionStyle || "bullets") === "bullets" ? (
+                                    <>
+                                        <ProjectBulletDocumentEditor
+                                            descriptions={currentBlock.data.highlights || []}
+                                            levels={(currentBlock.data.highlights || []).map(() => 1)}
+                                            html={currentBlock.data.highlightsHtml || []}
+                                            onChange={(highlights, _levels, highlightsHtml) => updateBlockData(currentBlock.id, {
+                                                ...currentBlock.data,
+                                                highlights,
+                                                highlightsHtml,
+                                            })}
+                                            maxLevel={1}
+                                            placeholder="핵심 경험이나 강점을 입력하세요"
+                                            ariaLabel="자기소개 불렛 목록"
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <RichTextEditable
+                                            html={(currentBlock.data.highlightsHtml || currentBlock.data.highlights?.map(escapeHtml) || []).join("<br>")}
+                                            placeholder="자기소개를 입력하세요"
+                                            onChange={(html) => {
+                                                const highlightsHtml = splitInlineRichTextLines(html);
+                                                updateBlockData(currentBlock.id, {
+                                                    ...currentBlock.data,
+                                                    highlights: highlightsHtml.map(richTextToPlainText),
+                                                    highlightsHtml,
+                                                });
+                                            }}
+                                            className="inspector-rich-text-editor"
+                                        />
+                                        <p className="text-[10px] text-neutral-500">
+                                            문장별로 줄을 나눠 입력하면 미리보기에서는 자연스럽게 이어서 표시됩니다.
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
                     </>
                 )}
 
@@ -1079,12 +1079,12 @@ export default function InspectorPanel() {
                             currentBlock.data
                                 .filter((exp: any) => !editingExperience || exp.id === editingExperience.id)
                                 .map((exp: any, experienceIndex: number) => (
-                                <div
-                                    key={exp.id}
-                                    className={editingExperience?.id === exp.id
-                                        ? "inspector-experience-editor__card"
-                                        : `inspector-repeat-card inspector-project-card${exp.isHidden ? " is-hidden" : ""}`}
-                                >
+                                    <div
+                                        key={exp.id}
+                                        className={editingExperience?.id === exp.id
+                                            ? "inspector-experience-editor__card"
+                                            : `inspector-repeat-card inspector-project-card${exp.isHidden ? " is-hidden" : ""}`}
+                                    >
                                         {!editingExperience && (
                                             <div className="inspector-project-card__summary">
                                                 <button
@@ -1147,9 +1147,9 @@ export default function InspectorPanel() {
                                             <div className="inspector-project-card__body">
                                                 <label className="block-settings__option block-settings__option--page">
                                                     <span className="block-settings__option-copy">
-<span className="block-settings__option-label">새 페이지에서 시작</span>
-<span className="block-settings__option-hint">이 프로젝트 앞에서 페이지를 나눠요.</span>
-</span>
+                                                        <span className="block-settings__option-label">새 페이지에서 시작</span>
+                                                        <span className="block-settings__option-hint">이 프로젝트 앞에서 페이지를 나눠요.</span>
+                                                    </span>
                                                     <input
                                                         type="checkbox"
                                                         checked={editingExperienceProject.startOnNewPage === true}
@@ -1159,7 +1159,7 @@ export default function InspectorPanel() {
                                                             { startOnNewPage: event.target.checked },
                                                         )}
                                                         aria-label="프로젝트를 새 페이지에서 시작"
-                                                        
+
                                                     />
                                                 </label>
                                                 <div className="inspector-field">
@@ -1233,9 +1233,9 @@ export default function InspectorPanel() {
 
                                                 <label className="block-settings__option block-settings__option--page">
                                                     <span className="block-settings__option-copy">
-<span className="block-settings__option-label">새 페이지에서 시작</span>
-<span className="block-settings__option-hint">이 회사 경력 앞에서 페이지를 나눠요.</span>
-</span>
+                                                        <span className="block-settings__option-label">새 페이지에서 시작</span>
+                                                        <span className="block-settings__option-hint">이 회사 경력 앞에서 페이지를 나눠요.</span>
+                                                    </span>
                                                     <input
                                                         type="checkbox"
                                                         checked={exp.startOnNewPage === true}
@@ -1245,7 +1245,7 @@ export default function InspectorPanel() {
                                                             event.target.checked,
                                                         )}
                                                         aria-label="회사 경력을 새 페이지에서 시작"
-                                                        
+
                                                     />
                                                 </label>
 
@@ -1579,191 +1579,191 @@ export default function InspectorPanel() {
                             currentBlock.data
                                 .filter((proj: any) => !editingProject || proj.id === editingProject.id)
                                 .map((proj: any, projectIndex: number) => (
-                                <div
-                                    key={proj.id}
-                                    className={editingProject?.id === proj.id
-                                        ? "inspector-experience-editor__card"
-                                        : `inspector-repeat-card inspector-project-card${proj.isHidden ? " is-hidden" : ""}`}
-                                >
-                                    {!editingProject && <div className="inspector-project-card__summary">
-                                        <button
-                                            type="button"
-                                            className="inspector-project-card__toggle"
-                                            onClick={() => {
-                                                setEditingProjectId(proj.id);
-                                                blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                            }}
-                                            aria-label={`${proj.title || "제목 없는 프로젝트"} 편집`}
-                                        >
-                                            <span className="inspector-project-card__summary-copy">
-                                                <strong>{proj.title || "제목 없는 프로젝트"}</strong>
-                                                {proj.isHidden && <em className="inspector-hidden-badge">숨김</em>}
-                                            </span>
-                                            <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="inspector-project-card__visibility"
-                                            onClick={() => handleUpdateProjectField(proj.id, "isHidden", !proj.isHidden)}
-                                            aria-pressed={proj.isHidden === true}
-                                            data-tooltip={proj.isHidden ? "다시 표시하기" : "이력서에서 숨기기"}
-                                            aria-label={`${proj.title || "프로젝트"} ${proj.isHidden ? "표시하기" : "숨기기"}`}
-                                        >
-                                            {proj.isHidden ? <EyeOff size={15} /> : <Eye size={15} />}
-                                        </button>
-                                        <details className="inspector-contact-menu inspector-project-menu">
-                                            <summary
-                                                data-tooltip={`${proj.title || "프로젝트"} 항목 메뉴`}
-                                                aria-label={`${proj.title || "프로젝트"} 항목 메뉴`}
+                                    <div
+                                        key={proj.id}
+                                        className={editingProject?.id === proj.id
+                                            ? "inspector-experience-editor__card"
+                                            : `inspector-repeat-card inspector-project-card${proj.isHidden ? " is-hidden" : ""}`}
+                                    >
+                                        {!editingProject && <div className="inspector-project-card__summary">
+                                            <button
+                                                type="button"
+                                                className="inspector-project-card__toggle"
+                                                onClick={() => {
+                                                    setEditingProjectId(proj.id);
+                                                    blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                }}
+                                                aria-label={`${proj.title || "제목 없는 프로젝트"} 편집`}
                                             >
-                                                <MoreHorizontal size={16} />
-                                            </summary>
-                                            <div className="inspector-contact-menu__popover">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleReorderProject(projectIndex, projectIndex - 1)}
-                                                    disabled={projectIndex === 0}
+                                                <span className="inspector-project-card__summary-copy">
+                                                    <strong>{proj.title || "제목 없는 프로젝트"}</strong>
+                                                    {proj.isHidden && <em className="inspector-hidden-badge">숨김</em>}
+                                                </span>
+                                                <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="inspector-project-card__visibility"
+                                                onClick={() => handleUpdateProjectField(proj.id, "isHidden", !proj.isHidden)}
+                                                aria-pressed={proj.isHidden === true}
+                                                data-tooltip={proj.isHidden ? "다시 표시하기" : "이력서에서 숨기기"}
+                                                aria-label={`${proj.title || "프로젝트"} ${proj.isHidden ? "표시하기" : "숨기기"}`}
+                                            >
+                                                {proj.isHidden ? <EyeOff size={15} /> : <Eye size={15} />}
+                                            </button>
+                                            <details className="inspector-contact-menu inspector-project-menu">
+                                                <summary
+                                                    data-tooltip={`${proj.title || "프로젝트"} 항목 메뉴`}
+                                                    aria-label={`${proj.title || "프로젝트"} 항목 메뉴`}
                                                 >
-                                                    <ChevronUp size={13} /> 위로 이동
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleReorderProject(projectIndex, projectIndex + 1)}
-                                                    disabled={projectIndex === currentBlock.data.length - 1}
-                                                >
-                                                    <ChevronDown size={13} /> 아래로 이동
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="inspector-project-menu__switch-item"
-                                                    role="switch"
-                                                    aria-checked={proj.keepTogether ?? (currentBlock.style.keepTogether === true)}
-                                                    onClick={() => handleUpdateProjectField(
-                                                        proj.id,
-                                                        "keepTogether",
-                                                        !(proj.keepTogether ?? (currentBlock.style.keepTogether === true)),
-                                                    )}
-                                                >
-                                                    <span>페이지 경계에서 자동 이동</span>
-                                                    <span className="inspector-project-menu__switch" aria-hidden="true" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    className="is-danger"
-                                                    onClick={() => handleRemoveProjectItem(proj.id)}
-                                                >
-                                                    <Trash2 size={13} /> 삭제
-                                                </button>
-                                            </div>
-                                        </details>
-                                    </div>}
+                                                    <MoreHorizontal size={16} />
+                                                </summary>
+                                                <div className="inspector-contact-menu__popover">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleReorderProject(projectIndex, projectIndex - 1)}
+                                                        disabled={projectIndex === 0}
+                                                    >
+                                                        <ChevronUp size={13} /> 위로 이동
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleReorderProject(projectIndex, projectIndex + 1)}
+                                                        disabled={projectIndex === currentBlock.data.length - 1}
+                                                    >
+                                                        <ChevronDown size={13} /> 아래로 이동
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="inspector-project-menu__switch-item"
+                                                        role="switch"
+                                                        aria-checked={proj.keepTogether ?? (currentBlock.style.keepTogether === true)}
+                                                        onClick={() => handleUpdateProjectField(
+                                                            proj.id,
+                                                            "keepTogether",
+                                                            !(proj.keepTogether ?? (currentBlock.style.keepTogether === true)),
+                                                        )}
+                                                    >
+                                                        <span>페이지 경계에서 자동 이동</span>
+                                                        <span className="inspector-project-menu__switch" aria-hidden="true" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        className="is-danger"
+                                                        onClick={() => handleRemoveProjectItem(proj.id)}
+                                                    >
+                                                        <Trash2 size={13} /> 삭제
+                                                    </button>
+                                                </div>
+                                            </details>
+                                        </div>}
 
-                                    {editingProject?.id === proj.id && (
-                                        <div className="inspector-project-card__body">
-                                            <label className="block-settings__option block-settings__option--page">
-                                                <span className="block-settings__option-copy">
-<span className="block-settings__option-label">새 페이지에서 시작</span>
-<span className="block-settings__option-hint">이 프로젝트 앞에서 페이지를 나눠요.</span>
-</span>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={proj.startOnNewPage === true}
-                                                    onChange={(event) => handleUpdateProjectField(
-                                                        proj.id,
-                                                        "startOnNewPage",
-                                                        event.target.checked,
-                                                    )}
-                                                    aria-label="프로젝트를 새 페이지에서 시작"
-                                                    
-                                                />
-                                            </label>
-                                            <div className="inspector-field">
-                                                <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="프로젝트명"
-                                                    value={proj.title || ""}
-                                                    onChange={(e) => handleUpdateProjectField(proj.id, "title", e.target.value)}
-                                                    className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                                />
-                                            </div>
+                                        {editingProject?.id === proj.id && (
+                                            <div className="inspector-project-card__body">
+                                                <label className="block-settings__option block-settings__option--page">
+                                                    <span className="block-settings__option-copy">
+                                                        <span className="block-settings__option-label">새 페이지에서 시작</span>
+                                                        <span className="block-settings__option-hint">이 프로젝트 앞에서 페이지를 나눠요.</span>
+                                                    </span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={proj.startOnNewPage === true}
+                                                        onChange={(event) => handleUpdateProjectField(
+                                                            proj.id,
+                                                            "startOnNewPage",
+                                                            event.target.checked,
+                                                        )}
+                                                        aria-label="프로젝트를 새 페이지에서 시작"
 
-                                            <div className="inspector-field">
-                                                <label className="inspector-label-inset inspector-field-label block">역할 / 기여도</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="담당 역할 또는 기여도"
-                                                    value={proj.role || ""}
-                                                    onChange={(e) => handleUpdateProjectField(proj.id, "role", e.target.value)}
-                                                    className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                                />
-                                            </div>
-
-                                            <div className="inspector-field">
-                                                <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">링크 URL <span className="font-normal text-neutral-600">선택</span></label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="https://github.com/..."
-                                                    value={proj.link || ""}
-                                                    onChange={(e) => handleUpdateProjectField(proj.id, "link", e.target.value)}
-                                                    className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                                />
-                                            </div>
-
-                                            <div className="inspector-project-card__dates">
+                                                    />
+                                                </label>
                                                 <div className="inspector-field">
-                                                    <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">시작일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                    <label className="inspector-label-inset inspector-field-label block">프로젝트명</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="예: 2025.01"
-                                                        value={proj.startDate || ""}
-                                                        onChange={(e) => handleUpdateProjectField(proj.id, "startDate", e.target.value)}
+                                                        placeholder="프로젝트명"
+                                                        value={proj.title || ""}
+                                                        onChange={(e) => handleUpdateProjectField(proj.id, "title", e.target.value)}
                                                         className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                                     />
                                                 </div>
+
                                                 <div className="inspector-field">
-                                                    <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">종료일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                    <label className="inspector-label-inset inspector-field-label block">역할 / 프로젝트 소개</label>
                                                     <input
                                                         type="text"
-                                                        placeholder="예: 진행 중"
-                                                        value={proj.endDate || ""}
-                                                        onChange={(e) => handleUpdateProjectField(proj.id, "endDate", e.target.value)}
+                                                        placeholder="담당 역할 또는 프로젝트 소개"
+                                                        value={proj.role || ""}
+                                                        onChange={(e) => handleUpdateProjectField(proj.id, "role", e.target.value)}
                                                         className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
                                                     />
                                                 </div>
-                                            </div>
 
-                                            <div className="inspector-field inspector-project-card__bullets">
-                                                <div>
-                                                    <label className="inspector-label-inset inspector-field-label block">기여/성과</label>
-                                                    <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
-                                                        <span><Kbd>Enter</Kbd> 새 불릿</span>
-                                                        <span><Kbd>Tab</Kbd> 들여쓰기</span>
-                                                        <span>
-                                                            <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
-                                                            볼드
-                                                        </span>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">링크 URL <span className="font-normal text-neutral-600">선택</span></label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="https://github.com/..."
+                                                        value={proj.link || ""}
+                                                        onChange={(e) => handleUpdateProjectField(proj.id, "link", e.target.value)}
+                                                        className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+
+                                                <div className="inspector-project-card__dates">
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">시작일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 2025.01"
+                                                            value={proj.startDate || ""}
+                                                            onChange={(e) => handleUpdateProjectField(proj.id, "startDate", e.target.value)}
+                                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-optional-label text-xs text-neutral-400">종료일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 진행 중"
+                                                            value={proj.endDate || ""}
+                                                            onChange={(e) => handleUpdateProjectField(proj.id, "endDate", e.target.value)}
+                                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                        />
                                                     </div>
                                                 </div>
 
-                                                <ProjectBulletDocumentEditor
-                                                    descriptions={proj.description || []}
-                                                    levels={proj.descriptionLevels || []}
-                                                    html={proj.descriptionHtml || []}
-                                                    onChange={(description, descriptionLevels, descriptionHtml) => (
-                                                        handleUpdateProjBulletDocument(
-                                                            proj.id,
-                                                            description,
-                                                            descriptionLevels,
-                                                            descriptionHtml,
-                                                        )
-                                                    )}
-                                                />
+                                                <div className="inspector-field inspector-project-card__bullets">
+                                                    <div>
+                                                        <label className="inspector-label-inset inspector-field-label block">기여/성과</label>
+                                                        <div className="inspector-shortcut-guide" aria-label="불릿 편집 단축키">
+                                                            <span><Kbd>Enter</Kbd> 새 불릿</span>
+                                                            <span><Kbd>Tab</Kbd> 들여쓰기</span>
+                                                            <span>
+                                                                <KbdGroup><Kbd>Ctrl/⌘</Kbd><span>+</span><Kbd>B</Kbd></KbdGroup>
+                                                                볼드
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <ProjectBulletDocumentEditor
+                                                        descriptions={proj.description || []}
+                                                        levels={proj.descriptionLevels || []}
+                                                        html={proj.descriptionHtml || []}
+                                                        onChange={(description, descriptionLevels, descriptionHtml) => (
+                                                            handleUpdateProjBulletDocument(
+                                                                proj.id,
+                                                                description,
+                                                                descriptionLevels,
+                                                                descriptionHtml,
+                                                            )
+                                                        )}
+                                                    />
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                        )}
+                                    </div>
+                                ))}
                         {!editingProject && (
                             <button type="button" onClick={handleAddProjectItem} className="inspector-list-add">
                                 <Plus size={14} /> 프로젝트 추가
@@ -1889,148 +1889,148 @@ export default function InspectorPanel() {
                             currentBlock.data
                                 .filter((edu: any) => !editingEducation || edu.id === editingEducation.id)
                                 .map((edu: any, educationIndex: number) => (
-                                <div
-                                    key={edu.id}
-                                    className={editingEducation?.id === edu.id
-                                        ? "inspector-experience-editor__card"
-                                        : "inspector-repeat-card inspector-project-card"}
-                                >
-                                    {!editingEducation && (
-                                        <div className="inspector-project-card__summary">
-                                            <button
-                                                type="button"
-                                                className="inspector-project-card__toggle"
-                                                onClick={() => {
-                                                    setEditingEducationId(edu.id);
-                                                    blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                                }}
-                                                aria-label={`${edu.school || "학교명 없음"} 편집`}
-                                            >
-                                                <span className="inspector-project-card__summary-copy">
-                                                    <strong>{edu.school || "학교명 없음"}</strong>
-                                                </span>
-                                                <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
-                                            </button>
-                                            <details className="inspector-contact-menu inspector-project-menu">
-                                                <summary
-                                                    data-tooltip={`${edu.school || "학력"} 항목 메뉴`}
-                                                    aria-label={`${edu.school || "학력"} 항목 메뉴`}
+                                    <div
+                                        key={edu.id}
+                                        className={editingEducation?.id === edu.id
+                                            ? "inspector-experience-editor__card"
+                                            : "inspector-repeat-card inspector-project-card"}
+                                    >
+                                        {!editingEducation && (
+                                            <div className="inspector-project-card__summary">
+                                                <button
+                                                    type="button"
+                                                    className="inspector-project-card__toggle"
+                                                    onClick={() => {
+                                                        setEditingEducationId(edu.id);
+                                                        blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                    }}
+                                                    aria-label={`${edu.school || "학교명 없음"} 편집`}
                                                 >
-                                                    <MoreHorizontal size={16} />
-                                                </summary>
-                                                <div className="inspector-contact-menu__popover">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleReorderEducation(educationIndex, educationIndex - 1)}
-                                                        disabled={educationIndex === 0}
+                                                    <span className="inspector-project-card__summary-copy">
+                                                        <strong>{edu.school || "학교명 없음"}</strong>
+                                                    </span>
+                                                    <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
+                                                </button>
+                                                <details className="inspector-contact-menu inspector-project-menu">
+                                                    <summary
+                                                        data-tooltip={`${edu.school || "학력"} 항목 메뉴`}
+                                                        aria-label={`${edu.school || "학력"} 항목 메뉴`}
                                                     >
-                                                        <ChevronUp size={13} /> 위로 이동
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleReorderEducation(educationIndex, educationIndex + 1)}
-                                                        disabled={educationIndex === currentBlock.data.length - 1}
-                                                    >
-                                                        <ChevronDown size={13} /> 아래로 이동
-                                                    </button>
-                                                    <button type="button" className="is-danger" onClick={() => handleRemoveEduItem(edu.id)}>
-                                                        <Trash2 size={13} /> 삭제
-                                                    </button>
+                                                        <MoreHorizontal size={16} />
+                                                    </summary>
+                                                    <div className="inspector-contact-menu__popover">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleReorderEducation(educationIndex, educationIndex - 1)}
+                                                            disabled={educationIndex === 0}
+                                                        >
+                                                            <ChevronUp size={13} /> 위로 이동
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleReorderEducation(educationIndex, educationIndex + 1)}
+                                                            disabled={educationIndex === currentBlock.data.length - 1}
+                                                        >
+                                                            <ChevronDown size={13} /> 아래로 이동
+                                                        </button>
+                                                        <button type="button" className="is-danger" onClick={() => handleRemoveEduItem(edu.id)}>
+                                                            <Trash2 size={13} /> 삭제
+                                                        </button>
+                                                    </div>
+                                                </details>
+                                            </div>
+                                        )}
+
+                                        {editingEducation?.id === edu.id && (
+                                            <div className="inspector-project-card__body">
+                                                <label className="block-settings__option block-settings__option--page">
+                                                    <span className="block-settings__option-copy">
+                                                        <span className="block-settings__option-label">새 페이지에서 시작</span>
+                                                        <span className="block-settings__option-hint">이 학력 항목 앞에서 페이지를 나눠요.</span>
+                                                    </span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={edu.startOnNewPage === true}
+                                                        onChange={(event) => handleUpdateEduField(
+                                                            edu.id,
+                                                            "startOnNewPage",
+                                                            event.target.checked,
+                                                        )}
+                                                        aria-label="학력 항목을 새 페이지에서 시작"
+
+                                                    />
+                                                </label>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-field-label block">학교명</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="학교명"
+                                                        value={edu.school || ""}
+                                                        onChange={(e) => handleUpdateEduField(edu.id, "school", e.target.value)}
+                                                        className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                    />
                                                 </div>
-                                            </details>
-                                        </div>
-                                    )}
 
-                                    {editingEducation?.id === edu.id && (
-                                    <div className="inspector-project-card__body">
-                                    <label className="block-settings__option block-settings__option--page">
-                                        <span className="block-settings__option-copy">
-<span className="block-settings__option-label">새 페이지에서 시작</span>
-<span className="block-settings__option-hint">이 학력 항목 앞에서 페이지를 나눠요.</span>
-</span>
-                                        <input
-                                            type="checkbox"
-                                            checked={edu.startOnNewPage === true}
-                                            onChange={(event) => handleUpdateEduField(
-                                                edu.id,
-                                                "startOnNewPage",
-                                                event.target.checked,
-                                            )}
-                                            aria-label="학력 항목을 새 페이지에서 시작"
-                                            
-                                        />
-                                    </label>
-                                    <div className="inspector-field">
-                                        <label className="inspector-label-inset inspector-field-label block">학교명</label>
-                                        <input
-                                            type="text"
-                                            placeholder="학교명"
-                                            value={edu.school || ""}
-                                            onChange={(e) => handleUpdateEduField(edu.id, "school", e.target.value)}
-                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                        />
-                                    </div>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-field-label block">전공</label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="전공명"
+                                                        value={edu.major || ""}
+                                                        onChange={(e) => handleUpdateEduField(edu.id, "major", e.target.value)}
+                                                        className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
 
-                                    <div className="inspector-field">
-                                        <label className="inspector-label-inset inspector-field-label block">전공</label>
-                                        <input
-                                            type="text"
-                                            placeholder="전공명"
-                                            value={edu.major || ""}
-                                            onChange={(e) => handleUpdateEduField(edu.id, "major", e.target.value)}
-                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                        />
-                                    </div>
+                                                <div className="inspector-project-card__dates">
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-field-label block">입학일</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 2019.03"
+                                                            value={edu.startDate || ""}
+                                                            onChange={(e) => handleUpdateEduField(edu.id, "startDate", e.target.value)}
+                                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-field-label block">졸업일</label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 2023.02"
+                                                            value={edu.endDate || ""}
+                                                            onChange={(e) => handleUpdateEduField(edu.id, "endDate", e.target.value)}
+                                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
 
-                                    <div className="inspector-project-card__dates">
-                                        <div className="inspector-field">
-                                            <label className="inspector-label-inset inspector-field-label block">입학일</label>
-                                            <input
-                                                type="text"
-                                                placeholder="예: 2019.03"
-                                                value={edu.startDate || ""}
-                                                onChange={(e) => handleUpdateEduField(edu.id, "startDate", e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                        <div className="inspector-field">
-                                            <label className="inspector-label-inset inspector-field-label block">졸업일</label>
-                                            <input
-                                                type="text"
-                                                placeholder="예: 2023.02"
-                                                value={edu.endDate || ""}
-                                                onChange={(e) => handleUpdateEduField(edu.id, "endDate", e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                            />
-                                        </div>
+                                                <div className="inspector-project-card__dates">
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-optional-label">상태 <span className="font-normal text-neutral-600">선택</span></label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 졸업"
+                                                            value={edu.status || ""}
+                                                            onChange={(e) => handleUpdateEduField(edu.id, "status", e.target.value)}
+                                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-optional-label">학점 <span className="font-normal text-neutral-600">선택</span></label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 3.8 / 4.5"
+                                                            value={edu.score || ""}
+                                                            onChange={(e) => handleUpdateEduField(edu.id, "score", e.target.value)}
+                                                            className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-
-                                    <div className="inspector-project-card__dates">
-                                        <div className="inspector-field">
-                                            <label className="inspector-label-inset inspector-optional-label">상태 <span className="font-normal text-neutral-600">선택</span></label>
-                                            <input
-                                                type="text"
-                                                placeholder="예: 졸업"
-                                                value={edu.status || ""}
-                                                onChange={(e) => handleUpdateEduField(edu.id, "status", e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                        <div className="inspector-field">
-                                            <label className="inspector-label-inset inspector-optional-label">학점 <span className="font-normal text-neutral-600">선택</span></label>
-                                            <input
-                                                type="text"
-                                                placeholder="예: 3.8 / 4.5"
-                                                value={edu.score || ""}
-                                                onChange={(e) => handleUpdateEduField(edu.id, "score", e.target.value)}
-                                                className="w-full bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-                                    </div>
-                                    )}
-                                </div>
-                            ))}
+                                ))}
                         {!editingEducation && (
                             <button type="button" onClick={handleAddEducationItem} className="inspector-list-add">
                                 <Plus size={14} /> 학력 추가
@@ -2057,158 +2057,158 @@ export default function InspectorPanel() {
                             currentBlock.data
                                 .filter((cert: any) => !editingCertification || cert.id === editingCertification.id)
                                 .map((cert: any, certificationIndex: number) => (
-                                <div
-                                    key={cert.id}
-                                    className={editingCertification?.id === cert.id
-                                        ? "inspector-experience-editor__card"
-                                        : "inspector-repeat-card inspector-project-card"}
-                                >
-                                    {!editingCertification && (
-                                        <div className="inspector-project-card__summary">
-                                            <button
-                                                type="button"
-                                                className="inspector-project-card__toggle"
-                                                onClick={() => {
-                                                    setEditingCertificationId(cert.id);
-                                                    blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                                                }}
-                                                aria-label={`${cert.title || "활동명 없음"} 편집`}
-                                            >
-                                                <span className="inspector-project-card__summary-copy">
-                                                    <strong>{cert.title || "활동명 없음"}</strong>
-                                                </span>
-                                                <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
-                                            </button>
-                                            <details className="inspector-contact-menu inspector-project-menu">
-                                                <summary
-                                                    data-tooltip={`${cert.title || "기타 경험"} 항목 메뉴`}
-                                                    aria-label={`${cert.title || "기타 경험"} 항목 메뉴`}
+                                    <div
+                                        key={cert.id}
+                                        className={editingCertification?.id === cert.id
+                                            ? "inspector-experience-editor__card"
+                                            : "inspector-repeat-card inspector-project-card"}
+                                    >
+                                        {!editingCertification && (
+                                            <div className="inspector-project-card__summary">
+                                                <button
+                                                    type="button"
+                                                    className="inspector-project-card__toggle"
+                                                    onClick={() => {
+                                                        setEditingCertificationId(cert.id);
+                                                        blockPanelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                                                    }}
+                                                    aria-label={`${cert.title || "활동명 없음"} 편집`}
                                                 >
-                                                    <MoreHorizontal size={16} />
-                                                </summary>
-                                                <div className="inspector-contact-menu__popover">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleReorderCertification(certificationIndex, certificationIndex - 1)}
-                                                        disabled={certificationIndex === 0}
+                                                    <span className="inspector-project-card__summary-copy">
+                                                        <strong>{cert.title || "활동명 없음"}</strong>
+                                                    </span>
+                                                    <ChevronRight className="inspector-project-card__edit-action" size={15} aria-hidden="true" />
+                                                </button>
+                                                <details className="inspector-contact-menu inspector-project-menu">
+                                                    <summary
+                                                        data-tooltip={`${cert.title || "기타 경험"} 항목 메뉴`}
+                                                        aria-label={`${cert.title || "기타 경험"} 항목 메뉴`}
                                                     >
-                                                        <ChevronUp size={13} /> 위로 이동
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleReorderCertification(certificationIndex, certificationIndex + 1)}
-                                                        disabled={certificationIndex === currentBlock.data.length - 1}
-                                                    >
-                                                        <ChevronDown size={13} /> 아래로 이동
-                                                    </button>
-                                                    <button type="button" className="is-danger" onClick={() => handleRemoveCertItem(cert.id)}>
-                                                        <Trash2 size={13} /> 삭제
-                                                    </button>
-                                                </div>
-                                            </details>
-                                        </div>
-                                    )}
-
-                                    {editingCertification?.id === cert.id && (
-                                    <div className="inspector-project-card__body">
-                                    <label className="block-settings__option block-settings__option--page">
-                                        <span className="block-settings__option-copy">
-<span className="block-settings__option-label">새 페이지에서 시작</span>
-<span className="block-settings__option-hint">이 기타 경험 항목 앞에서 페이지를 나눠요.</span>
-</span>
-                                        <input
-                                            type="checkbox"
-                                            checked={cert.startOnNewPage === true}
-                                            onChange={(event) => handleUpdateCertField(
-                                                cert.id,
-                                                "startOnNewPage",
-                                                event.target.checked,
-                                            )}
-                                            aria-label="기타 경험 항목을 새 페이지에서 시작"
-                                            
-                                        />
-                                    </label>
-                                    <div className="inspector-field">
-                                        <label className="inspector-label-inset inspector-field-label block">활동명</label>
-                                        <textarea
-                                            rows={2}
-                                            placeholder="활동, 수상 또는 프로그램명"
-                                            value={cert.title || ""}
-                                            onChange={(e) => handleUpdateCertField(cert.id, "title", e.target.value)}
-                                            className="w-full resize-y bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
-                                        />
-                                    </div>
-
-                                    <div className="inspector-project-card__dates">
-                                        <div className="inspector-field">
-                                            <label className="inspector-label-inset inspector-optional-label">시작일 <span className="font-normal text-neutral-600">선택</span></label>
-                                            <input
-                                                type="text"
-                                                placeholder="예: 2024.09"
-                                                value={cert.startDate || ""}
-                                                onChange={(event) => handleUpdateCertField(cert.id, "startDate", event.target.value)}
-                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                        <div className="inspector-field">
-                                            <label className="inspector-label-inset inspector-optional-label">종료일 <span className="font-normal text-neutral-600">선택</span></label>
-                                            <input
-                                                type="text"
-                                                placeholder="예: 2025.01"
-                                                value={cert.endDate || ""}
-                                                onChange={(event) => handleUpdateCertField(cert.id, "endDate", event.target.value)}
-                                                className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="inspector-field">
-                                        <label className="inspector-label-inset inspector-optional-label">링크 URL <span className="font-normal text-neutral-600">선택</span></label>
-                                        <input
-                                            type="text"
-                                            placeholder="https://github.com/..."
-                                            value={cert.link || ""}
-                                            onChange={(event) => handleUpdateCertField(cert.id, "link", event.target.value)}
-                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
-                                        />
-                                    </div>
-
-                                    <div className="inspector-field inspector-project-card__bullets">
-                                        <div>
-                                            <label className="inspector-label-inset inspector-field-label block">활동 내용 및 성과</label>
-                                            <div className="inspector-shortcut-guide" aria-label="기타 경험 불렛 편집 단축키">
-                                                <span><Kbd>Enter</Kbd> 새 불렛</span>
-                                                <span><Kbd>Ctrl/⌘ + B</Kbd> 볼드</span>
+                                                        <MoreHorizontal size={16} />
+                                                    </summary>
+                                                    <div className="inspector-contact-menu__popover">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleReorderCertification(certificationIndex, certificationIndex - 1)}
+                                                            disabled={certificationIndex === 0}
+                                                        >
+                                                            <ChevronUp size={13} /> 위로 이동
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleReorderCertification(certificationIndex, certificationIndex + 1)}
+                                                            disabled={certificationIndex === currentBlock.data.length - 1}
+                                                        >
+                                                            <ChevronDown size={13} /> 아래로 이동
+                                                        </button>
+                                                        <button type="button" className="is-danger" onClick={() => handleRemoveCertItem(cert.id)}>
+                                                            <Trash2 size={13} /> 삭제
+                                                        </button>
+                                                    </div>
+                                                </details>
                                             </div>
-                                        </div>
-                                        <ProjectBulletDocumentEditor
-                                            descriptions={Array.isArray(cert.description)
-                                                ? cert.description
-                                                : cert.description
-                                                    ? [cert.description]
-                                                    : cert.issuer
-                                                        ? [cert.issuer]
-                                                        : []}
-                                            levels={(Array.isArray(cert.description) ? cert.description : []).map(() => 1)}
-                                            html={cert.descriptionHtml || []}
-                                            onChange={(description, descriptionLevels, descriptionHtml) => (
-                                                handleUpdateCertDescription(
-                                                    cert.id,
-                                                    description,
-                                                    descriptionLevels,
-                                                    descriptionHtml,
-                                                )
-                                            )}
-                                            maxLevel={1}
-                                            allowBold
-                                            placeholder="활동 내용이나 성과를 입력하세요"
-                                            ariaLabel="기타 경험 활동 내용 및 성과"
-                                        />
+                                        )}
+
+                                        {editingCertification?.id === cert.id && (
+                                            <div className="inspector-project-card__body">
+                                                <label className="block-settings__option block-settings__option--page">
+                                                    <span className="block-settings__option-copy">
+                                                        <span className="block-settings__option-label">새 페이지에서 시작</span>
+                                                        <span className="block-settings__option-hint">이 기타 경험 항목 앞에서 페이지를 나눠요.</span>
+                                                    </span>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={cert.startOnNewPage === true}
+                                                        onChange={(event) => handleUpdateCertField(
+                                                            cert.id,
+                                                            "startOnNewPage",
+                                                            event.target.checked,
+                                                        )}
+                                                        aria-label="기타 경험 항목을 새 페이지에서 시작"
+
+                                                    />
+                                                </label>
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-field-label block">활동명</label>
+                                                    <textarea
+                                                        rows={2}
+                                                        placeholder="활동, 수상 또는 프로그램명"
+                                                        value={cert.title || ""}
+                                                        onChange={(e) => handleUpdateCertField(cert.id, "title", e.target.value)}
+                                                        className="w-full resize-y bg-neutral-950 border border-neutral-700 rounded px-2 py-1 text-xs text-neutral-200 focus:outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+
+                                                <div className="inspector-project-card__dates">
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-optional-label">시작일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 2024.09"
+                                                            value={cert.startDate || ""}
+                                                            onChange={(event) => handleUpdateCertField(cert.id, "startDate", event.target.value)}
+                                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                    <div className="inspector-field">
+                                                        <label className="inspector-label-inset inspector-optional-label">종료일 <span className="font-normal text-neutral-600">선택</span></label>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="예: 2025.01"
+                                                            value={cert.endDate || ""}
+                                                            onChange={(event) => handleUpdateCertField(cert.id, "endDate", event.target.value)}
+                                                            className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="inspector-field">
+                                                    <label className="inspector-label-inset inspector-optional-label">링크 URL <span className="font-normal text-neutral-600">선택</span></label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="https://github.com/..."
+                                                        value={cert.link || ""}
+                                                        onChange={(event) => handleUpdateCertField(cert.id, "link", event.target.value)}
+                                                        className="w-full rounded border border-neutral-700 bg-neutral-950 px-2.5 py-1.5 text-xs text-neutral-200 outline-none focus:border-blue-500"
+                                                    />
+                                                </div>
+
+                                                <div className="inspector-field inspector-project-card__bullets">
+                                                    <div>
+                                                        <label className="inspector-label-inset inspector-field-label block">활동 내용 및 성과</label>
+                                                        <div className="inspector-shortcut-guide" aria-label="기타 경험 불렛 편집 단축키">
+                                                            <span><Kbd>Enter</Kbd> 새 불렛</span>
+                                                            <span><Kbd>Ctrl/⌘ + B</Kbd> 볼드</span>
+                                                        </div>
+                                                    </div>
+                                                    <ProjectBulletDocumentEditor
+                                                        descriptions={Array.isArray(cert.description)
+                                                            ? cert.description
+                                                            : cert.description
+                                                                ? [cert.description]
+                                                                : cert.issuer
+                                                                    ? [cert.issuer]
+                                                                    : []}
+                                                        levels={(Array.isArray(cert.description) ? cert.description : []).map(() => 1)}
+                                                        html={cert.descriptionHtml || []}
+                                                        onChange={(description, descriptionLevels, descriptionHtml) => (
+                                                            handleUpdateCertDescription(
+                                                                cert.id,
+                                                                description,
+                                                                descriptionLevels,
+                                                                descriptionHtml,
+                                                            )
+                                                        )}
+                                                        maxLevel={1}
+                                                        allowBold
+                                                        placeholder="활동 내용이나 성과를 입력하세요"
+                                                        ariaLabel="기타 경험 활동 내용 및 성과"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    </div>
-                                    )}
-                                </div>
-                            ))}
+                                ))}
                         {!editingCertification && (
                             <button type="button" onClick={handleAddCertItem} className="inspector-list-add">
                                 <Plus size={14} /> 기타 경험 추가

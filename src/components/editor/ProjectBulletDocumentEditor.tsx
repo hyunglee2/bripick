@@ -295,6 +295,64 @@ export default function ProjectBulletDocumentEditor({
         readDocument();
     };
 
+    // readDocument와 같은 방식으로 지금 화면에 있는 내용을 서명으로 만든다.
+    const readDomSignature = (editor: HTMLElement) => {
+        const rows = Array.from(editor.querySelectorAll<HTMLElement>("[data-project-bullet-row]"));
+        const entries = rows.map((row) => {
+            const rowHtml = sanitizeInlineRichText(
+                row.querySelector<HTMLElement>("[data-project-bullet-content]")?.innerHTML || "",
+            );
+            return {
+                description: richTextToPlainText(rowHtml),
+                level: clampDocumentLevel(Number(row.dataset.level)),
+                html: rowHtml,
+            };
+        }).filter((entry) => entry.description.trim());
+        return documentSignature(
+            entries.map((entry) => entry.description),
+            entries.map((entry) => entry.level),
+            entries.map((entry) => entry.html),
+        );
+    };
+
+    // 불릿 순서와 그 안의 글자 위치로 커서를 기억했다가, 내용을 다시 그린 뒤 같은 자리에 돌려놓는다.
+    const saveCaret = (editor: HTMLElement) => {
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return null;
+        const range = selection.getRangeAt(0);
+        const contents = Array.from(editor.querySelectorAll<HTMLElement>("[data-project-bullet-content]"));
+        const rowIndex = contents.findIndex((content) => content.contains(range.startContainer));
+        if (rowIndex < 0) return null;
+        const measure = document.createRange();
+        measure.selectNodeContents(contents[rowIndex]);
+        measure.setEnd(range.startContainer, range.startOffset);
+        return { rowIndex, offset: measure.toString().length };
+    };
+
+    const restoreCaret = (editor: HTMLElement, caret: { rowIndex: number; offset: number }) => {
+        const contents = Array.from(editor.querySelectorAll<HTMLElement>("[data-project-bullet-content]"));
+        const content = contents[Math.min(caret.rowIndex, contents.length - 1)];
+        if (!content) return;
+        const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
+        let remaining = caret.offset;
+        let node = walker.nextNode();
+        while (node) {
+            const length = node.textContent?.length ?? 0;
+            if (remaining <= length) {
+                const range = document.createRange();
+                range.setStart(node, remaining);
+                range.collapse(true);
+                const selection = window.getSelection();
+                selection?.removeAllRanges();
+                selection?.addRange(range);
+                return;
+            }
+            remaining -= length;
+            node = walker.nextNode();
+        }
+        placeCaret(content, true);
+    };
+
     useLayoutEffect(() => {
         const editor = editorRef.current;
         if (!editor) return;
@@ -308,6 +366,10 @@ export default function ProjectBulletDocumentEditor({
             lastEmittedDocumentRef.current = null;
             return;
         }
+        // 입력 중에 캔버스가 다시 그려져도(쪽 나눔 재계산 등) 화면 내용이 같으면 DOM을 갈아끼우지 않는다.
+        // 갈아끼우면 커서가 첫 불릿 앞으로 튀어서 이어 치는 글자가 엉뚱한 곳에 들어간다.
+        if (isFocused && readDomSignature(editor) === nextSignature) return;
+        const caret = isFocused ? saveCaret(editor) : null;
         editor.replaceChildren(...(descriptions.length > 0 ? descriptions : [""]).map((description, index) => (
             createRow(
                 clampDocumentLevel(Number(levels[index]) || 1),
@@ -315,6 +377,7 @@ export default function ProjectBulletDocumentEditor({
                 index,
             )
         )));
+        if (caret) restoreCaret(editor, caret);
     }, [descriptions, levels, html]);
 
     useEffect(() => {

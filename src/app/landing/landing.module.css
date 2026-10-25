@@ -1702,7 +1702,7 @@
   /* 첫 화면을 꽉 채우되, 아래쪽에 미리보기 윗부분이 살짝 보이게 남겨 스크롤을 유도한다 */
   .heroCopy {
     display: flex;
-    min-height: calc(100svh - var(--landing-header-h, 91px) - var(--hero-peek, 150px));
+    min-height: calc(100svh - var(--landing-header-h, 91px) - var(--hero-peek, 200px));
     padding-block: 16px 8px;
     flex-direction: column;
     align-items: center;
