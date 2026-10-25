@@ -363,176 +363,47 @@
 
 /* 종이는 테마와 관계없이 항상 흰색 */
 .paper {
-  --p-accent: #3d6bff;
-  --p-ink: #111421;
-  --p-muted: #6a7084;
-  --p-line: #e6e8ef;
-
   position: relative;
-  display: flex;
   margin: 0 auto;
   max-width: 440px;
-  aspect-ratio: 1 / 1.22;
+  aspect-ratio: 1000 / 1300;
   overflow: hidden;
   border-radius: 14px;
-  color: var(--p-ink);
   background: #fff;
   box-shadow: var(--shadow-lg);
-  text-align: left;
   transform: perspective(1400px) rotateY(-7deg) rotateX(3deg);
   transition: transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* 페이지가 아래로 이어진다는 느낌만 주도록 끝을 흐리게 */
+.paper::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 18%;
+  background: linear-gradient(to bottom, rgb(255 255 255 / 0), #fff);
+  pointer-events: none;
 }
 
 .heroVisual:hover .paper {
   transform: perspective(1400px) rotateY(0) rotateX(0);
 }
 
-.paperAside {
-  width: 0;
-  flex: none;
-  background: linear-gradient(180deg, #3d6bff, #8a5cff);
-  transition: width 450ms cubic-bezier(0.2, 0.7, 0.2, 1);
+.paperShot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top;
+  opacity: 0;
+  transition: opacity 450ms ease;
 }
 
-.paperBody {
-  display: flex;
-  min-width: 0;
-  padding: 30px 30px 24px;
-  flex: 1;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.paperHead {
-  display: flex;
-  padding-bottom: 16px;
-  align-items: center;
-  gap: 14px;
-  border-bottom: 2px solid var(--p-accent);
-  transition: border-color 300ms ease;
-}
-
-.paperAvatar {
-  width: 46px;
-  height: 46px;
-  flex: none;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #c9d6ff, #e4d8ff);
-  transition: border-radius 300ms ease;
-}
-
-.paperName {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-}
-
-.paperRole {
-  margin: 2px 0 0;
-  color: var(--p-muted);
-  font-size: 12px;
-  font-weight: 550;
-}
-
-.paperBlock ul {
-  margin: 6px 0 0;
-  padding-left: 16px;
-  color: #3a3f52;
-  font-size: 11.5px;
-  line-height: 1.7;
-}
-
-.paperLabel {
-  margin: 0 0 8px;
-  color: var(--p-accent);
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  transition: color 300ms ease;
-}
-
-.paperRow {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12.5px;
-}
-
-.paperRow span {
-  color: var(--p-muted);
-  font-size: 11px;
-}
-
-.paperChips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.paperChips span {
-  padding: 3px 9px;
-  border-radius: 6px;
-  color: var(--p-accent);
-  background: color-mix(in srgb, var(--p-accent) 10%, #fff);
-  font-size: 10.5px;
-  font-weight: 650;
-  transition: color 300ms ease, background-color 300ms ease, border-radius 300ms ease;
-}
-
-.paperLines {
-  display: grid;
-  gap: 7px;
-}
-
-.paperLines span {
-  height: 7px;
-  border-radius: 4px;
-  background: var(--p-line);
-}
-
-.paperLines span:nth-child(2) {
-  width: 86%;
-}
-
-.paperLines span:nth-child(3) {
-  width: 64%;
-}
-
-.paper[data-template="minimal"] {
-  --p-accent: #111421;
-}
-
-.paper[data-template="minimal"] .paperHead {
-  border-bottom-width: 1px;
-  border-color: var(--p-line);
-}
-
-.paper[data-template="minimal"] .paperAvatar {
-  border-radius: 50%;
-  background: #eceef3;
-}
-
-.paper[data-template="minimal"] .paperChips span {
-  border-radius: 999px;
-  color: #3a3f52;
-  background: #f1f2f6;
-}
-
-.paper[data-template="creative"] {
-  --p-accent: #7b4dff;
-}
-
-.paper[data-template="creative"] .paperAside {
-  width: 22px;
-}
-
-.paper[data-template="creative"] .paperHead {
-  border-bottom-style: dashed;
-}
-
-.paper[data-template="creative"] .paperAvatar {
-  border-radius: 50% 50% 50% 8px;
-  background: linear-gradient(135deg, #ffd3e8, #d9caff);
+.paperShot[data-active="true"] {
+  opacity: 1;
 }
 
 .floatCard {
@@ -573,7 +444,7 @@
 }
 
 .floatAts {
-  top: 96px;
+  top: 150px;
   right: -6px;
 }
 
@@ -590,6 +461,272 @@
 @keyframes float {
   50% {
     transform: translateY(-10px);
+  }
+}
+
+/* ───────── Hero intro ─────────
+   첫 화면은 스크롤 감지 없이 CSS만으로 순서대로 등장한다.
+   제목이 올라오고 → 이력서가 놓이고 → 스캔 → ATS 통과 → 공개 링크 순서. */
+
+.backdrop {
+  animation: backdropIn 1600ms ease both;
+}
+
+@keyframes backdropIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.intro {
+  animation: introUp 800ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.badge.intro {
+  animation-delay: 80ms;
+}
+
+.heroLead.intro {
+  animation-delay: 520ms;
+}
+
+.heroActions.intro {
+  animation-delay: 640ms;
+}
+
+.heroPoints.intro {
+  animation-delay: 760ms;
+}
+
+@keyframes introUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+/* 제목은 줄마다 아래에서 밀려 올라온다 */
+.titleLine {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+
+.titleLine > span {
+  display: inline-block;
+  animation: lineUp 1000ms cubic-bezier(0.16, 1, 0.3, 1) 180ms backwards;
+}
+
+.titleLine + .titleLine > span {
+  animation-delay: 320ms;
+}
+
+@keyframes lineUp {
+  from {
+    transform: translateY(105%);
+  }
+}
+
+/* 그라데이션 글자는 등장 후 한 번 빛이 훑고 지나간다 */
+.titleLine .gradientText {
+  background-image:
+    linear-gradient(100deg, transparent 42%, rgb(255 255 255 / 85%) 50%, transparent 58%),
+    linear-gradient(100deg, var(--accent) 0%, var(--accent-2) 55%, var(--accent-3) 110%);
+  background-repeat: no-repeat;
+  background-size: 250% 100%, 100% 100%;
+  background-position: 0 0, 0 0;
+  animation:
+    lineUp 1000ms cubic-bezier(0.16, 1, 0.3, 1) 320ms backwards,
+    shine 1400ms ease-in-out 1400ms both;
+}
+
+@keyframes shine {
+  from {
+    background-position: 100% 0, 0 0;
+  }
+
+  to {
+    background-position: 0 0, 0 0;
+  }
+}
+
+.preview .tabs {
+  animation: introUp 700ms cubic-bezier(0.2, 0.7, 0.2, 1) 700ms backwards;
+}
+
+/* 종이 묶음: 뒤에 겹친 종이 두 장과 은은한 빛 */
+.paperStack {
+  position: relative;
+  max-width: 440px;
+  margin: 0 auto;
+  animation: paperIn 1200ms cubic-bezier(0.16, 1, 0.3, 1) 380ms backwards;
+}
+
+.paperStack::before,
+.paperStack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 92%, #fff 8%);
+  box-shadow: var(--shadow);
+  transform: perspective(1400px) rotateY(-7deg) rotateX(3deg) translate(26px, 18px) rotate(4deg);
+  opacity: 0.55;
+  transition: transform 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation: sheetIn 1100ms cubic-bezier(0.16, 1, 0.3, 1) 900ms backwards;
+}
+
+.paperStack::after {
+  transform: perspective(1400px) rotateY(-7deg) rotateX(3deg) translate(48px, 34px) rotate(8deg);
+  opacity: 0.28;
+  animation-delay: 1000ms;
+}
+
+.heroVisual:hover .paperStack::before {
+  transform: translate(18px, 12px) rotate(3deg);
+}
+
+.heroVisual:hover .paperStack::after {
+  transform: translate(34px, 24px) rotate(6deg);
+}
+
+.paperStack .paper {
+  z-index: 1;
+}
+
+.paperGlow {
+  position: absolute;
+  inset: 8% -18% -6%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--glow-1), transparent);
+  filter: blur(30px);
+  pointer-events: none;
+  animation: glowBreath 7s ease-in-out infinite;
+}
+
+@keyframes glowBreath {
+  50% {
+    opacity: 0.6;
+    transform: scale(0.94);
+  }
+}
+
+@keyframes paperIn {
+  from {
+    opacity: 0;
+    transform: translateY(56px) scale(0.94);
+  }
+}
+
+@keyframes sheetIn {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateY(-7deg) rotateX(3deg);
+  }
+}
+
+/* ATS 스캔: 종이 위를 한 번 훑는 빛 띠 */
+.paperScan {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  left: 0;
+  top: 0;
+  height: 22%;
+  background: linear-gradient(to bottom, transparent, rgb(76 132 255 / 14%) 70%, rgb(76 132 255 / 55%) 100%);
+  border-bottom: 2px solid rgb(76 132 255 / 70%);
+  opacity: 0;
+  pointer-events: none;
+  animation: scan 1500ms cubic-bezier(0.5, 0, 0.3, 1) 1300ms both;
+}
+
+@keyframes scan {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+
+  12% {
+    opacity: 1;
+  }
+
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(460%);
+  }
+}
+
+/* 떠 있는 카드는 스캔이 끝난 뒤 차례로 튀어나온다 */
+.floatCard {
+  z-index: 3;
+  animation:
+    float 6s ease-in-out 3400ms infinite,
+    popIn 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 2700ms backwards;
+}
+
+.floatLink {
+  animation:
+    float 6s ease-in-out 3700ms infinite,
+    popIn 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 3000ms backwards;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.85);
+  }
+}
+
+/* 블록을 끌어 옮기는 중인 칩 */
+.dragChip {
+  position: absolute;
+  z-index: 2;
+  top: 34%;
+  left: -18px;
+  display: flex;
+  padding: 9px 14px 9px 10px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 12px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 14px 30px -12px color-mix(in srgb, var(--accent) 55%, transparent);
+  font-size: 13px;
+  font-weight: 700;
+  backdrop-filter: blur(12px);
+  animation:
+    drag 6s ease-in-out 2600ms infinite,
+    popIn 600ms cubic-bezier(0.34, 1.56, 0.64, 1) 2000ms backwards;
+}
+
+.dragChip svg:first-child {
+  color: var(--muted);
+}
+
+.dragCursor {
+  position: absolute;
+  right: -14px;
+  bottom: -18px;
+  color: #fff;
+  fill: var(--accent);
+  filter: drop-shadow(0 4px 8px rgb(0 0 0 / 35%));
+}
+
+@keyframes drag {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  50% {
+    transform: translate(3px, 6px);
   }
 }
 
@@ -1026,6 +1163,7 @@
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(250%);
   }
@@ -1034,7 +1172,7 @@
 /* Templates */
 .swatches {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 8px;
 }
 
@@ -1052,17 +1190,13 @@
   transition: transform 250ms ease;
 }
 
+/* 실제 샘플 이력서 캡처의 윗부분을 견본으로 쓴다. */
 .swatches span[data-kind="modern"] {
-  background: linear-gradient(#3d6bff 0 0) 10px 14px / 40% 4px no-repeat, #fff;
+  background: linear-gradient(to bottom, rgb(255 255 255 / 0) 45%, #fff 88%), url("/landing/resume-modern.webp") top / cover no-repeat, #fff;
 }
 
 .swatches span[data-kind="minimal"] {
-  background: linear-gradient(#111421 0 0) 10px 14px / 30% 2px no-repeat, #fff;
-}
-
-.swatches span[data-kind="creative"] {
-  background: linear-gradient(180deg, #3d6bff, #8a5cff) 0 0 / 8px 100% no-repeat, #fff;
-  padding-left: 16px;
+  background: linear-gradient(to bottom, rgb(255 255 255 / 0) 45%, #fff 88%), url("/landing/resume-minimal.webp") top / cover no-repeat, #fff;
 }
 
 .card:hover .swatches span:nth-child(1) {
@@ -1094,7 +1228,7 @@
   box-shadow: 0 10px 24px -8px rgb(0 0 0 / 40%);
 }
 
-.toolbar > * {
+.toolbar>* {
   display: grid;
   width: 28px;
   height: 26px;
@@ -1103,7 +1237,7 @@
   font-size: 13px;
 }
 
-.toolbar > *:first-child {
+.toolbar>*:first-child {
   background: rgb(255 255 255 / 14%);
 }
 
@@ -1346,26 +1480,6 @@
   transform: none;
 }
 
-.hero .reveal:nth-child(2) {
-  transition-delay: 60ms;
-}
-
-.hero .reveal:nth-child(3) {
-  transition-delay: 120ms;
-}
-
-.hero .reveal:nth-child(4) {
-  transition-delay: 180ms;
-}
-
-.hero .reveal:nth-child(5) {
-  transition-delay: 240ms;
-}
-
-.heroVisual.reveal {
-  transition-delay: 200ms;
-}
-
 .bento .reveal:nth-child(3n + 2),
 .steps .reveal:nth-child(2) {
   transition-delay: 90ms;
@@ -1377,6 +1491,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   .page *,
   .page *::before,
   .page *::after {
@@ -1386,6 +1501,22 @@
 }
 
 /* ───────── Responsive ───────── */
+
+/* 데스크톱: 히어로가 헤더 아래 남은 화면 높이를 정확히 채운다 */
+@media (min-width: 1001px) {
+  .hero {
+    min-height: calc(100svh - var(--landing-header-h, 91px));
+    padding-top: clamp(24px, 4svh, 56px);
+    padding-bottom: clamp(32px, 6svh, 72px);
+    align-content: center;
+  }
+
+  /* 낮은 화면에서도 미리보기가 히어로 높이 안에 들어오도록 줄인다 */
+  .paper,
+  .paperStack {
+    max-width: min(440px, calc((100svh - 260px) / 1.3));
+  }
+}
 
 @media (max-width: 1000px) {
   .hero {
@@ -1437,7 +1568,7 @@
     padding: 28px 16px 72px;
   }
 
-  .heroActions > * {
+  .heroActions>* {
     width: 100%;
     justify-content: center;
   }
@@ -1450,11 +1581,6 @@
     transform: none;
   }
 
-  .paperBody {
-    padding: 22px 20px 18px;
-    gap: 14px;
-  }
-
   .floatAts {
     top: 70px;
     right: -4px;
@@ -1463,6 +1589,10 @@
   .floatLink {
     bottom: 24px;
     left: -4px;
+  }
+
+  .dragChip {
+    display: none;
   }
 
   .section {

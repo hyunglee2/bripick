@@ -1,32 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Link2 } from "lucide-react";
+import Image from "next/image";
+import { Check, GripVertical, Link2, MousePointer2 } from "lucide-react";
 import styles from "./landing.module.css";
 
+// 이미지는 에디터의 기본 샘플 이력서 첫 페이지를 템플릿별로 캡처한 것이다.
 const TEMPLATES = [
-  { id: "modern", label: "모던" },
-  { id: "minimal", label: "미니멀" },
-  { id: "creative", label: "크리에이티브" },
+  { id: "modern", label: "모던", image: "/landing/resume-modern.webp" },
+  { id: "minimal", label: "미니멀", image: "/landing/resume-minimal.webp" },
 ] as const;
 
 type TemplateId = (typeof TEMPLATES)[number]["id"];
 
-// 히어로의 이력서 미리보기. 템플릿 탭을 누르거나 가만히 두면 스타일이 바뀐다.
+// 히어로의 이력서 미리보기. 스크롤하거나 템플릿 탭을 누르면 스타일이 바뀐다.
 export default function TemplatePreview() {
   const [template, setTemplate] = useState<TemplateId>("modern");
-  const [autoplay, setAutoplay] = useState(true);
 
+  // 처음엔 모던, 스크롤을 조금 내리면 미니멀로 바뀐다. 기준선을 넘을 때만 바꾸므로 탭으로 고른 값은 유지된다.
   useEffect(() => {
-    if (!autoplay || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const timer = window.setInterval(() => {
-      setTemplate((current) => {
-        const index = TEMPLATES.findIndex((item) => item.id === current);
-        return TEMPLATES[(index + 1) % TEMPLATES.length].id;
-      });
-    }, 3200);
-    return () => window.clearInterval(timer);
-  }, [autoplay]);
+    const threshold = () => Math.min(160, window.innerHeight * 0.18);
+    let scrolled = window.scrollY > threshold();
+    if (scrolled) setTemplate("minimal");
+    const onScroll = () => {
+      const next = window.scrollY > threshold();
+      if (next === scrolled) return;
+      scrolled = next;
+      setTemplate(next ? "minimal" : "modern");
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className={styles.preview}>
@@ -38,58 +42,38 @@ export default function TemplatePreview() {
             role="tab"
             aria-selected={template === item.id}
             className={styles.tab}
-            onClick={() => {
-              setAutoplay(false);
-              setTemplate(item.id);
-            }}
+            onClick={() => setTemplate(item.id)}
           >
             {item.label}
           </button>
         ))}
       </div>
 
-      <div className={styles.paper} data-template={template} aria-label="이력서 예시">
-        <div className={styles.paperAside} />
-        <div className={styles.paperBody}>
-          <div className={styles.paperHead}>
-            <div className={styles.paperAvatar} />
-            <div>
-              <p className={styles.paperName}>김지원</p>
-              <p className={styles.paperRole}>프론트엔드 엔지니어 · 5년차</p>
-            </div>
-          </div>
-
-          <div className={styles.paperBlock}>
-            <p className={styles.paperLabel}>경력</p>
-            <div className={styles.paperRow}>
-              <strong>핀테크 스타트업</strong>
-              <span>2022 – 현재</span>
-            </div>
-            <ul>
-              <li>결제 페이지 LCP 3.1초 → 1.2초 개선</li>
-              <li>디자인 시스템 구축, 화면 개발 속도 40% 향상</li>
-            </ul>
-          </div>
-
-          <div className={styles.paperBlock}>
-            <p className={styles.paperLabel}>기술 스택</p>
-            <div className={styles.paperChips}>
-              <span>TypeScript</span>
-              <span>React</span>
-              <span>Next.js</span>
-              <span>Node.js</span>
-            </div>
-          </div>
-
-          <div className={styles.paperBlock}>
-            <p className={styles.paperLabel}>프로젝트</p>
-            <div className={styles.paperLines}>
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
+      <div className={styles.paperStack}>
+        <span className={styles.paperGlow} aria-hidden="true" />
+        <div className={styles.paper}>
+          {TEMPLATES.map((item, index) => (
+            <Image
+              key={item.id}
+              src={item.image}
+              alt={`${item.label} 템플릿으로 만든 샘플 이력서`}
+              width={1000}
+              height={1300}
+              sizes="(max-width: 640px) 100vw, 440px"
+              priority={index === 0}
+              className={styles.paperShot}
+              data-active={template === item.id}
+              aria-hidden={template !== item.id}
+            />
+          ))}
+          <span className={styles.paperScan} aria-hidden="true" />
         </div>
+      </div>
+
+      <div className={styles.dragChip} aria-hidden="true">
+        <GripVertical size={14} />
+        <span>프로젝트 블록</span>
+        <MousePointer2 size={24} strokeWidth={1.75} className={styles.dragCursor} />
       </div>
 
       <div className={`${styles.floatCard} ${styles.floatAts}`} aria-hidden="true">

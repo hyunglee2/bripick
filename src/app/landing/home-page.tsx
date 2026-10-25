@@ -109,20 +109,23 @@ export default function LandingPage() {
         {/* Hero */}
         <section className={styles.hero}>
           <div className={styles.heroCopy}>
-            <p className={`${styles.badge} ${styles.reveal}`} data-reveal>
+            <p className={`${styles.badge} ${styles.intro}`}>
               <span className={styles.badgeDot} />
               개발자를 위한 블록형 이력서 빌더
             </p>
-            <h1 className={`${styles.heroTitle} ${styles.reveal}`} data-reveal>
-              끝까지 읽히는
-              <br />
-              <span className={styles.gradientText}>이력서를 쌓다.</span>
+            <h1 className={styles.heroTitle}>
+              <span className={styles.titleLine}>
+                <span>끝까지 읽히는</span>
+              </span>
+              <span className={styles.titleLine}>
+                <span className={styles.gradientText}>이력서를 쌓다.</span>
+              </span>
             </h1>
-            <p className={`${styles.heroLead} ${styles.reveal}`} data-reveal>
+            <p className={`${styles.heroLead} ${styles.intro}`}>
               경력, 프로젝트, 기술 스택을 블록처럼 쌓고 옮기세요. 디자인은 Bripick이 맞춰 드릴게요.
               PDF 저장부터 공개 링크, ATS 검사까지 한 화면에서 끝납니다.
             </p>
-            <div className={`${styles.heroActions} ${styles.reveal}`} data-reveal>
+            <div className={`${styles.heroActions} ${styles.intro}`}>
               <Link href={START_HREF} className={styles.primaryButton}>
                 지금 바로 만들기
                 <ArrowRight size={18} aria-hidden="true" />
@@ -132,12 +135,12 @@ export default function LandingPage() {
                 로그인하고 이어 쓰기
               </Link>
             </div>
-            <ul className={`${styles.heroPoints} ${styles.reveal}`} data-reveal>
+            <ul className={`${styles.heroPoints} ${styles.intro}`}>
               <li>
                 <Check size={15} aria-hidden="true" /> 가입 없이 시작
               </li>
               <li>
-                <Check size={15} aria-hidden="true" /> 템플릿 3종
+                <Check size={15} aria-hidden="true" /> 템플릿 2종
               </li>
               <li>
                 <Check size={15} aria-hidden="true" /> PDF · 링크 공유
@@ -145,7 +148,7 @@ export default function LandingPage() {
             </ul>
           </div>
 
-          <div className={`${styles.heroVisual} ${styles.reveal}`} data-reveal>
+          <div className={styles.heroVisual}>
             <TemplatePreview />
           </div>
         </section>
@@ -268,13 +271,12 @@ export default function LandingPage() {
                 <span className={styles.cardIcon}>
                   <LayoutTemplate size={18} aria-hidden="true" />
                 </span>
-                <h3>템플릿 3종</h3>
-                <p>모던, 미니멀, 크리에이티브. 내용은 그대로 두고 분위기만 바꾸세요.</p>
+                <h3>템플릿 2종</h3>
+                <p>모던과 미니멀. 내용은 그대로 두고 분위기만 바꾸세요.</p>
               </div>
               <div className={styles.swatches} aria-hidden="true">
                 <span data-kind="modern">Modern</span>
                 <span data-kind="minimal">Minimal</span>
-                <span data-kind="creative">Creative</span>
               </div>
             </article>
 
