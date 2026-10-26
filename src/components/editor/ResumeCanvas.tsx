@@ -40,6 +40,8 @@ type BlockPlacement = {
     itemEnd?: number;
     descriptionStart?: number;
     descriptionEnd?: number;
+    // 이 조각이 항목의 마지막 불릿까지 담는다. 입력으로 불릿이 늘어도 쪽 나눔을 다시 계산하기 전까지 새 불릿을 함께 보여준다.
+    descriptionToEnd?: boolean;
     itemHeaderOnly?: boolean;
     itemHeaderContinuation?: boolean;
     experienceProjectStart?: number;
@@ -48,11 +50,16 @@ type BlockPlacement = {
     experienceCompanyOnly?: boolean;
     experienceProjectDescriptionStart?: number;
     experienceProjectDescriptionEnd?: number;
+    experienceProjectDescriptionToEnd?: boolean;
     experienceProjectHeaderOnly?: boolean;
     experienceProjectHeaderContinuation?: boolean;
     experienceProjectTitleOnly?: boolean;
     experienceProjectTitleContinuation?: boolean;
 };
+
+const getDescriptionEnd = (end: number | undefined, toEnd: boolean | undefined, length: number) => (
+    toEnd || end === undefined ? length : end
+);
 
 const getPlacementMeasurementKey = (blockIndex: number, placement: BlockPlacement) => [
     blockIndex,
@@ -259,6 +266,8 @@ export default function ResumeCanvas({
             if (from !== to) storeReorderBlocks(from, to);
         };
     const removeBlock = readOnly ? (() => undefined) : storeRemoveBlock;
+    // 불릿을 나누거나 합친 뒤 다시 그려진 불릿에 커서를 옮겨 둘 자리
+    const pendingBulletFocusRef = useRef<{ editorId: string; offset: number } | null>(null);
 
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
@@ -314,6 +323,81 @@ export default function ResumeCanvas({
     useEffect(() => () => {
         if (dragScrollFrameRef.current !== null) cancelAnimationFrame(dragScrollFrameRef.current);
     }, []);
+
+    useLayoutEffect(() => {
+        const pending = pendingBulletFocusRef.current;
+        if (!pending) return;
+        const editor = document.querySelector<HTMLElement>(
+            `[data-project-bullet-editor="${CSS.escape(pending.editorId)}"]`,
+        );
+        if (!editor) return;
+        pendingBulletFocusRef.current = null;
+        editor.focus();
+        const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+        let remaining = pending.offset;
+        let node = walker.nextNode();
+        while (node && remaining > (node.textContent?.length ?? 0)) {
+            remaining -= node.textContent?.length ?? 0;
+            node = walker.nextNode();
+        }
+        const range = document.createRange();
+        if (node) {
+            range.setStart(node, remaining);
+            range.collapse(true);
+        } else {
+            range.selectNodeContents(editor);
+            range.collapse(false);
+        }
+        const selection = window.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+    });
+
+    // 한 줄씩 따로 편집하는 불릿 목록에서 Enter는 새 불릿으로 나누고, 맨 앞 Backspace는 앞 불릿과 합친다.
+    const handleBulletListKeyDown = (
+        event: React.KeyboardEvent<HTMLDivElement>,
+        options: { editorIdPrefix: string; index: number; htmlList: string[]; commit: (nextHtmlList: string[]) => void },
+    ) => {
+        if (event.nativeEvent.isComposing) return;
+        const editor = event.currentTarget;
+        const selection = window.getSelection();
+        if (!selection?.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        if (!editor.contains(range.startContainer)) return;
+        const { editorIdPrefix, index, htmlList, commit } = options;
+        const beforeCaret = document.createRange();
+        beforeCaret.selectNodeContents(editor);
+        beforeCaret.setEnd(range.startContainer, range.startOffset);
+        const rangeToHtml = (part: Range) => {
+            const holder = document.createElement("div");
+            holder.append(part.cloneContents());
+            return sanitizeInlineRichText(holder.innerHTML);
+        };
+
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            const afterCaret = document.createRange();
+            afterCaret.selectNodeContents(editor);
+            afterCaret.setStart(range.endContainer, range.endOffset);
+            const nextHtmlList = [...htmlList];
+            nextHtmlList.splice(index, 1, rangeToHtml(beforeCaret), rangeToHtml(afterCaret));
+            pendingBulletFocusRef.current = { editorId: `${editorIdPrefix}-${index + 1}`, offset: 0 };
+            commit(nextHtmlList);
+            return;
+        }
+        if (event.key === "Backspace" && range.collapsed && index > 0 && beforeCaret.toString() === "") {
+            event.preventDefault();
+            const previousHtml = htmlList[index - 1] || "";
+            const currentHtml = sanitizeInlineRichText(editor.innerHTML);
+            const nextHtmlList = [...htmlList];
+            nextHtmlList.splice(index - 1, 2, `${previousHtml}${richTextToPlainText(currentHtml) ? currentHtml : ""}`);
+            pendingBulletFocusRef.current = {
+                editorId: `${editorIdPrefix}-${index - 1}`,
+                offset: richTextToPlainText(previousHtml).length,
+            };
+            commit(nextHtmlList);
+        }
+    };
 
     useEffect(() => {
         if (!isViewMenuOpen) return;
@@ -1376,7 +1460,10 @@ export default function ResumeCanvas({
                                         startNewPage();
                                     }
 
-                                    pushPlacement(getFragmentPlacement(descriptionEnd), fragmentHeight);
+                                    pushPlacement({
+                                        ...getFragmentPlacement(descriptionEnd),
+                                        experienceProjectDescriptionToEnd: descriptionEnd >= projectDescriptions.length,
+                                    }, fragmentHeight);
                                     companyPending = false;
                                     descriptionStart = descriptionEnd;
 
@@ -1493,7 +1580,10 @@ export default function ResumeCanvas({
                                     ) || 24;
                                 }
 
-                                pushPlacement(getFragmentPlacement(descriptionEnd), fragmentHeight);
+                                pushPlacement({
+                                    ...getFragmentPlacement(descriptionEnd),
+                                    descriptionToEnd: descriptionEnd >= descriptions.length,
+                                }, fragmentHeight);
                                 descriptionStart = descriptionEnd;
                                 if (descriptionStart < descriptions.length) startNewPage();
                             }
@@ -1815,6 +1905,19 @@ export default function ResumeCanvas({
                                                 readOnly={readOnly}
                                                 placeholder="핵심 경험이나 강점을 입력하세요"
                                                 className="resume-rich-bullet"
+                                                editorId={`profile-highlight-${block.id}-${index}`}
+                                                onKeyDown={(event) => handleBulletListKeyDown(event, {
+                                                    editorIdPrefix: `profile-highlight-${block.id}`,
+                                                    index,
+                                                    htmlList: displayedHighlights.map((item: string, itemIndex: number) => (
+                                                        block.data.highlightsHtml?.[itemIndex] || escapeHtml(item)
+                                                    )),
+                                                    commit: (nextHtmlList) => updateBlockData(block.id, {
+                                                        ...block.data,
+                                                        highlights: nextHtmlList.map(richTextToPlainText),
+                                                        highlightsHtml: nextHtmlList,
+                                                    }),
+                                                })}
                                                 onChange={(highlightHtml) => {
                                                     const updated = [...displayedHighlights];
                                                     const highlightsHtml = [...(block.data.highlightsHtml || [])];
@@ -1939,6 +2042,19 @@ export default function ResumeCanvas({
                                                 readOnly={readOnly}
                                                 placeholder="핵심 경험이나 강점을 입력하세요"
                                                 className="resume-rich-bullet"
+                                                editorId={`profile-highlight-${block.id}-${index}`}
+                                                onKeyDown={(event) => handleBulletListKeyDown(event, {
+                                                    editorIdPrefix: `profile-highlight-${block.id}`,
+                                                    index,
+                                                    htmlList: displayedHighlights.map((item: string, itemIndex: number) => (
+                                                        block.data.highlightsHtml?.[itemIndex] || escapeHtml(item)
+                                                    )),
+                                                    commit: (nextHtmlList) => updateBlockData(block.id, {
+                                                        ...block.data,
+                                                        highlights: nextHtmlList.map(richTextToPlainText),
+                                                        highlightsHtml: nextHtmlList,
+                                                    }),
+                                                })}
                                                 onChange={(highlightHtml) => {
                                                     const updated = [...displayedHighlights];
                                                     const highlightsHtml = [...(block.data.highlightsHtml || [])];
@@ -2180,7 +2296,7 @@ export default function ResumeCanvas({
                                                     const descriptionStart = placement.descriptionStart ?? 0;
                                                     const visibleDescriptions = (exp.description || []).slice(
                                                         descriptionStart,
-                                                        placement.descriptionEnd ?? exp.description.length,
+                                                        getDescriptionEnd(placement.descriptionEnd, placement.descriptionToEnd, exp.description.length),
                                                     );
                                                     if (visibleDescriptions.length === 0) return null;
 
@@ -2230,6 +2346,23 @@ export default function ResumeCanvas({
                                                                             readOnly={readOnly}
                                                                             placeholder="성과 및 업무 내용"
                                                                             className="resume-rich-bullet"
+                                                                            editorId={`experience-description-${exp.id}-${i}`}
+                                                                            onKeyDown={(event) => handleBulletListKeyDown(event, {
+                                                                                editorIdPrefix: `experience-description-${exp.id}`,
+                                                                                index: i,
+                                                                                htmlList: (exp.description || []).map((item: string, itemIndex: number) => (
+                                                                                    exp.descriptionHtml?.[itemIndex] || escapeHtml(item)
+                                                                                )),
+                                                                                commit: (nextHtmlList) => {
+                                                                                    const updated = [...block.data];
+                                                                                    updated[expIndex] = {
+                                                                                        ...exp,
+                                                                                        description: nextHtmlList.map(richTextToPlainText),
+                                                                                        descriptionHtml: nextHtmlList,
+                                                                                    };
+                                                                                    updateBlockData(block.id, updated);
+                                                                                },
+                                                                            })}
                                                                             onChange={(descriptionHtml) => {
                                                                                 const updated = [...block.data];
                                                                                 const newDescriptions = [...exp.description];
@@ -2265,7 +2398,7 @@ export default function ResumeCanvas({
                                                                     ? project.description
                                                                     : [];
                                                                 const projectDescriptionStart = placement.experienceProjectDescriptionStart ?? 0;
-                                                                const projectDescriptionEnd = placement.experienceProjectDescriptionEnd ?? projectDescriptions.length;
+                                                                const projectDescriptionEnd = getDescriptionEnd(placement.experienceProjectDescriptionEnd, placement.experienceProjectDescriptionToEnd, projectDescriptions.length);
                                                                 const visibleProjectDescriptions = projectDescriptions.length > 0
                                                                     ? projectDescriptions.slice(projectDescriptionStart, projectDescriptionEnd)
                                                                     : readOnly
@@ -2466,15 +2599,15 @@ export default function ResumeCanvas({
                                                     readOnly={readOnly}
                                                     descriptions={(proj.description || []).slice(
                                                         placement.descriptionStart ?? 0,
-                                                        placement.descriptionEnd ?? proj.description.length,
+                                                        getDescriptionEnd(placement.descriptionEnd, placement.descriptionToEnd, proj.description.length),
                                                     )}
                                                     levels={(proj.descriptionLevels || []).slice(
                                                         placement.descriptionStart ?? 0,
-                                                        placement.descriptionEnd ?? proj.description.length,
+                                                        getDescriptionEnd(placement.descriptionEnd, placement.descriptionToEnd, proj.description.length),
                                                     )}
                                                     html={(proj.descriptionHtml || []).slice(
                                                         placement.descriptionStart ?? 0,
-                                                        placement.descriptionEnd ?? proj.description.length,
+                                                        getDescriptionEnd(placement.descriptionEnd, placement.descriptionToEnd, proj.description.length),
                                                     )}
                                                     descriptionStart={placement.descriptionStart ?? 0}
                                                     placeholder="프로젝트 기여와 성과"
@@ -2483,7 +2616,7 @@ export default function ResumeCanvas({
                                                     onChange={(descriptions, descriptionLevels, descriptionHtml) => {
                                                         const descriptionStart = placement.descriptionStart ?? 0;
                                                         const visibleDescriptionCount = (
-                                                            placement.descriptionEnd ?? proj.description.length
+                                                            getDescriptionEnd(placement.descriptionEnd, placement.descriptionToEnd, proj.description.length)
                                                         ) - descriptionStart;
                                                         const updated = [...block.data];
                                                         const nextDescriptions = [...(proj.description || [])];
@@ -2774,7 +2907,7 @@ export default function ResumeCanvas({
                                         const descriptionStart = placement.descriptionStart ?? 0;
                                         const visibleDescriptions = descriptions.slice(
                                             descriptionStart,
-                                            placement.descriptionEnd ?? descriptions.length,
+                                            getDescriptionEnd(placement.descriptionEnd, placement.descriptionToEnd, descriptions.length),
                                         );
                                         const legacyDateParts = String(cert.date || "").split(/\s*~\s*/);
                                         const startDate = cert.startDate ?? legacyDateParts[0] ?? "";
@@ -2846,42 +2979,45 @@ export default function ResumeCanvas({
                                                         const descriptionIndex = descriptionStart + localDescriptionIndex;
                                                         const descriptionHtml = cert.descriptionHtml?.[descriptionIndex] || escapeHtml(description);
                                                         return <li key={descriptionIndex} data-pagination-description-index={descriptionIndex}>
-                                                            {richTextToPlainText(descriptionHtml).trim() ? (
-                                                                <RichTextEditable
-                                                                    html={descriptionHtml}
-                                                                    readOnly={readOnly}
-                                                                    ariaLabel={`기타 경험 성과 ${descriptionIndex + 1}`}
-                                                                    className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
-                                                                    onChange={(nextHtml) => {
+                                                            <RichTextEditable
+                                                                html={descriptionHtml}
+                                                                readOnly={readOnly}
+                                                                ariaLabel={`기타 경험 성과 ${descriptionIndex + 1}`}
+                                                                placeholder="활동 내용과 성과"
+                                                                className="resume-rich-bullet inline cursor-text rounded-sm outline-none focus:bg-blue-50"
+                                                                editorId={`certification-description-${cert.id}-${descriptionIndex}`}
+                                                                onKeyDown={(event) => handleBulletListKeyDown(event, {
+                                                                    editorIdPrefix: `certification-description-${cert.id}`,
+                                                                    index: descriptionIndex,
+                                                                    htmlList: descriptions.map((item: string, itemIndex: number) => (
+                                                                        cert.descriptionHtml?.[itemIndex] || escapeHtml(item)
+                                                                    )),
+                                                                    commit: (nextHtmlList) => {
                                                                         const updated = [...block.data];
-                                                                        const nextDescriptions = [...descriptions];
-                                                                        const nextDescriptionHtml = Array.isArray(cert.descriptionHtml)
-                                                                            ? [...cert.descriptionHtml]
-                                                                            : descriptions.map((item: string) => escapeHtml(item));
-                                                                        nextDescriptions[descriptionIndex] = richTextToPlainText(nextHtml);
-                                                                        nextDescriptionHtml[descriptionIndex] = nextHtml;
                                                                         updated[certIdx] = {
                                                                             ...cert,
-                                                                            description: nextDescriptions,
-                                                                            descriptionHtml: nextDescriptionHtml,
+                                                                            description: nextHtmlList.map(richTextToPlainText),
+                                                                            descriptionHtml: nextHtmlList,
                                                                         };
                                                                         updateBlockData(block.id, updated);
-                                                                    }}
-                                                                />
-                                                            ) : (
-                                                                <EditableText
-                                                                    value=""
-                                                                    width="full"
-                                                                    placeholder="활동 내용과 성과"
-                                                                    onChange={(nextDescription) => {
-                                                                        const updated = [...block.data];
-                                                                        const nextDescriptions = [...descriptions];
-                                                                        nextDescriptions[descriptionIndex] = nextDescription;
-                                                                        updated[certIdx] = { ...cert, description: nextDescriptions };
-                                                                        updateBlockData(block.id, updated);
-                                                                    }}
-                                                                />
-                                                            )}
+                                                                    },
+                                                                })}
+                                                                onChange={(nextHtml) => {
+                                                                    const updated = [...block.data];
+                                                                    const nextDescriptions = [...descriptions];
+                                                                    const nextDescriptionHtml = Array.isArray(cert.descriptionHtml)
+                                                                        ? [...cert.descriptionHtml]
+                                                                        : descriptions.map((item: string) => escapeHtml(item));
+                                                                    nextDescriptions[descriptionIndex] = richTextToPlainText(nextHtml);
+                                                                    nextDescriptionHtml[descriptionIndex] = nextHtml;
+                                                                    updated[certIdx] = {
+                                                                        ...cert,
+                                                                        description: nextDescriptions,
+                                                                        descriptionHtml: nextDescriptionHtml,
+                                                                    };
+                                                                    updateBlockData(block.id, updated);
+                                                                }}
+                                                            />
                                                         </li>;
                                                     })}
                                                 </ul>

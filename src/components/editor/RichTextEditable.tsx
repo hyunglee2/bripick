@@ -30,8 +30,10 @@ export default function RichTextEditable({
 
     useLayoutEffect(() => {
         const editor = editorRef.current;
-        if (!editor || document.activeElement === editor) return;
+        if (!editor) return;
         const sanitizedHtml = sanitizeInlineRichText(html);
+        // 입력 중에는 내가 친 내용과 같으면 그대로 둔다. 불릿을 나누거나 합쳐 내용이 바뀐 경우에만 다시 채운다.
+        if (document.activeElement === editor && sanitizeInlineRichText(editor.innerHTML) === sanitizedHtml) return;
         if (editor.innerHTML !== sanitizedHtml) editor.innerHTML = sanitizedHtml;
     }, [html]);
 

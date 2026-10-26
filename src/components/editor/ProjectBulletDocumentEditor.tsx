@@ -380,22 +380,42 @@ export default function ProjectBulletDocumentEditor({
         if (caret) restoreCaret(editor, caret);
     }, [descriptions, levels, html]);
 
-    useEffect(() => {
-        const meaningfulIndexes = descriptions
-            .map((description, index) => description.trim() ? index : -1)
-            .filter((index) => index >= 0);
-        if (
-            meaningfulIndexes.length === 0
-            || meaningfulIndexes.length === descriptions.length
-        ) return;
+    const latestPropsRef = useRef({ descriptions, levels, html, onChange });
+    latestPropsRef.current = { descriptions, levels, html, onChange };
 
-        onChange(
-            meaningfulIndexes.map((index) => descriptions[index]),
-            meaningfulIndexes.map((index) => clampDocumentLevel(Number(levels[index]) || 1)),
-            meaningfulIndexes.map((index) => sanitizeInlineRichText(
-                html[index] || escapeHtml(descriptions[index]),
-            )),
-        );
+    useEffect(() => {
+        // 빈 불릿은 정리하되, 미리보기의 다른 불릿에 입력 중일 때는 기다렸다가 포커스가 빠진 뒤에 정리한다.
+        const removeEmptyRows = () => {
+            const active = document.activeElement;
+            if (active instanceof HTMLElement && active.isContentEditable && !editorRef.current?.contains(active)) return;
+            const { descriptions, levels, html, onChange } = latestPropsRef.current;
+            const meaningfulIndexes = descriptions
+                .map((description, index) => description.trim() ? index : -1)
+                .filter((index) => index >= 0);
+            if (
+                meaningfulIndexes.length === 0
+                || meaningfulIndexes.length === descriptions.length
+            ) return;
+
+            onChange(
+                meaningfulIndexes.map((index) => descriptions[index]),
+                meaningfulIndexes.map((index) => clampDocumentLevel(Number(levels[index]) || 1)),
+                meaningfulIndexes.map((index) => sanitizeInlineRichText(
+                    html[index] || escapeHtml(descriptions[index]),
+                )),
+            );
+        };
+        removeEmptyRows();
+        let timer: number | undefined;
+        const handleFocusOut = () => {
+            window.clearTimeout(timer);
+            timer = window.setTimeout(removeEmptyRows, 0);
+        };
+        document.addEventListener("focusout", handleFocusOut);
+        return () => {
+            window.clearTimeout(timer);
+            document.removeEventListener("focusout", handleFocusOut);
+        };
     }, [descriptions, levels, html, onChange]);
 
     const handleEditorKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
@@ -455,11 +475,87 @@ export default function ProjectBulletDocumentEditor({
             return;
         }
         if (event.key === "Enter") {
+            if (event.nativeEvent.isComposing) return;
             event.preventDefault();
-            const nextRow = createRow(clampDocumentLevel(Number(row.dataset.level)));
+            // 커서 뒤에 남은 글자는 새 불릿으로 옮겨 문서 편집기처럼 줄을 나눈다.
+            let trailingHtml = "";
+            const selectionRange = selection?.rangeCount ? selection.getRangeAt(0) : null;
+            if (selectionRange && content.contains(selectionRange.startContainer)) {
+                selectionRange.deleteContents();
+                const trailingRange = document.createRange();
+                trailingRange.setStart(selectionRange.startContainer, selectionRange.startOffset);
+                trailingRange.setEnd(content, content.childNodes.length);
+                const holder = document.createElement("span");
+                holder.append(trailingRange.extractContents());
+                trailingHtml = richTextToPlainText(holder.innerHTML).trim() ? holder.innerHTML : "";
+                if (!content.textContent) content.innerHTML = "<br>";
+            }
+            const nextRow = createRow(clampDocumentLevel(Number(row.dataset.level)), trailingHtml);
             row.after(nextRow);
             placeCaret(nextRow.querySelector<HTMLElement>("[data-project-bullet-content]")!);
             readDocument();
+            return;
+        }
+        const caretRange = selection?.rangeCount ? selection.getRangeAt(0) : null;
+        const caretInContent = Boolean(caretRange?.collapsed && content.contains(caretRange.startContainer));
+        const textBeforeCaret = () => {
+            const measure = document.createRange();
+            measure.selectNodeContents(content);
+            measure.setEnd(caretRange!.startContainer, caretRange!.startOffset);
+            return measure.toString();
+        };
+        const textAfterCaret = () => {
+            const measure = document.createRange();
+            measure.selectNodeContents(content);
+            measure.setStart(caretRange!.startContainer, caretRange!.startOffset);
+            return measure.toString();
+        };
+        // 내용이 있는 불릿을 앞뒤 불릿과 합칠 때 글자를 잃지 않도록 직접 옮긴다.
+        const mergeRows = (target: HTMLElement, source: HTMLElement) => {
+            const targetContent = target.querySelector<HTMLElement>("[data-project-bullet-content]");
+            const sourceContent = source.querySelector<HTMLElement>("[data-project-bullet-content]");
+            if (!targetContent || !sourceContent) return;
+            const joinOffset = (targetContent.textContent || "").length;
+            if (!targetContent.textContent) targetContent.replaceChildren();
+            if (sourceContent.textContent) targetContent.append(...Array.from(sourceContent.childNodes));
+            source.remove();
+            setActiveContent(targetContent);
+            const walker = document.createTreeWalker(targetContent, NodeFilter.SHOW_TEXT);
+            let remaining = joinOffset;
+            let node = walker.nextNode();
+            while (node) {
+                const length = node.textContent?.length ?? 0;
+                if (remaining <= length) break;
+                remaining -= length;
+                node = walker.nextNode();
+            }
+            const range = document.createRange();
+            if (node) range.setStart(node, remaining);
+            else range.selectNodeContents(targetContent);
+            range.collapse(!node ? false : true);
+            selection?.removeAllRanges();
+            selection?.addRange(range);
+            readDocument();
+        };
+        if (event.key === "Backspace" && content.textContent && caretInContent && textBeforeCaret() === "") {
+            const level = clampDocumentLevel(Number(row.dataset.level));
+            if (level > 1) {
+                event.preventDefault();
+                setRowLevel(row, level - 1);
+                readDocument();
+                return;
+            }
+            const previousRow = row.previousElementSibling as HTMLElement | null;
+            if (!previousRow) return;
+            event.preventDefault();
+            mergeRows(previousRow, row);
+            return;
+        }
+        if (event.key === "Delete" && caretInContent && textAfterCaret() === "") {
+            const nextRow = row.nextElementSibling as HTMLElement | null;
+            if (!nextRow) return;
+            event.preventDefault();
+            mergeRows(row, nextRow);
             return;
         }
         if (event.key === "Backspace" && !content.textContent) {
@@ -528,87 +624,7 @@ export default function ProjectBulletDocumentEditor({
                 setActiveContent(null);
                 readDocument();
             }}
-            onKeyDown={readOnly ? undefined : (event) => {
-                const selection = window.getSelection();
-                const anchor = selection?.anchorNode;
-                const anchorElement = anchor instanceof HTMLElement ? anchor : anchor?.parentElement;
-                const row = anchorElement?.closest<HTMLElement>("[data-project-bullet-row]");
-                const content = row?.querySelector<HTMLElement>("[data-project-bullet-content]");
-                if (!row || !content) return;
-                setActiveContent(content);
-
-                if (allowBold && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "b") {
-                    event.preventDefault();
-                    document.execCommand("bold");
-                    readDocument();
-                    return;
-                }
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "u") {
-                    event.preventDefault();
-                    document.execCommand("underline");
-                    readDocument();
-                    return;
-                }
-                if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-                    event.preventDefault();
-                    editorRef.current?.dispatchEvent(new CustomEvent("open-rich-text-link"));
-                    return;
-                }
-                if (event.key === "Tab" || event.code === "Tab") {
-                    if (maxLevel === 1) return;
-                    event.preventDefault();
-                    const selectionRange = selection?.rangeCount ? selection.getRangeAt(0) : null;
-                    const selectedRows = selectionRange
-                        ? Array.from(
-                            editorRef.current?.querySelectorAll<HTMLElement>("[data-project-bullet-row]") || [],
-                        ).filter((candidateRow) => {
-                            const candidateContent = candidateRow.querySelector<HTMLElement>(
-                                "[data-project-bullet-content]",
-                            );
-                            if (!candidateContent) return false;
-                            try {
-                                return selectionRange.intersectsNode(candidateContent);
-                            } catch {
-                                return false;
-                            }
-                        })
-                        : [];
-                    const rowsToIndent = selectedRows.length > 0 ? selectedRows : [row];
-                    const levelDelta = event.shiftKey ? -1 : 1;
-                    rowsToIndent.forEach((selectedRow) => {
-                        setRowLevel(
-                            selectedRow,
-                            clampDocumentLevel(Number(selectedRow.dataset.level)) + levelDelta,
-                        );
-                    });
-                    readDocument();
-                    return;
-                }
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    const nextRow = createRow(clampDocumentLevel(Number(row.dataset.level)));
-                    row.after(nextRow);
-                    placeCaret(nextRow.querySelector<HTMLElement>("[data-project-bullet-content]")!);
-                    readDocument();
-                    return;
-                }
-                if (event.key === "Backspace" && !content.textContent) {
-                    event.preventDefault();
-                    const level = clampDocumentLevel(Number(row.dataset.level));
-                    if (level > 1) {
-                        setRowLevel(row, level - 1);
-                        placeCaret(content);
-                        readDocument();
-                        return;
-                    }
-                    const previousContent = row.previousElementSibling?.querySelector<HTMLElement>("[data-project-bullet-content]");
-                    if (previousContent) {
-                        row.remove();
-                        placeCaret(previousContent, true);
-                        readDocument();
-                    }
-                }
-            }}
+            onKeyDown={readOnly ? undefined : handleEditorKeyDown}
         /> : <div
             ref={(node) => { editorRef.current = node; }}
             contentEditable
