@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { SITE_URL } from "@/lib/site";
+import { OPEN_GRAPH_IMAGE, SITE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
 import { findPublicResumeSitemapEntries } from "@/server/resumes/resume-publication.service";
 
 export const revalidate = 3600;
@@ -10,8 +10,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     {
       url: SITE_URL,
+      lastModified: SITE_LAST_MODIFIED,
       changeFrequency: "weekly",
       priority: 1,
+      images: [`${SITE_URL}${OPEN_GRAPH_IMAGE.url}`],
     },
     ...publications.map((publication) => ({
       url: `${SITE_URL}/r/${publication.slug}`,

@@ -18,12 +18,30 @@ import {
 import LandingMotion from "./LandingMotion";
 import TemplatePreview from "./TemplatePreview";
 import styles from "./landing.module.css";
+import { OPEN_GRAPH_IMAGE, SITE_NAME } from "@/lib/site";
+
+const LANDING_TITLE = "개발자를 위한 블록형 이력서 빌더";
+const LANDING_DESCRIPTION =
+  "경력, 프로젝트, 기술 스택을 블록처럼 쌓아 이력서를 완성하세요. Bripick의 템플릿으로 경험을 더 돋보이게 정리하고, 완성한 이력서는 PDF나 링크로 바로 공유할 수 있어요.";
 
 export const metadata: Metadata = {
-  title: "블록으로 쌓는 개발자 이력서",
-  description:
-    "경력, 프로젝트, 기술 스택을 블록처럼 쌓아 이력서를 완성하세요. PDF 저장과 공개 링크까지 Bripick 한 곳에서.",
+  title: LANDING_TITLE,
+  description: LANDING_DESCRIPTION,
   alternates: { canonical: "/" },
+  openGraph: {
+    title: `$${SITE_NAME} | {LANDING_TITLE}`,
+    description: LANDING_DESCRIPTION,
+    url: "/",
+    siteName: SITE_NAME,
+    locale: "ko_KR",
+    type: "website",
+    images: [OPEN_GRAPH_IMAGE],
+  },
+  twitter: {
+    title: `$${SITE_NAME} | {LANDING_TITLE}`,
+    description: LANDING_DESCRIPTION,
+    images: [OPEN_GRAPH_IMAGE.url],
+  },
 };
 
 const START_HREF = "/editor";
