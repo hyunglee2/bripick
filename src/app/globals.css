@@ -4191,6 +4191,62 @@ summary[data-tooltip],
   margin-top: 24px;
 }
 
+/*
+ * 새 회사가 시작되는 곳: 같은 조각 안의 다음 회사, 또는 같은 페이지에서 이어진 조각의 첫 회사.
+ * --resume-experience-gap(블록 설정)은 기본 간격에 더하는 여백이고, 구분선은 전체 간격의 가운데에 긋는다.
+ */
+.reference-template {
+  --resume-experience-base-gap: 24px;
+  --resume-experience-default-gap: 0px;
+}
+
+.minimal-template {
+  --resume-experience-base-gap: 22px;
+  --resume-experience-default-gap: 24px;
+}
+
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"],
+.minimal-template .resume-block-fragment--continues-previous[data-block-type="experience"] {
+  --resume-experience-base-gap: 38px;
+}
+
+/* 블록 설정값은 경력 목록에 걸리므로 항목 안에서 다시 계산한다. */
+.reference-template .resume-experience-item,
+.minimal-template .resume-experience-item {
+  --resume-experience-extra-gap: var(--resume-experience-gap, var(--resume-experience-default-gap));
+}
+
+.reference-template .resume-experience-item+.resume-experience-item,
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] .resume-experience-item:first-child,
+.minimal-template .resume-experience-item+.resume-experience-item,
+.minimal-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] .resume-experience-item:first-child {
+  position: relative;
+  padding-top: var(--resume-experience-extra-gap);
+}
+
+/* 모던의 회사 마커는 위치가 고정이라 늘어난 여백만큼 내린다. */
+.reference-template .resume-experience-item+.resume-experience-item::before,
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] .resume-experience-item:first-child::before {
+  top: calc(7px + var(--resume-experience-extra-gap));
+}
+
+.reference-template [data-experience-divider="true"]>.resume-experience-item+.resume-experience-item::after,
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] [data-experience-divider="true"]>.resume-experience-item:first-child::after,
+.minimal-template [data-experience-divider="true"]>.resume-experience-item+.resume-experience-item::after,
+.minimal-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] [data-experience-divider="true"]>.resume-experience-item:first-child::after {
+  content: "";
+  position: absolute;
+  top: calc((var(--resume-experience-extra-gap) - var(--resume-experience-base-gap)) / 2);
+  right: 0;
+  left: 0;
+  border-top: 1px solid #e5e7eb;
+  pointer-events: none;
+}
+
+.minimal-template [data-experience-divider="true"]>.resume-experience-item::after {
+  border-top-color: var(--minimal-rule);
+}
+
 .resume-other-experience__list {
   display: flex;
   flex-direction: column;

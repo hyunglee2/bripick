@@ -2157,7 +2157,13 @@ export default function ResumeCanvas({
                             </h2>
                         </div>}
                         {Array.isArray(block.data) && block.data.length > 0 ? (
-                            <div className="space-y-3 pt-1">
+                            <div
+                                className="space-y-3 pt-1"
+                                data-experience-divider={block.style.showExperienceDivider === true ? "true" : undefined}
+                                style={typeof block.style.experienceGap === "number"
+                                    ? { "--resume-experience-gap": `${block.style.experienceGap}px` } as React.CSSProperties
+                                    : undefined}
+                            >
                                 {block.data
                                     .slice(placement.itemStart ?? 0, placement.itemEnd ?? block.data.length)
                                     .map((exp: any, localIndex: number) => {

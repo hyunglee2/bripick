@@ -2358,6 +2358,39 @@ export default function InspectorPanel() {
                             </div>
                         </div>
 
+                        {currentBlock.type === "experience" && (
+                            <div className="block-settings__options">
+                                <label className="block-settings__option">
+                                    <span className="block-settings__option-copy">
+                                        <span className="block-settings__option-label">경력 사이 구분선 표시</span>
+                                        <span className="block-settings__option-hint">회사가 바뀌는 곳에 얇은 선을 그어요.</span>
+                                    </span>
+                                    <input
+                                        type="checkbox"
+                                        checked={currentBlock.style.showExperienceDivider === true}
+                                        onChange={(event) => updateBlockStyle(currentBlock.id, { showExperienceDivider: event.target.checked })}
+                                        aria-label="경력 사이 구분선 표시"
+                                    />
+                                </label>
+                                <label className="doc-settings__slider block-settings__option-slider">
+                                    <span className="doc-settings__slider-head">
+                                        <span>경력 사이 여백 추가</span>
+                                        <output>+{currentBlock.style.experienceGap ?? (globalStyle?.template === "minimal" ? 24 : 0)}px</output>
+                                    </span>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="64"
+                                        step="4"
+                                        value={currentBlock.style.experienceGap ?? (globalStyle?.template === "minimal" ? 24 : 0)}
+                                        onChange={(event) => updateBlockStyle(currentBlock.id, { experienceGap: Number(event.target.value) })}
+                                        aria-label="경력 사이 여백 추가"
+                                        style={{ "--doc-settings-fill": `${((currentBlock.style.experienceGap ?? (globalStyle?.template === "minimal" ? 24 : 0)) / 64) * 100}%` } as CSSProperties}
+                                    />
+                                </label>
+                            </div>
+                        )}
+
                         {currentBlock.type === "certification" && (
                             <label className="doc-settings__slider block-settings__slider">
                                 <span className="doc-settings__slider-head">

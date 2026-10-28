@@ -23,6 +23,8 @@ export interface BlockStyle {
     startOnNewPage?: boolean;
     useCustomPadding?: boolean;
     otherExperienceLeftColumnRatio?: number;
+    experienceGap?: number;
+    showExperienceDivider?: boolean;
 }
 
 export interface ProfileData {
