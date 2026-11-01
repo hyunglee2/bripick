@@ -23,6 +23,15 @@ export async function unpublishResume(slug: string) {
     await request(`/api/resumes/${encodeURIComponent(slug)}`, { method: "DELETE" });
 }
 
+/** 이력서와 공개 게시물을 서버에서 함께 지운다. 로컬 목록 정리는 호출한 쪽에서 한다. */
+export async function deleteResumeWithPublication(resume: Pick<ResumeDocument, "id" | "publication">) {
+    await ensureSession();
+    await request(`/api/resumes/drafts/${encodeURIComponent(resume.id)}`, {
+        method: "DELETE",
+        body: JSON.stringify({ slug: resume.publication?.slug ?? null }),
+    });
+}
+
 export function getPublicResumeUrl(slug: string) {
     if (typeof window === "undefined") return `/r/${encodeURIComponent(slug)}`;
     return `${window.location.origin}/r/${encodeURIComponent(slug)}`;

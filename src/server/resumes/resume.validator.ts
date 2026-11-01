@@ -3,6 +3,7 @@ import { ResumeDocument } from "@/types/resume";
 import { ApiError } from "@/server/http/api-error";
 export const PUBLIC_SLUG_PATTERN = /^[a-z0-9]{16,64}$/;
 export function validateSlug(slug: string) { if (!PUBLIC_SLUG_PATTERN.test(slug)) throw new ApiError(400, "INVALID_SLUG", "공개 주소 형식이 올바르지 않습니다."); return slug; }
+export function validateResumeId(id: string) { if (typeof id !== "string" || !id.trim() || id.length > 200) throw new ApiError(400, "INVALID_RESUME_ID", "이력서 ID가 올바르지 않습니다."); return id; }
 export function validateResumePayload(value: unknown): ResumeDocument {
     const encoded = JSON.stringify(value);
     if (typeof encoded !== "string") throw new ApiError(400, "INVALID_DOCUMENT", "이력서 데이터가 올바르지 않습니다.");

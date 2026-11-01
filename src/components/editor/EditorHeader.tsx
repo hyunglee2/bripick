@@ -32,6 +32,7 @@ import { BlockType, ResumeDocument } from "@/types/resume";
 import AuthMenu from "@/components/auth/AuthMenu";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { isResumeBackup, prepareImportedResume } from "@/lib/resumeBackup";
+import { deleteResumeWithPublication } from "@/lib/resumePublishing";
 
 type DialogState = {
     title: string;
@@ -39,7 +40,7 @@ type DialogState = {
     variant: ServiceDialogVariant;
     confirmLabel?: string;
     cancelLabel?: string;
-    action?: () => void;
+    action?: () => void | Promise<void>;
 };
 
 const STARTER_CONTENT = new Set([
@@ -191,7 +192,7 @@ export default function EditorHeader() {
     const confirmDialog = () => {
         const action = dialog?.action;
         setDialog(null);
-        action?.();
+        void action?.();
     };
 
     const blockButtons: { label: string; type: BlockType }[] = [
@@ -733,15 +734,34 @@ export default function EditorHeader() {
                                                     disabled={(resumeList || []).length <= 1}
                                                     onClick={() => {
                                                         setOpenMenu(null);
+                                                        const isPublished = Boolean(item.publication);
                                                         setDialog({
                                                             title: "이력서를 삭제할까요?",
-                                                            message: `'${item.versionName}' 이력서는 삭제 후 복구할 수 없습니다.`,
+                                                            message: isPublished
+                                                                ? "현재 공개 중인 이력서입니다. 삭제하면 공개 링크도 함께 사라지며 복구할 수 없습니다."
+                                                                : "삭제한 내용은 복구할 수 없습니다.",
                                                             variant: "danger",
-                                                            confirmLabel: "삭제",
+                                                            confirmLabel: isPublished ? "게시물과 이력서 삭제" : "삭제",
                                                             cancelLabel: "취소",
-                                                            action: () => {
+                                                            action: async () => {
+                                                                if (isPublished) {
+                                                                    // 공개 링크만 남지 않도록 서버에서 게시물과 원본을 먼저 지운 뒤 로컬 목록을 정리한다.
+                                                                    try {
+                                                                        await deleteResumeWithPublication(item);
+                                                                    } catch (error) {
+                                                                        setDialog({
+                                                                            title: "이력서를 삭제하지 못했어요",
+                                                                            message: error instanceof Error ? error.message : "잠시 후 다시 시도해 주세요.",
+                                                                            variant: "danger",
+                                                                            confirmLabel: "확인",
+                                                                        });
+                                                                        return;
+                                                                    }
+                                                                }
                                                                 deleteResume(item.id);
-                                                                setToastMessage(`'${item.versionName}' 이력서를 삭제했어요.`);
+                                                                setToastMessage(isPublished
+                                                                    ? `'${item.versionName}' 이력서와 공개 링크를 삭제했어요.`
+                                                                    : `'${item.versionName}' 이력서를 삭제했어요.`);
                                                             },
                                                         });
                                                     }}

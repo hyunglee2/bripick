@@ -1,0 +1,179 @@
+/* 404 전용 스타일. 랜딩(/landing)과 같은 기본 색을 쓴다. */
+
+.page {
+  --bg: #f6f7fb;
+  --ink: #0d1020;
+  --muted: #6b7287;
+  --accent: #3d6bff;
+  --digit: #b9bfcd;
+
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  flex-direction: column;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+  word-break: keep-all;
+}
+
+:global(html[data-theme="dark"]) .page {
+  --bg: #07080d;
+  --ink: #f4f5fa;
+  --muted: #8a90a3;
+  --accent: #6b8cff;
+  --digit: #4a5061;
+}
+
+.page a {
+  text-decoration: none;
+}
+
+.page :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.header {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px 30px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 24px;
+  width: auto;
+}
+
+.logoOnDark {
+  display: none;
+}
+
+:global(html[data-theme="dark"]) .logoOnLight {
+  display: none;
+}
+
+:global(html[data-theme="dark"]) .logoOnDark {
+  display: block;
+}
+
+.main {
+  display: flex;
+  padding: 0 20px 120px;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.code {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--digit);
+  font-size: 96px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  user-select: none;
+}
+
+.mascot {
+  position: relative;
+  /* 숫자 4는 오른쪽이 꽉 차 있어 왼쪽 간격이 좁아 보인다. 캐릭터를 살짝 오른쪽으로 옮겨 양쪽 간격을 맞춘다. */
+  left: 0.025em;
+  width: 0.8em;
+  height: 0.8em;
+}
+
+/* 눈동자만 가끔 옆을 한 번 본다. */
+.pupils {
+  animation: look 6s ease-in-out infinite;
+}
+
+@keyframes look {
+  0%, 60% {
+    transform: translateX(0);
+  }
+  66%, 88% {
+    transform: translateX(-26px);
+  }
+  94%, 100% {
+    transform: translateX(0);
+  }
+}
+
+.title {
+  margin: 28px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.lead {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  margin-top: 32px;
+  align-items: center;
+  gap: 20px;
+}
+
+.primaryButton {
+  padding: 11px 22px;
+  border-radius: 10px;
+  color: var(--bg);
+  background: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  transition: opacity 150ms ease;
+}
+
+.primaryButton:hover {
+  opacity: 0.85;
+}
+
+.textLink {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 150ms ease;
+}
+
+.textLink:hover {
+  color: var(--ink);
+}
+
+@media (max-width: 520px) {
+  .header {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .code {
+    font-size: 80px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pupils {
+    animation: none;
+  }
+}
