@@ -369,6 +369,25 @@ export default function ProjectBulletDocumentEditor({
         // 입력 중에 캔버스가 다시 그려져도(쪽 나눔 재계산 등) 화면 내용이 같으면 DOM을 갈아끼우지 않는다.
         // 갈아끼우면 커서가 첫 불릿 앞으로 튀어서 이어 치는 글자가 엉뚱한 곳에 들어간다.
         if (isFocused && readDomSignature(editor) === nextSignature) return;
+        // 다른 곳을 입력해 캔버스가 다시 그려질 때도 내용이 같으면 DOM을 새로 만들지 않는다.
+        // 매번 갈아끼우면 입력과 상관없는 불릿까지 다시 그려져 깜빡인다. 페이지 번호표만 맞춰 둔다.
+        const existingRows = Array.from(editor.querySelectorAll<HTMLElement>("[data-project-bullet-row]"));
+        // 저장된 plain text와 서식 html이 조금 달라도 화면은 html로 그리므로 단계와 html만 비교한다.
+        const renderedMatches = existingRows.length === descriptions.length
+            && existingRows.every((row, index) => (
+                clampDocumentLevel(Number(row.dataset.level)) === clampDocumentLevel(Number(levels[index]) || 1)
+                && sanitizeInlineRichText(row.querySelector<HTMLElement>("[data-project-bullet-content]")?.innerHTML || "")
+                    === sanitizeInlineRichText(html[index] || escapeHtml(descriptions[index]))
+            ));
+        if (!isFocused && descriptions.length > 0 && renderedMatches) {
+            if (variant === "resume") {
+                existingRows.forEach((row, index) => {
+                    const nextIndex = String(descriptionStart + index);
+                    if (row.dataset.paginationDescriptionIndex !== nextIndex) row.dataset.paginationDescriptionIndex = nextIndex;
+                });
+            }
+            return;
+        }
         const caret = isFocused ? saveCaret(editor) : null;
         editor.replaceChildren(...(descriptions.length > 0 ? descriptions : [""]).map((description, index) => (
             createRow(
@@ -378,7 +397,7 @@ export default function ProjectBulletDocumentEditor({
             )
         )));
         if (caret) restoreCaret(editor, caret);
-    }, [descriptions, levels, html]);
+    }, [descriptions, levels, html, descriptionStart]);
 
     const latestPropsRef = useRef({ descriptions, levels, html, onChange });
     latestPropsRef.current = { descriptions, levels, html, onChange };

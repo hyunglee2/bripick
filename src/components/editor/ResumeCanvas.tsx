@@ -2,6 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
 import { ChevronDown, Columns2, Crop, FileText, GripVertical, ImagePlus, Maximize2, Monitor, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
@@ -308,7 +309,6 @@ export default function ResumeCanvas({
         }
         | null
     >(null);
-    const paginationFrameRef = useRef<number | null>(null);
     const appliedPaginationSignatureRef = useRef<string | null>(null);
     const paginationRefineRef = useRef<(() => void) | null>(null);
     const paginationBlockSignaturesRef = useRef<string[]>([]);
@@ -899,7 +899,9 @@ export default function ResumeCanvas({
         paginationSettledRef.current = false;
         delete canvas.dataset.paginationSettled;
 
-        const repaginate = () => {
+        // React commit 안에서 부르면 바로 반영하고, ResizeObserver·폰트 로드처럼 밖에서 부르면 flushSync로
+        // 그리기 전에 반영한다. 다음 프레임으로 미루면 이전 배치가 한 프레임 그려져 화면이 깜빡인다.
+        const repaginate = (fromOutsideReact = false) => {
             if (disposed) return;
             const availableHeight = A4_PAPER_HEIGHT - (paperPadding * 2) - PAGINATION_BOTTOM_SAFETY_GAP;
             // 프로젝트 블록의 항목 사이 여백. Minimal은 CSS의 프로젝트 사이 margin-top과 같은 값이다.
@@ -1629,9 +1631,7 @@ export default function ResumeCanvas({
             });
 
             const nextSignature = JSON.stringify(nextPages);
-            if (paginationFrameRef.current !== null) cancelAnimationFrame(paginationFrameRef.current);
-            paginationFrameRef.current = requestAnimationFrame(() => {
-                paginationFrameRef.current = null;
+            const commitLayout = () => {
                 if (disposed) return;
                 const appliedSignature = appliedPaginationSignatureRef.current;
                 const applyLayout = (pages: BlockPlacement[][]) => {
@@ -1658,7 +1658,9 @@ export default function ResumeCanvas({
                 delete canvas.dataset.paginationSettled;
                 appliedLayouts.set(nextSignature, nextPages);
                 applyLayout(nextPages);
-            });
+            };
+            if (fromOutsideReact) flushSync(commitLayout);
+            else commitLayout();
         };
 
         // 그려 본 배치들의 실제 페이지 높이를 비교해 넘치지 않으면서 페이지가 가장 적은 배치를 고른다.
@@ -1709,7 +1711,7 @@ export default function ResumeCanvas({
             repaginate();
         };
         repaginate();
-        observer = new ResizeObserver(repaginate);
+        observer = new ResizeObserver(() => repaginate(true));
         canvas.querySelectorAll<HTMLElement>("[data-resume-block-index]").forEach((element) => observer.observe(element));
         // 웹 폰트가 늦게 적용되면 그 전에 잰 높이는 모두 틀리므로 처음부터 다시 잰다.
         const restartPagination = () => {
@@ -1721,7 +1723,7 @@ export default function ResumeCanvas({
             paginationFinalized = false;
             paginationSettledRef.current = false;
             delete canvas.dataset.paginationSettled;
-            repaginate();
+            repaginate(true);
         };
         document.fonts.ready.then(restartPagination);
         document.fonts.addEventListener("loadingdone", restartPagination);
@@ -1731,10 +1733,6 @@ export default function ResumeCanvas({
             paginationRefineRef.current = null;
             document.fonts.removeEventListener("loadingdone", restartPagination);
             observer?.disconnect();
-            if (paginationFrameRef.current !== null) {
-                cancelAnimationFrame(paginationFrameRef.current);
-                paginationFrameRef.current = null;
-            }
         };
     }, [
         blocks,

@@ -4198,6 +4198,8 @@ summary[data-tooltip],
 .reference-template {
   --resume-experience-base-gap: 24px;
   --resume-experience-default-gap: 0px;
+  /* 회사 마커 자리만큼 구분선을 왼쪽으로 늘린다. */
+  --resume-experience-divider-inset: 18px;
 }
 
 .minimal-template {
@@ -4207,7 +4209,7 @@ summary[data-tooltip],
 
 .reference-template .resume-block-fragment--continues-previous[data-block-type="experience"],
 .minimal-template .resume-block-fragment--continues-previous[data-block-type="experience"] {
-  --resume-experience-base-gap: 38px;
+  --resume-experience-base-gap: var(--resume-project-divider-gap);
 }
 
 /* 블록 설정값은 경력 목록에 걸리므로 항목 안에서 다시 계산한다. */
@@ -4230,20 +4232,26 @@ summary[data-tooltip],
   top: calc(7px + var(--resume-experience-extra-gap));
 }
 
-.reference-template [data-experience-divider="true"]>.resume-experience-item+.resume-experience-item::after,
-.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] [data-experience-divider="true"]>.resume-experience-item:first-child::after,
-.minimal-template [data-experience-divider="true"]>.resume-experience-item+.resume-experience-item::after,
-.minimal-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] [data-experience-divider="true"]>.resume-experience-item:first-child::after {
+.reference-template [data-experience-divider="true"]>.resume-experience-item>.resume-experience-company-header,
+.minimal-template [data-experience-divider="true"]>.resume-experience-item>.resume-experience-company-header {
+  position: relative;
+}
+
+.reference-template [data-experience-divider="true"]>.resume-experience-item+.resume-experience-item>.resume-experience-company-header::before,
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] [data-experience-divider="true"]>.resume-experience-item:first-child>.resume-experience-company-header::before,
+.minimal-template [data-experience-divider="true"]>.resume-experience-item+.resume-experience-item>.resume-experience-company-header::before,
+.minimal-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] [data-experience-divider="true"]>.resume-experience-item:first-child>.resume-experience-company-header::before {
   content: "";
   position: absolute;
-  top: calc((var(--resume-experience-extra-gap) - var(--resume-experience-base-gap)) / 2);
+  /* 선택 표시가 항목의 ::after를 쓰므로 구분선은 회사 머리줄에 그린다. 머리줄 위로 전체 간격의 가운데에 놓는다. */
+  top: calc((var(--resume-experience-extra-gap) + var(--resume-experience-base-gap)) / -2);
   right: 0;
-  left: 0;
+  left: calc(var(--resume-experience-divider-inset, 0px) * -1);
   border-top: 1px solid #e5e7eb;
   pointer-events: none;
 }
 
-.minimal-template [data-experience-divider="true"]>.resume-experience-item::after {
+.minimal-template [data-experience-divider="true"]>.resume-experience-item>.resume-experience-company-header::before {
   border-top-color: var(--minimal-rule);
 }
 
@@ -8369,7 +8377,7 @@ body:has(.editor-tutorial) .feedback-launcher {
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-top: 16px;
+  margin-top: var(--resume-project-divider-gap);
   margin-left: 2px;
   padding-left: 32px;
 }
@@ -9312,3 +9320,51 @@ body:has(.editor-tutorial) .feedback-launcher {
   }
 }
 
+
+/*
+ * 프로젝트 사이 간격(--resume-project-divider-gap)
+ * 경력 블록의 회사↔첫 프로젝트, 프로젝트↔프로젝트, 프로젝트 블록의 프로젝트↔프로젝트를 모두 이 값으로 맞춘다.
+ * 프로젝트마다 따로 그려지는 조각(같은 페이지에서 이어지는 조각) 사이도 같은 값이 되도록,
+ * 이어지는 조각의 위아래 패딩은 없애고 조각 사이 margin을 이 값으로 둔다.
+ * Minimal은 이 값 그대로, Modern은 구분선 위아래에 각각 이 값을 둔다.
+ */
+.reference-template [data-block-type="experience"].resume-block-fragment--continues-next[data-custom-padding="false"],
+.reference-template [data-block-type="project"].resume-block-fragment--continues-next[data-custom-padding="false"],
+.minimal-template [data-block-type="experience"].resume-block-fragment--continues-next[data-custom-padding="false"],
+.minimal-template [data-block-type="project"].resume-block-fragment--continues-next[data-custom-padding="false"] {
+  margin-bottom: var(--resume-project-divider-gap) !important;
+  padding-bottom: 0 !important;
+}
+
+.reference-template [data-block-type="experience"].resume-block-fragment--continues-previous[data-custom-padding="false"],
+.reference-template [data-block-type="project"].resume-block-fragment--continues-previous[data-custom-padding="false"],
+.minimal-template [data-block-type="experience"].resume-block-fragment--continues-previous[data-custom-padding="false"],
+.minimal-template [data-block-type="project"].resume-block-fragment--continues-previous[data-custom-padding="false"] {
+  padding-top: 0 !important;
+}
+
+/* Modern: 같은 페이지에서 이어진 조각의 첫 프로젝트도 다른 프로젝트처럼 위에 구분선을 긋는다. */
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-experience-project-continuation="true"][data-experience-project-description-start="0"] .resume-experience-project:first-child,
+.reference-template .resume-block-fragment--continues-previous[data-block-type="project"] .resume-project-item:first-child {
+  padding-top: var(--resume-project-divider-gap);
+  border-top: 1px solid #e5e7eb;
+}
+
+/* Modern: 회사 정보 없이 프로젝트만 이어지는 조각은 프로젝트 목록 위 여백을 다시 두지 않는다(구분선 위아래 간격만 남김). */
+.reference-template [data-experience-project-start]:not([data-experience-project-start="0"]) .resume-experience-projects,
+.reference-template [data-experience-project-continuation="true"] .resume-experience-projects {
+  margin-top: 0;
+}
+
+/* Modern은 프로젝트 사이가 구분선 위아래로 두 배이므로, 이어진 조각에서 새 회사가 시작될 때도 그만큼 띄운다. */
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"] {
+  --resume-experience-base-gap: calc(var(--resume-project-divider-gap) * 2);
+}
+
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] .resume-experience-item:first-child {
+  padding-top: calc(var(--resume-experience-extra-gap) + var(--resume-project-divider-gap));
+}
+
+.reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] .resume-experience-item:first-child::before {
+  top: calc(7px + var(--resume-experience-extra-gap) + var(--resume-project-divider-gap));
+}
