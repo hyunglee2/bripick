@@ -51,3 +51,16 @@ export function withProfileContacts(
         github: findValue(/^github$/i),
     };
 }
+
+/**
+ * 연락처 값이 웹 주소면 링크 주소를 돌려준다. "github.com/name"처럼 프로토콜이 없으면 https://를 붙인다.
+ * 이메일·전화번호처럼 주소가 아닌 값은 null.
+ */
+export function getContactHref(value: string): string | null {
+    const trimmed = value.trim();
+    if (!trimmed || /\s/.test(trimmed)) return null;
+    if (/^https?:\/\/[^/]+\.[^/]+/i.test(trimmed)) return trimmed;
+    if (trimmed.includes("@")) return null;
+    if (/^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}(:\d+)?([/?#]\S*)?$/i.test(trimmed)) return `https://${trimmed}`;
+    return null;
+}

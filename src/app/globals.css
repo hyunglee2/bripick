@@ -8463,6 +8463,7 @@ body:has(.editor-tutorial) .feedback-launcher {
   color: var(--minimal-text) !important;
   font-size: var(--resume-body-size) !important;
 }
+
 /* 문서 전역 설정 패널 */
 
 .doc-settings {
@@ -8527,7 +8528,7 @@ body:has(.editor-tutorial) .feedback-launcher {
   padding: 20px 22px;
 }
 
-.doc-settings__section + .doc-settings__section {
+.doc-settings__section+.doc-settings__section {
   border-top: 1px solid var(--inspector-border);
 }
 
@@ -8783,7 +8784,7 @@ body:has(.editor-tutorial) .feedback-launcher {
   padding: 0 6px 0 12px;
 }
 
-.doc-settings__row + .doc-settings__row {
+.doc-settings__row+.doc-settings__row {
   border-top: 1px solid var(--inspector-border);
 }
 
@@ -8857,11 +8858,9 @@ body:has(.editor-tutorial) .feedback-launcher {
 .inspector-panel .doc-settings__slider input[type="range"] {
   width: 100%;
   cursor: pointer;
-  background: linear-gradient(
-      to right,
+  background: linear-gradient(to right,
       var(--brand-primary) var(--doc-settings-fill, 0%),
-      var(--inspector-border) var(--doc-settings-fill, 0%)
-    ) !important;
+      var(--inspector-border) var(--doc-settings-fill, 0%)) !important;
 }
 
 .doc-settings__hint {
@@ -9040,13 +9039,13 @@ body:has(.editor-tutorial) .feedback-launcher {
   padding-bottom: 100px;
 }
 
-.inspector-panel--block .block-settings__body > * {
+.inspector-panel--block .block-settings__body>* {
   margin: 0 !important;
   padding: 20px 22px !important;
   border-top: 1px solid var(--inspector-border) !important;
 }
 
-.inspector-panel--block .block-settings__body > :first-child {
+.inspector-panel--block .block-settings__body> :first-child {
   border-top: 0 !important;
 }
 
@@ -9064,7 +9063,7 @@ body:has(.editor-tutorial) .feedback-launcher {
   gap: 8px;
 }
 
-.inspector-panel--block .block-settings__body .inspector-list-section > .doc-settings__section-title {
+.inspector-panel--block .block-settings__body .inspector-list-section>.doc-settings__section-title {
   margin-bottom: 4px;
 }
 
@@ -9101,7 +9100,7 @@ body:has(.editor-tutorial) .feedback-launcher {
   padding-inline: var(--inspector-label-padding-inline);
 }
 
-.inspector-panel--block .block-settings__field-head > label:first-child {
+.inspector-panel--block .block-settings__field-head>label:first-child {
   padding-inline: 0;
 }
 
@@ -9165,7 +9164,7 @@ body:has(.editor-tutorial) .feedback-launcher {
   border-radius: 10px;
 }
 
-.block-settings__options > * + * {
+.block-settings__options>*+* {
   border-top: 1px solid var(--inspector-border);
 }
 
@@ -9227,7 +9226,7 @@ body:has(.editor-tutorial) .feedback-launcher {
     padding-left: 16px;
   }
 
-  .inspector-panel--block .block-settings__body > * {
+  .inspector-panel--block .block-settings__body>* {
     padding-right: 16px !important;
     padding-left: 16px !important;
   }
@@ -9367,4 +9366,15 @@ body:has(.editor-tutorial) .feedback-launcher {
 
 .reference-template .resume-block-fragment--continues-previous[data-block-type="experience"][data-description-continuation="false"][data-experience-project-continuation="false"] .resume-experience-item:first-child::before {
   top: calc(7px + var(--resume-experience-extra-gap) + var(--resume-project-divider-gap));
+}
+
+
+/* 연락처 값: 주소가 아닐 때(<a> without href)는 일반 글자처럼 보이게 한다. */
+.resume-paper .resume-contact-anchor {
+  color: inherit;
+}
+
+/* "링크 ↗"는 화면·PDF 모두 포인트 컬러로 표시한다(인쇄 시 a 색상 상속 규칙보다 우선). */
+.resume-paper .resume-block-item a.resume-link-badge {
+  color: var(--resume-link-color, var(--resume-blue, #2f80c3)) !important;
 }

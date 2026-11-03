@@ -7,7 +7,7 @@ import { useResumeStore } from "@/store/useResumeStore";
 import EditableText from "@/components/editor/EditableText";
 import { ChevronDown, Columns2, Crop, FileText, GripVertical, ImagePlus, Maximize2, Monitor, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { ProfileData, ResumeBlock, ResumeDocument, SkillsData } from "@/types/resume";
-import { getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
+import { getContactHref, getProfileContacts, withProfileContacts } from "@/lib/profileContacts";
 import { getSkillCategories, withSkillCategories } from "@/lib/skills";
 import { formatBlockTitle } from "@/lib/blockTitles";
 import { mergeHiddenItems, stripHiddenBlocks } from "@/lib/resumeVisibility";
@@ -1791,6 +1791,30 @@ export default function ResumeCanvas({
                     );
                 };
                 const showProfilePhoto = block.data.showPhoto !== false;
+                // 웹 주소는 PDF와 공개 링크에서 누를 수 있게 <a>로 감싼다. 편집 중에는 글자를 고칠 수 있도록
+                // 이동을 막고(Ctrl/⌘+클릭만 열기), 주소가 아니어도 같은 구조를 유지해 입력 중 포커스가 끊기지 않게 한다.
+                const renderContactValue = (contact: (typeof displayedProfileContacts)[number]) => {
+                    const href = getContactHref(contact.value);
+                    return (
+                        <a
+                            href={href ?? undefined}
+                            target={href ? "_blank" : undefined}
+                            rel={href ? "noopener noreferrer" : undefined}
+                            className="resume-contact-anchor"
+                            draggable={false}
+                            onClick={(event) => {
+                                if (!readOnly && !(event.metaKey || event.ctrlKey)) event.preventDefault();
+                            }}
+                        >
+                            <EditableText
+                                value={contact.value}
+                                placeholder="내용 또는 URL"
+                                className={href ? "resume-contact-link" : ""}
+                                onChange={(value) => updateDisplayedProfileContact(contact.id, "value", value)}
+                            />
+                        </a>
+                    );
+                };
                 const profileContactRows = displayedProfileContacts.reduce<typeof displayedProfileContacts[]>((rows, contact) => {
                     if (contact.inlineWithPrevious && rows.length > 0) {
                         rows[rows.length - 1].push(contact);
@@ -1880,12 +1904,7 @@ export default function ResumeCanvas({
                                                                 />
                                                                 <span> :</span>
                                                             </span>
-                                                            <EditableText
-                                                                value={contact.value}
-                                                                placeholder="내용 또는 URL"
-                                                                className={/^https?:\/\//i.test(contact.value) ? "resume-contact-link" : ""}
-                                                                onChange={(value) => updateDisplayedProfileContact(contact.id, "value", value)}
-                                                            />
+                                                            {renderContactValue(contact)}
                                                         </span>
                                                     ))}
                                                 </div>
@@ -1990,12 +2009,7 @@ export default function ResumeCanvas({
                                                         className="resume-minimal-profile__contact-label"
                                                         onChange={(label) => updateDisplayedProfileContact(contact.id, "label", label)}
                                                     />
-                                                    <EditableText
-                                                        value={contact.value}
-                                                        placeholder="내용 또는 URL"
-                                                        className={/^https?:\/\//i.test(contact.value) ? "resume-contact-link" : ""}
-                                                        onChange={(value) => updateDisplayedProfileContact(contact.id, "value", value)}
-                                                    />
+                                                    {renderContactValue(contact)}
                                                 </span>
                                             ))}
                                         </div>
@@ -2557,7 +2571,7 @@ export default function ResumeCanvas({
                                                             className="resume-item-title font-bold text-neutral-900 text-sm"
                                                         />
                                                         {proj.link && (
-                                                            <a href={proj.link} target="_blank" rel="noreferrer" style={{ color: primaryColor }} className="text-xs hover:underline">
+                                                            <a href={proj.link} target="_blank" rel="noreferrer" style={{ "--resume-link-color": primaryColor } as React.CSSProperties} className="resume-link-badge text-xs hover:underline">
                                                                 링크 ↗
                                                             </a>
                                                         )}
@@ -2947,8 +2961,8 @@ export default function ResumeCanvas({
                                                                 href={cert.link}
                                                                 target="_blank"
                                                                 rel="noreferrer"
-                                                                style={{ color: primaryColor }}
-                                                                className="ml-2 inline-block whitespace-nowrap align-baseline text-xs hover:underline"
+                                                                style={{ "--resume-link-color": primaryColor } as React.CSSProperties}
+                                                                className="resume-link-badge ml-2 inline-block whitespace-nowrap align-baseline text-xs hover:underline"
                                                             >
                                                                 링크 ↗
                                                             </a>
@@ -3119,7 +3133,7 @@ export default function ResumeCanvas({
                         transformOrigin: "top center",
                         backfaceVisibility: "hidden",
                     }}
-                    className={`resume-canvas-pages items-center gap-10 pb-36${viewMode === "two-page" ? " resume-canvas-pages--two-page" : " flex flex-col"}`}
+                    className={`resume-canvas-pages shrink-0 self-start items-center gap-10 pb-36${viewMode === "two-page" ? " resume-canvas-pages--two-page" : " flex flex-col"}`}
                 >
                     {/* 실제 A4 시트 단위 분할 렌더링 */}
                     {pages.map((page) => (
@@ -3203,11 +3217,9 @@ export default function ResumeCanvas({
                                                 );
                                             }}
                                             style={{
+                                                // 직접 설정한 블록 여백은 CSS 변수로 넘겨, 같은 페이지에서 이어진 조각 사이에는 적용되지 않게 한다.
                                                 ...(block.style.useCustomPadding
-                                                    ? {
-                                                        paddingTop: `${block.style.paddingY}px`,
-                                                        paddingBottom: `${block.style.paddingY}px`,
-                                                    }
+                                                    ? { "--resume-custom-padding-y": `${block.style.paddingY}px` } as React.CSSProperties
                                                     : {}),
                                                 marginBottom: continuesNextFragment ? 0 : "var(--resume-block-gap)",
                                             }}
