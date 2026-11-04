@@ -15,8 +15,10 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import LandingMotion from "./LandingMotion";
+import HeroSpace from "./HeroSpace";
 import TemplatePreview from "./TemplatePreview";
+import HeroWave from "./HeroWave";
+import LandingMotion from "./LandingMotion";
 import styles from "./landing.module.css";
 import { OPEN_GRAPH_IMAGE, SITE_NAME } from "@/lib/site";
 
@@ -86,7 +88,6 @@ export default function LandingPage() {
   return (
     <div className={styles.page}>
       <LandingMotion />
-      <div className={styles.backdrop} aria-hidden="true" />
 
       <header className={styles.header} data-landing-header>
         <div className={styles.headerInner}>
@@ -115,17 +116,21 @@ export default function LandingPage() {
       <main>
         {/* Hero */}
         <section className={styles.hero}>
+          <HeroWave />
           <div className={styles.heroCopy}>
-            <p className={`${styles.badge} ${styles.intro}`}>
-              <span className={styles.badgeDot} />
-              개발자를 위한 블록형 이력서 빌더
-            </p>
+            <span className={`${styles.heroDots} ${styles.intro}`} aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
             <h1 className={styles.heroTitle}>
               <span className={styles.titleLine}>
                 <span>끝까지 읽히는</span>
               </span>
               <span className={styles.titleLine}>
-                <span className={styles.gradientText}>이력서<span className="font-light">를 쌓다.</span></span>
+                <span>이력서<span className={styles.titleLight}>를 쌓다.</span></span>
               </span>
             </h1>
             <p className={`${styles.heroLead} ${styles.intro}`}>
@@ -156,8 +161,10 @@ export default function LandingPage() {
           </div>
 
           <div className={styles.heroVisual}>
+            <HeroSpace className={styles.space} hazeClassName={styles.haze} />
             <TemplatePreview />
           </div>
+
         </section>
 
         {/* Block marquee */}
