@@ -115,7 +115,7 @@ export default function LandingPage() {
 
       <main>
         {/* Hero */}
-        <section className={styles.hero}>
+        <section className={styles.hero} data-replay>
           <HeroWave />
           <div className={styles.heroCopy}>
             <span className={`${styles.heroDots} ${styles.intro}`} aria-hidden="true">
@@ -187,9 +187,9 @@ export default function LandingPage() {
         <section id="why" className={styles.section}>
           <div className={`${styles.sectionHead} ${styles.reveal}`} data-reveal>
             <h2 className={styles.sectionTitle}>
-              내 이력서 분량,
+              <span className={styles.titleLight}>내 이력서 분량,</span>
               <br />
-              <span className={styles.gradientText}>쓰면서 바로</span> 확인하세요.
+              쓰면서 바로 <span className={styles.titleLight}>확인하세요.</span>
             </h2>
             <p className={styles.sectionLead}>
               PDF로 저장했더니 생각보다 페이지가 늘어나서 당황한 적, 있으시죠?<br />
@@ -284,11 +284,11 @@ export default function LandingPage() {
         {/* Features */}
         <section id="features" className={styles.section}>
           <div className={`${styles.sectionHead} ${styles.reveal}`} data-reveal>
-            <p className={styles.eyebrow}>Features</p>
+            <p className={styles.eyebrow}>기능</p>
             <h2 className={styles.sectionTitle}>
-              이력서 작성에 필요한 건
+              <span className={styles.titleLight}>이력서 작성에 필요한 건</span>
               <br />
-              <span className={styles.gradientText}>Bripick</span>이 모두 준비했어요
+              Bripick<span className={styles.titleLight}>이 모두 준비했어요</span>
             </h2>
           </div>
 
@@ -305,7 +305,7 @@ export default function LandingPage() {
                 </p>
               </div>
               <div className={styles.blockStack} aria-hidden="true">
-                <div className={styles.stackItem}>
+                <div className={`${styles.stackItem} ${styles.stackItemPushed}`}>
                   <GripVertical size={14} /> 프로필
                 </div>
                 <div className={`${styles.stackItem} ${styles.stackItemLifted}`}>
@@ -435,9 +435,9 @@ export default function LandingPage() {
         {/* How it works */}
         <section id="how" className={styles.section}>
           <div className={`${styles.sectionHead} ${styles.reveal}`} data-reveal>
-            <p className={styles.eyebrow}>How it works</p>
+            <p className={styles.eyebrow}>사용 방법</p>
             <h2 className={styles.sectionTitle}>
-              <span className={styles.gradientText}>세 단계</span>면 이력서 완성!
+              세 단계<span className={styles.titleLight}>면 이력서 완성!</span>
             </h2>
           </div>
           <ol className={styles.steps}>
@@ -454,7 +454,7 @@ export default function LandingPage() {
         {/* FAQ */}
         <section id="faq" className={`${styles.section} ${styles.faqSection}`}>
           <div className={`${styles.sectionHead} ${styles.reveal}`} data-reveal>
-            <p className={styles.eyebrow}>FAQ</p>
+            <p className={styles.eyebrow}>궁금한 점</p>
             <h2 className={styles.sectionTitle}>자주 묻는 질문</h2>
           </div>
           <div className={styles.faqList}>
