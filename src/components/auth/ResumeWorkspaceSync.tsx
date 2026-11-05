@@ -23,6 +23,8 @@ type WorkspaceMigration = {
 const LEGACY_STORAGE_KEY = "bripick-resume-storage";
 const GUEST_STORAGE_KEY = "bripick-resume-storage:guest";
 const GUEST_BASELINE_KEY = "bripick-resume-storage:guest-baseline";
+// 마지막으로 계정 작업공간을 연 사용자. 오프라인이라 세션을 확인할 수 없을 때 이 사용자의 기기 사본을 연다.
+const LAST_ACCOUNT_USER_KEY = "bripick-last-account-user";
 const MINIMUM_LOADING_DURATION_MS = 1200;
 const accountStorageKey = (userId: string) => `bripick-resume-storage:user:${userId}`;
 
@@ -102,6 +104,11 @@ export default function ResumeWorkspaceSync() {
     const loadingTimerRef = useRef<number | null>(null);
     const loadingStartedAtRef = useRef(Date.now());
     const activeUserIdRef = useRef<string | null>(null);
+    const saveFailedRef = useRef(false);
+    // 오프라인 모드: 계정 사본을 기기에서만 편집 중인 사용자 id와, 그동안 바뀐 내용이 있는지
+    const [offlineUserId, setOfflineUserId] = useState<string | null>(null);
+    const offlineUserIdRef = useRef<string | null>(null);
+    const offlineDirtyRef = useRef(false);
 
     const beginLoading = useCallback(() => {
         if (loadingTimerRef.current !== null) window.clearTimeout(loadingTimerRef.current);
@@ -127,6 +134,9 @@ export default function ResumeWorkspaceSync() {
         if (saveTimerRef.current !== null) window.clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
         activeUserIdRef.current = null;
+        offlineUserIdRef.current = null;
+        offlineDirtyRef.current = false;
+        setOfflineUserId(null);
     }, []);
 
     const startSync = useCallback((userId: string) => {
@@ -139,8 +149,12 @@ export default function ResumeWorkspaceSync() {
                 if (activeUserIdRef.current !== userId) return;
                 const latest = useResumeStore.getState();
                 saveWorkspace(latest.resumeList, latest.resume.id)
-                    .then(() => setErrorMessage(null))
+                    .then(() => {
+                        saveFailedRef.current = false;
+                        setErrorMessage(null);
+                    })
                     .catch(() => {
+                        saveFailedRef.current = true;
                         setErrorMessage("변경사항을 계정에 저장하지 못했습니다. 네트워크 연결을 확인해 주세요.");
                     });
             }, 700);
@@ -156,9 +170,27 @@ export default function ResumeWorkspaceSync() {
         replaceWorkspace(workspace.resumes, workspace.activeResumeId);
         if (shouldSave) await saveWorkspace(workspace.resumes, workspace.activeResumeId ?? workspace.resumes[0].id);
         startSync(user.id);
+        window.localStorage.setItem(LAST_ACCOUNT_USER_KEY, user.id);
         setMigration(null);
         finishLoading();
     }, [finishLoading, replaceWorkspace, startSync]);
+
+    // 세션을 확인할 수 없을 때(오프라인 등) 마지막 계정의 기기 사본을 열고, 바뀐 내용은 연결되면 올린다.
+    const activateOfflineAccountWorkspace = useCallback((userId: string, workspace: StoredWorkspace) => {
+        stopSync();
+        useResumeStore.persist.setOptions({ name: accountStorageKey(userId) });
+        replaceWorkspace(workspace.resumes, workspace.activeResumeId);
+        offlineUserIdRef.current = userId;
+        offlineDirtyRef.current = false;
+        setOfflineUserId(userId);
+        unsubscribeRef.current = useResumeStore.subscribe((state, previous) => {
+            if (state.resume === previous.resume && state.resumeList === previous.resumeList) return;
+            offlineDirtyRef.current = true;
+        });
+        setMigration(null);
+        setErrorMessage(null);
+        finishLoading();
+    }, [finishLoading, replaceWorkspace, stopSync]);
 
     const activateGuestWorkspace = useCallback(() => {
         stopSync();
@@ -179,13 +211,26 @@ export default function ResumeWorkspaceSync() {
         setMigration(null);
 
         let user: SessionUser | null = null;
+        let sessionUnavailable = false;
         try {
             user = await getAuthSession();
         } catch {
-            // 인증 서버를 확인할 수 없어도 비로그인 편집은 로컬에서 계속 가능해야 한다.
+            // 인증 서버를 확인할 수 없어도 편집은 로컬에서 계속 가능해야 한다.
+            // 기기가 오프라인일 때만 계정 사본을 열고, 온라인인데 서버 오류면 예전처럼 게스트로 연다.
+            sessionUnavailable = !navigator.onLine;
+        }
+
+        if (sessionUnavailable) {
+            const lastUserId = window.localStorage.getItem(LAST_ACCOUNT_USER_KEY);
+            const cachedAccount = lastUserId ? readWorkspace(accountStorageKey(lastUserId)) : null;
+            if (lastUserId && cachedAccount) {
+                activateOfflineAccountWorkspace(lastUserId, cachedAccount);
+                return;
+            }
         }
 
         if (!user || user.isAnonymous) {
+            if (!sessionUnavailable) window.localStorage.removeItem(LAST_ACCOUNT_USER_KEY);
             activateGuestWorkspace();
             return;
         }
@@ -227,7 +272,43 @@ export default function ResumeWorkspaceSync() {
         } catch {
             setErrorMessage("계정의 이력서를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.");
         }
-    }, [activateAccountWorkspace, activateGuestWorkspace, beginLoading, stopSync]);
+    }, [activateAccountWorkspace, activateGuestWorkspace, activateOfflineAccountWorkspace, beginLoading, stopSync]);
+
+    // 연결이 돌아오면: 오프라인에서 고친 내용을 계정에 올리고 다시 불러오거나, 실패했던 저장을 다시 시도한다.
+    useEffect(() => {
+        const handleOnline = async () => {
+            const offlineId = offlineUserIdRef.current;
+            if (offlineId) {
+                try {
+                    const user = await getAuthSession();
+                    if (user?.id === offlineId && offlineDirtyRef.current) {
+                        const latest = useResumeStore.getState();
+                        await saveWorkspace(latest.resumeList, latest.resume.id);
+                        offlineDirtyRef.current = false;
+                    }
+                } catch {
+                    // 아직 서버에 닿지 않으면 기기 사본을 그대로 두고 다음 연결 때 다시 시도한다.
+                    return;
+                }
+                void load();
+                return;
+            }
+
+            const userId = activeUserIdRef.current;
+            if (userId && saveFailedRef.current) {
+                const latest = useResumeStore.getState();
+                saveWorkspace(latest.resumeList, latest.resume.id)
+                    .then(() => {
+                        saveFailedRef.current = false;
+                        setErrorMessage(null);
+                    })
+                    .catch(() => undefined);
+            }
+        };
+        const onOnline = () => void handleOnline();
+        window.addEventListener("online", onOnline);
+        return () => window.removeEventListener("online", onOnline);
+    }, [load]);
 
     useEffect(() => {
         const initialLoad = window.setTimeout(() => void load(), 0);
@@ -283,6 +364,14 @@ export default function ResumeWorkspaceSync() {
             {isLoading && !migration && (
                 <div className="workspace-sync-state">
                     <BripickLoadingLogo label="계정 이력서를 불러오는 중…" />
+                </div>
+            )}
+            {offlineUserId && !errorMessage && (
+                <div
+                    className="fixed left-1/2 top-[70px] z-[95] max-w-[calc(100vw-32px)] -translate-x-1/2 rounded-[10px] border border-sky-400/30 bg-[#0f1a2a]/95 px-3 py-2.5 text-[13px] text-sky-100 shadow-lg"
+                    role="status"
+                >
+                    오프라인이에요. 이 기기에 저장된 사본을 편집 중이고, 연결되면 계정에 저장할게요.
                 </div>
             )}
             {errorMessage && (
