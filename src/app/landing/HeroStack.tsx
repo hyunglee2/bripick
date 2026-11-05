@@ -90,7 +90,6 @@ export default function HeroStack() {
       <HeroSpace
         className={styles.space}
         hazeClassName={styles.haze}
-        dotClassName={styles.hazeDot}
       />
       <div className={styles.stackSheet}>
         {BLOCKS.map((block, index) => (
