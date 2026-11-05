@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import FeedbackWidget from "@/components/feedback/FeedbackWidget";
+import ServiceWorkerRegister from "@/components/pwa/ServiceWorkerRegister";
 import {
   OPEN_GRAPH_IMAGE,
   SITE_DESCRIPTION,
@@ -104,6 +105,7 @@ export default function RootLayout({
         {children}
         <FeedbackWidget />
         <GoogleAnalytics />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
