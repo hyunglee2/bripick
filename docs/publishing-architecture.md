@@ -24,7 +24,7 @@ PublishResumeButton (브라우저)
 - `src/server/resumes/resume-publication.service.ts`: slug 생성, 소유자 확인, DB 저장·조회·삭제
 - `src/server/auth/auth.service.ts`: 현재 세션의 사용자를 검증하는 인증 경계
 - `src/server/supabase/server.ts`: 환경변수와 쿠키를 사용하는 서버 전용 Supabase 클라이언트
-- `src/app/r/[slug]/page.tsx`: 공개 문서를 서버에서 조회해 읽기 전용 화면으로 전달
+- `src/app/resume/[slug]/page.tsx`: 공개 문서를 서버에서 조회해 읽기 전용 화면으로 전달 (예전 주소 `src/app/r/[slug]`는 `/resume/[slug]`로 308 리다이렉트)
 
 ## 인증과 인가
 
@@ -34,7 +34,7 @@ PublishResumeButton (브라우저)
 
 ## 공개 조회
 
-`GET /api/resumes/[slug]`와 `/r/[slug]`는 로그인 없이 접근할 수 있다. 생성·수정·삭제만 인증과 소유자 확인이 필요하다.
+`GET /api/resumes/[slug]`와 `/resume/[slug]`는 로그인 없이 접근할 수 있다. 생성·수정·삭제만 인증과 소유자 확인이 필요하다.
 
 ## 배포 변화
 

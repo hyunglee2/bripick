@@ -8,6 +8,13 @@ import type { ProfileData, ResumeDocument } from "@/types/resume";
 
 export const dynamic = "force-dynamic";
 
+const NO_INDEX_ROBOTS: Metadata["robots"] = {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: { index: false, follow: false, noimageindex: true },
+};
+
 function getResumeDescription(resume: ResumeDocument) {
     const profile = resume.blocks.find(
         (block) => block.type === "profile" && block.isVisible,
@@ -27,22 +34,24 @@ function getResumeDescription(resume: ResumeDocument) {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const { slug } = await params;
     if (!PUBLIC_SLUG_PATTERN.test(slug)) {
-        return { title: "공개 이력서", robots: { index: false, follow: false } };
+        return { title: "공개 이력서", robots: NO_INDEX_ROBOTS };
     }
 
     const resume = await findPublicResume(slug).catch(() => null);
     if (!resume) {
-        return { title: "공개 이력서", robots: { index: false, follow: false } };
+        return { title: "공개 이력서", robots: NO_INDEX_ROBOTS };
     }
 
     const title = resume.versionName || "개발자 이력서";
     const description = getResumeDescription(resume);
-    const url = `/r/${slug}`;
+    const url = `/resume/${slug}`;
 
     return {
         title,
         description,
         alternates: { canonical: url },
+        // 링크를 받은 사람만 보도록 검색 결과(구글·네이버 등)에는 싣지 않는다. 링크 미리보기(OG)는 그대로 둔다.
+        robots: NO_INDEX_ROBOTS,
         openGraph: {
             title: `${title} | ${SITE_NAME}`,
             description,

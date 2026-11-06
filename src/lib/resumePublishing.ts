@@ -33,6 +33,6 @@ export async function deleteResumeWithPublication(resume: Pick<ResumeDocument, "
 }
 
 export function getPublicResumeUrl(slug: string) {
-    if (typeof window === "undefined") return `/r/${encodeURIComponent(slug)}`;
-    return `${window.location.origin}/r/${encodeURIComponent(slug)}`;
+    if (typeof window === "undefined") return `/resume/${encodeURIComponent(slug)}`;
+    return `${window.location.origin}/resume/${encodeURIComponent(slug)}`;
 }

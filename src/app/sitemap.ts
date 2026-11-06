@@ -1,12 +1,10 @@
 import type { MetadataRoute } from "next";
 import { OPEN_GRAPH_IMAGE, SITE_LAST_MODIFIED, SITE_URL } from "@/lib/site";
-import { findPublicResumeSitemapEntries } from "@/server/resumes/resume-publication.service";
 
 export const revalidate = 3600;
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const publications = await findPublicResumeSitemapEntries().catch(() => []);
-
+// 게시된 이력서(/resume/...)는 검색 노출을 막으므로 사이트맵에 넣지 않는다.
+export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
       url: SITE_URL,
@@ -15,11 +13,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
       images: [`${SITE_URL}${OPEN_GRAPH_IMAGE.url}`],
     },
-    ...publications.map((publication) => ({
-      url: `${SITE_URL}/r/${publication.slug}`,
-      lastModified: publication.updated_at,
-      changeFrequency: "weekly" as const,
-      priority: 0.6,
-    })),
   ];
 }
