@@ -348,7 +348,8 @@ body,
 }
 
 .editor-zoom-controls:not(.public-resume-zoom-controls) {
-  right: calc(clamp(380px, 30vw, 480px) + var(--editor-floating-control-offset));
+  /* 작업 패널 너비(EditorWorkspace가 드래그 값을 넘겨줌)를 따라 캔버스 오른쪽 아래에 붙는다. */
+  right: calc(var(--editor-inspector-width, clamp(380px, 30vw, 480px)) + var(--editor-floating-control-offset));
 }
 
 .editor-document-status,
@@ -825,11 +826,25 @@ body,
     14px 0 24px -18px rgba(15, 23, 42, 0.18);
 }
 
-.reference-template .resume-block-fragment--continues-next[data-custom-padding="false"] {
+/* 블록 설정의 '위아래 여백 직접 지정'. 같은 페이지에서 이어진 조각 사이에는 아래 규칙들이 덮어써서 여백이 겹치지 않는다. */
+:where(.resume-paper) .resume-block-item[data-custom-padding="true"] {
+  padding-top: var(--resume-custom-padding-y) !important;
+  padding-bottom: var(--resume-custom-padding-y) !important;
+}
+
+.minimal-template .resume-block-item.resume-block-fragment--continues-previous[data-custom-padding="true"] {
+  padding-top: 0 !important;
+}
+
+.minimal-template .resume-block-item.resume-block-fragment--continues-next[data-custom-padding="true"] {
+  padding-bottom: 0 !important;
+}
+
+.reference-template .resume-block-fragment--continues-next {
   padding-bottom: 8px !important;
 }
 
-.reference-template .resume-block-fragment--continues-previous[data-custom-padding="false"] {
+.reference-template .resume-block-fragment--continues-previous {
   padding-top: 8px !important;
 }
 
@@ -9324,21 +9339,27 @@ body:has(.editor-tutorial) .feedback-launcher {
  * 프로젝트 사이 간격(--resume-project-divider-gap)
  * 경력 블록의 회사↔첫 프로젝트, 프로젝트↔프로젝트, 프로젝트 블록의 프로젝트↔프로젝트를 모두 이 값으로 맞춘다.
  * 프로젝트마다 따로 그려지는 조각(같은 페이지에서 이어지는 조각) 사이도 같은 값이 되도록,
- * 이어지는 조각의 위아래 패딩은 없애고 조각 사이 margin을 이 값으로 둔다.
+ * 이어지는 조각의 위아래 패딩은 없애고(블록 여백을 직접 지정한 경우도 포함) 조각 사이 margin을 이 값으로 둔다.
  * Minimal은 이 값 그대로, Modern은 구분선 위아래에 각각 이 값을 둔다.
  */
-.reference-template [data-block-type="experience"].resume-block-fragment--continues-next[data-custom-padding="false"],
-.reference-template [data-block-type="project"].resume-block-fragment--continues-next[data-custom-padding="false"],
-.minimal-template [data-block-type="experience"].resume-block-fragment--continues-next[data-custom-padding="false"],
-.minimal-template [data-block-type="project"].resume-block-fragment--continues-next[data-custom-padding="false"] {
+.reference-template [data-block-type="experience"].resume-block-fragment--continues-next,
+.reference-template [data-block-type="project"].resume-block-fragment--continues-next,
+.minimal-template [data-block-type="experience"].resume-block-fragment--continues-next,
+.minimal-template [data-block-type="project"].resume-block-fragment--continues-next {
   margin-bottom: var(--resume-project-divider-gap) !important;
   padding-bottom: 0 !important;
 }
 
-.reference-template [data-block-type="experience"].resume-block-fragment--continues-previous[data-custom-padding="false"],
-.reference-template [data-block-type="project"].resume-block-fragment--continues-previous[data-custom-padding="false"],
-.minimal-template [data-block-type="experience"].resume-block-fragment--continues-previous[data-custom-padding="false"],
-.minimal-template [data-block-type="project"].resume-block-fragment--continues-previous[data-custom-padding="false"] {
+.reference-template [data-block-type="experience"].resume-block-fragment--continues-previous,
+.reference-template [data-block-type="project"].resume-block-fragment--continues-previous,
+.minimal-template [data-block-type="experience"].resume-block-fragment--continues-previous,
+.minimal-template [data-block-type="project"].resume-block-fragment--continues-previous {
+  padding-top: 0 !important;
+}
+
+/* 이어진 조각의 목록 윗여백(pt-1)도 없애, 조각이 나뉘어도 프로젝트 사이가 한 조각 안과 똑같이 이 값이 되게 한다. */
+.resume-block-fragment--continues-previous[data-block-type="project"] .resume-project-list,
+.resume-block-fragment--continues-previous[data-block-type="experience"] .resume-section>.pt-1 {
   padding-top: 0 !important;
 }
 

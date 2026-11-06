@@ -53,7 +53,7 @@ const TYPOGRAPHY_CONTROLS = [
 
 const SPACING_CONTROLS = [
     { key: "basePadding", label: "용지 안쪽 여백", min: 20, max: 64, step: 4 },
-    { key: "blockGap", label: "섹션 사이 간격", min: 0, max: 40, step: 2 },
+    { key: "blockGap", label: "블록 사이 간격", min: 0, max: 40, step: 2 },
     { key: "projectDividerGap", label: "프로젝트 사이 간격", min: 0, max: 120, step: 2 },
     { key: "contentWidth", label: "문서 가로 너비", min: 720, max: 900, step: 20 },
 ] as const;

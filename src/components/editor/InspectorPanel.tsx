@@ -2329,7 +2329,7 @@ export default function InspectorPanel() {
                                 <label className="block-settings__option">
                                     <span className="block-settings__option-copy">
                                         <span className="block-settings__option-label">위아래 여백 직접 지정</span>
-                                        <span className="block-settings__option-hint">전역 섹션 간격에 이 블록만 여백을 더해요.</span>
+                                        <span className="block-settings__option-hint">전역 블록 사이 간격에 이 블록만 여백을 더해요.</span>
                                     </span>
                                     <input
                                         type="checkbox"

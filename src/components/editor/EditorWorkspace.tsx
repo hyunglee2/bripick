@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { GripVertical } from "lucide-react";
 import ResumeCanvas from "@/components/editor/ResumeCanvas";
 import InspectorPanel from "@/components/editor/InspectorPanel";
@@ -160,7 +160,7 @@ export default function EditorWorkspace() {
 
     return (
         <>
-            <div ref={workspaceRef} className={`editor-workspace flex min-h-0 flex-1 overflow-hidden${isResizing ? " is-resizing" : ""}${mobileInspectorLevel === "collapsed" ? " is-mobile-inspector-collapsed" : ""}${mobileInspectorLevel === "full" ? " is-mobile-inspector-full" : ""}`}>
+            <div ref={workspaceRef} style={{ "--editor-inspector-width": `${inspectorWidth}px` } as CSSProperties} className={`editor-workspace flex min-h-0 flex-1 overflow-hidden${isResizing ? " is-resizing" : ""}${mobileInspectorLevel === "collapsed" ? " is-mobile-inspector-collapsed" : ""}${mobileInspectorLevel === "full" ? " is-mobile-inspector-full" : ""}`}>
                 <ResumeCanvas />
                 <div
                     role="separator"
